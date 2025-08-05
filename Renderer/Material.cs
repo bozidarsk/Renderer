@@ -20,7 +20,15 @@ public sealed class Material
 			if (name == null || value == null)
 				throw new ArgumentNullException();
 
-			uniforms[name] = value;
+			if (value.GetType().IsValueType)
+				uniforms[name] = value;
+			else if (value is Texture) 
+			{
+				var x = (Texture)value;
+				uniforms[name] = (x.Sampler, x.ImageView);
+			}
+			else
+				throw new InvalidOperationException($"Cannot create a uniform variable of type '{value.GetType()}'.");
 		}
 	}
 

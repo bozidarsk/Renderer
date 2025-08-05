@@ -23,4 +23,8 @@
     <ProjectReference Include="Vulkan/Vulkan-cs.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.IO.Hashing" Version="9.0.7" />
+  </ItemGroup>
+
 </Project>

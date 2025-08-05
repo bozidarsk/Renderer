@@ -12,7 +12,9 @@ namespace Renderer;
 public abstract class Texture : IDisposable
 {
 	public Vulkan.Image Image;
+	public Vulkan.ImageView ImageView;
 	public Vulkan.DeviceMemory Memory;
+	public Vulkan.Sampler Sampler;
 
 	public int Width { protected set; get; }
 	public int Height { protected set; get; }
@@ -38,9 +40,26 @@ public abstract class Texture : IDisposable
 
 	public abstract void Save(string filename);
 
+	public void Initialize(Vulkan.Program vk) 
+	{
+		vk.CreateTexture(
+			ref Unsafe.As<uint, byte>(ref MemoryMarshal.GetArrayDataReference(Colors)),
+			Width,
+			Height,
+			ImageType.Generic2D,
+			Format.B8G8R8A8UNorm,
+			out Image,
+			out ImageView,
+			out Memory,
+			out Sampler
+		);
+	}
+
 	public void Dispose() 
 	{
-		// Image.Dispose();
+		Sampler.Dispose();
+		ImageView.Dispose();
+		Image.Dispose();
 		Memory.Dispose();
 	}
 }

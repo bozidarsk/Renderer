@@ -46,14 +46,7 @@ public sealed class Camera : SceneObject
 		this.Scene.Program.DrawFrame(
 			projection: this.Projection,
 			view: this.Transform,
-			objects: objects.Select(x => 
-				{
-					var material = x.GetComponent<MeshRenderer>().Material;
-					material["MODEL"] = (Matrix4x4)x.Transform;
-
-					return (material.Uniforms, x.RenderInfo);
-				}
-			)
+			objects: objects.Select(x => ((Matrix4x4)x.Transform, x.GetComponent<MeshRenderer>().Material.Uniforms, x.RenderInfo))
 		);
 	}
 
