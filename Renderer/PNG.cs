@@ -34,9 +34,9 @@ public sealed class PNG : Texture
 
 		{
 			using var chunk = new MemoryStream();
-			chunk.WriteBigEndian(base.Width);
-			chunk.WriteBigEndian(base.Height);
-			chunk.Write((byte)base.Depth);
+			chunk.WriteBigEndian((uint)base.Width);
+			chunk.WriteBigEndian((uint)base.Height);
+			chunk.Write((byte)8);
 			chunk.Write((byte)(ColorType.Color | ColorType.Alpha));
 			chunk.Write((byte)CompressionType.Deflate);
 			chunk.Write((byte)FilterType.None);
@@ -47,12 +47,18 @@ public sealed class PNG : Texture
 
 		{
 			using var chunk = new MemoryStream();
-			for (uint y = 0; y < base.Height; y++) 
+			for (int y = 0; y < base.Height; y++) 
 			{
 				chunk.Write((byte)FilterType.None);
 
-				for (uint x = 0; x < base.Width; x++)
-					chunk.WriteBigEndian(base.Colors[y * base.Width + x]);
+				for (int x = 0; x < base.Width; x++) 
+				{
+					uint color = base.Colors[y * base.Width + x];
+					chunk.Write((byte)(color >> 16));
+					chunk.Write((byte)(color >> 8));
+					chunk.Write((byte)(color >> 0));
+					chunk.Write((byte)(color >> 24));
+				}
 			}
 
 			WriteChunk(writer, ChunkType.IDAT, chunk, true);
@@ -142,13 +148,13 @@ public sealed class PNG : Texture
 			return c;
 	}
 
-	private uint[] ReadTrueColor(Dictionary<ChunkType, Stream> chunks, Stream data) 
+	private uint[] ReadTrueColor(Dictionary<ChunkType, Stream> chunks, Stream data, int depth) 
 	{
 		var pixels = new uint[base.Width * base.Height];
-		uint stride = (uint)(base.IsTransparent ? 4 : 3);
+		int stride = base.IsTransparent ? 4 : 3;
 		byte[]? previousScanline = null;
 
-		for (uint y = 0; y < base.Height; y++) 
+		for (int y = 0; y < base.Height; y++) 
 		{
 			var filterType = (FilterType)data.ReadUInt8();
 			byte[] scanline = data.ReadBytes(checked((int)(base.Width * stride)));
@@ -158,7 +164,7 @@ public sealed class PNG : Texture
 				case FilterType.None:
 					break;
 				case FilterType.Sub:
-					for (uint i = stride; i < scanline.Length; i++)
+					for (int i = stride; i < scanline.Length; i++)
 						 scanline[i] = (byte)(scanline[i] + scanline[i - stride]);
 					break;
 				case FilterType.Up:
@@ -191,14 +197,14 @@ public sealed class PNG : Texture
 					throw new FormatException($"Invalid filter type '{filterType}'.");
 			}
 
-			for (uint x = 0; x < base.Width; x++) 
+			for (int x = 0; x < base.Width; x++) 
 			{
-				uint index = x * stride;
+				int index = x * stride;
 				pixels[y * base.Width + x] = 
-					(uint)((uint)scanline[index + 0] << 24) | 
-					(uint)((uint)scanline[index + 1] << 16) | 
-					(uint)((uint)scanline[index + 2] << 8) | 
-					(uint)(base.IsTransparent ? scanline[index + 3] : byte.MaxValue)
+					(uint)((base.IsTransparent ? scanline[index + 3] : byte.MaxValue) << 24) | 
+					(uint)((uint)scanline[index + 0] << 16) | 
+					(uint)((uint)scanline[index + 1] << 8) | 	
+					(uint)((uint)scanline[index + 2] << 0)
 				;
 			}
 
@@ -208,33 +214,33 @@ public sealed class PNG : Texture
 		return pixels;
 	}
 
-	private uint[] ReadIndexed(Dictionary<ChunkType, Stream> chunks, Stream data) 
+	private uint[] ReadIndexed(Dictionary<ChunkType, Stream> chunks, Stream data, int depth) 
 	{
-		if (base.Depth != 1 && base.Depth != 2 && base.Depth != 4 && base.Depth != 8)
-			throw new FormatException($"Invalid depth '{base.Depth}'.");
+		if (depth != 1 && depth != 2 && depth != 4 && depth != 8)
+			throw new FormatException($"Invalid depth '{depth}'.");
 
 		Stream plte = chunks[ChunkType.PLTE];
 		Stream? trns = null;
-		int mask = (1 << (int)base.Depth) - 1;
+		int mask = (1 << (int)depth) - 1;
 
 		if (base.IsTransparent)
 			trns = chunks[ChunkType.tRNS];
 
 		var pixels = new uint[base.Width * base.Height];
-		uint stride = 1;
+		int stride = 1;
 		byte[]? previousScanline = null;
 
-		for (uint y = 0; y < base.Height; y++) 
+		for (int y = 0; y < base.Height; y++) 
 		{
 			var filterType = (FilterType)data.ReadUInt8();
-			byte[] scanline = data.ReadBytes(checked((int)(base.Width / (8 / base.Depth))));
+			byte[] scanline = data.ReadBytes(checked((int)(base.Width / (8 / depth))));
 
 			switch (filterType) 
 			{
 				case FilterType.None:
 					break;
 				case FilterType.Sub:
-					for (uint i = stride; i < scanline.Length; i++)
+					for (int i = stride; i < scanline.Length; i++)
 						 scanline[i] = (byte)(scanline[i] + scanline[i - stride]);
 					break;
 				case FilterType.Up:
@@ -267,26 +273,27 @@ public sealed class PNG : Texture
 					throw new FormatException($"Invalid filter type '{filterType}'.");
 			}
 
-			for (uint x = 0; x < base.Width; x++) 
+			for (int x = 0; x < base.Width; x++) 
 			{
-				int ppb = 8 / (int)base.Depth;
+				int ppb = 8 / (int)depth;
 				long index = x / ppb;
 				byte a = byte.MaxValue;
 
-				plte.Position = ((long)scanline[index] >> (int)(base.Depth * (ppb - (x % ppb) - 1))) & mask;
-				plte.Position *= 3;
+				long i = ((long)scanline[index] >> (int)(depth * (ppb - (x % ppb) - 1))) & mask;
 
 				if (base.IsTransparent) 
 				{
-					trns!.Position = plte.Position;
+					trns!.Position = i;
 					a = (trns.Position < trns.Length) ? trns.ReadUInt8() : byte.MaxValue;
 				}
+
+				plte.Position = i * 3;
 
 				byte r = plte.ReadUInt8();
 				byte g = plte.ReadUInt8();
 				byte b = plte.ReadUInt8();
 
-				pixels[y * base.Width + x] = ((uint)r << 24) | ((uint)g << 16) | ((uint)b << 8) | (uint)a;
+				pixels[y * base.Width + x] = ((uint)a << 24) | ((uint)r << 16) | ((uint)g << 8) | ((uint)b << 0);
 			}
 
 			previousScanline = scanline;
@@ -346,18 +353,17 @@ public sealed class PNG : Texture
 		zlib.CopyTo(decompressed);
 		decompressed.Position = 0;
 
-		base.Width = width;
-		base.Height = height;
-		base.Depth = (uint)depth;
+		base.Width = checked((int)width);
+		base.Height = checked((int)height);
 		base.IsTransparent = colorType.HasFlag(ColorType.Alpha);
 		base.Colors = colorType switch 
 		{
-			ColorType.Color => ReadTrueColor(chunks, decompressed),
-			ColorType.Color | ColorType.Alpha => ReadTrueColor(chunks, decompressed),
-			ColorType.Color | ColorType.Palette => ReadIndexed(chunks, decompressed),
-			ColorType.Color | ColorType.Palette | ColorType.Alpha => ReadIndexed(chunks, decompressed),
+			ColorType.Color => ReadTrueColor(chunks, decompressed, depth),
+			ColorType.Color | ColorType.Alpha => ReadTrueColor(chunks, decompressed, depth),
+			ColorType.Color | ColorType.Palette => ReadIndexed(chunks, decompressed, depth),
+			ColorType.Color | ColorType.Palette | ColorType.Alpha => ReadIndexed(chunks, decompressed, depth),
 			_ => throw new FormatException($"Invalid color type '{colorType}'.")
-		};;
+		};
 
 		foreach ((var key, var value) in chunks)
 			value.Dispose();

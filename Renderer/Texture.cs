@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using Vulkan;
@@ -13,11 +14,10 @@ public abstract class Texture : IDisposable
 	public Vulkan.Image Image;
 	public Vulkan.DeviceMemory Memory;
 
-	public uint Width { protected set; get; }
-	public uint Height { protected set; get; }
-	public uint Depth { protected set; get; }
+	public int Width { protected set; get; }
+	public int Height { protected set; get; }
 	public bool IsTransparent { protected set; get; }
-	public uint[] Colors { protected set; get; } // R8G8B8A8
+	public uint[] Colors { protected set; get; } // msb A8R8G8B8 lsb
 
 	public static Texture FromFile(string filename) 
 	{
