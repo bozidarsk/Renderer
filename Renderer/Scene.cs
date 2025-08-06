@@ -33,6 +33,8 @@ public class Scene : IDisposable
 			foreach (var camera in objects.Where(x => x is Camera))
 				((Camera)camera).Render(renderable);
 		}
+
+		this.Program.DeviceWaitIdle();
 	}
 
 	internal void RegisterObject(SceneObject x) 
@@ -45,8 +47,6 @@ public class Scene : IDisposable
 
 	public void Dispose() 
 	{
-		this.Program.DeviceWaitIdle();
-
 		foreach (var x in objects)
 			x.Dispose();
 
