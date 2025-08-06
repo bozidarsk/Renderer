@@ -9,11 +9,16 @@ using System.Runtime.CompilerServices;
 
 namespace Renderer;
 
-public sealed class PNG : Texture
+public sealed class PNG 
 {
+	public int Width { get; }
+	public int Height { get; }
+	public bool IsTransparent { get; }
+	public uint[] Colors { get; }
+
 	private const ulong SIGNATURE = 0x89504e470d0a1a0a;
 
-	new public static PNG FromFile(string filename) 
+	public static PNG FromFile(string filename) 
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
@@ -24,7 +29,7 @@ public sealed class PNG : Texture
 		return new(filename);
 	}
 
-	public override void Save(string filename) 
+	public void Save(string filename) 
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
@@ -34,8 +39,8 @@ public sealed class PNG : Texture
 
 		{
 			using var chunk = new MemoryStream();
-			chunk.WriteBigEndian((uint)base.Width);
-			chunk.WriteBigEndian((uint)base.Height);
+			chunk.WriteBigEndian((uint)this.Width);
+			chunk.WriteBigEndian((uint)this.Height);
 			chunk.Write((byte)8);
 			chunk.Write((byte)(ColorType.Color | ColorType.Alpha));
 			chunk.Write((byte)CompressionType.Deflate);
@@ -47,13 +52,13 @@ public sealed class PNG : Texture
 
 		{
 			using var chunk = new MemoryStream();
-			for (int y = 0; y < base.Height; y++) 
+			for (int y = 0; y < this.Height; y++) 
 			{
 				chunk.Write((byte)FilterType.None);
 
-				for (int x = 0; x < base.Width; x++) 
+				for (int x = 0; x < this.Width; x++) 
 				{
-					uint color = base.Colors[y * base.Width + x];
+					uint color = this.Colors[y * this.Width + x];
 					chunk.Write((byte)(color >> 16));
 					chunk.Write((byte)(color >> 8));
 					chunk.Write((byte)(color >> 0));
@@ -150,14 +155,14 @@ public sealed class PNG : Texture
 
 	private uint[] ReadTrueColor(Dictionary<ChunkType, Stream> chunks, Stream data, int depth) 
 	{
-		var pixels = new uint[base.Width * base.Height];
-		int stride = base.IsTransparent ? 4 : 3;
+		var pixels = new uint[this.Width * this.Height];
+		int stride = this.IsTransparent ? 4 : 3;
 		byte[]? previousScanline = null;
 
-		for (int y = 0; y < base.Height; y++) 
+		for (int y = 0; y < this.Height; y++) 
 		{
 			var filterType = (FilterType)data.ReadUInt8();
-			byte[] scanline = data.ReadBytes(checked((int)(base.Width * stride)));
+			byte[] scanline = data.ReadBytes(checked((int)(this.Width * stride)));
 
 			switch (filterType) 
 			{
@@ -197,11 +202,11 @@ public sealed class PNG : Texture
 					throw new FormatException($"Invalid filter type '{filterType}'.");
 			}
 
-			for (int x = 0; x < base.Width; x++) 
+			for (int x = 0; x < this.Width; x++) 
 			{
 				int index = x * stride;
-				pixels[y * base.Width + x] = 
-					(uint)((base.IsTransparent ? scanline[index + 3] : byte.MaxValue) << 24) | 
+				pixels[y * this.Width + x] = 
+					(uint)((this.IsTransparent ? scanline[index + 3] : byte.MaxValue) << 24) | 
 					(uint)((uint)scanline[index + 0] << 16) | 
 					(uint)((uint)scanline[index + 1] << 8) | 	
 					(uint)((uint)scanline[index + 2] << 0)
@@ -223,17 +228,17 @@ public sealed class PNG : Texture
 		Stream? trns = null;
 		int mask = (1 << (int)depth) - 1;
 
-		if (base.IsTransparent)
+		if (this.IsTransparent)
 			trns = chunks[ChunkType.tRNS];
 
-		var pixels = new uint[base.Width * base.Height];
+		var pixels = new uint[this.Width * this.Height];
 		int stride = 1;
 		byte[]? previousScanline = null;
 
-		for (int y = 0; y < base.Height; y++) 
+		for (int y = 0; y < this.Height; y++) 
 		{
 			var filterType = (FilterType)data.ReadUInt8();
-			byte[] scanline = data.ReadBytes(checked((int)(base.Width / (8 / depth))));
+			byte[] scanline = data.ReadBytes(checked((int)(this.Width / (8 / depth))));
 
 			switch (filterType) 
 			{
@@ -273,7 +278,7 @@ public sealed class PNG : Texture
 					throw new FormatException($"Invalid filter type '{filterType}'.");
 			}
 
-			for (int x = 0; x < base.Width; x++) 
+			for (int x = 0; x < this.Width; x++) 
 			{
 				int ppb = 8 / (int)depth;
 				long index = x / ppb;
@@ -281,7 +286,7 @@ public sealed class PNG : Texture
 
 				long i = ((long)scanline[index] >> (int)(depth * (ppb - (x % ppb) - 1))) & mask;
 
-				if (base.IsTransparent) 
+				if (this.IsTransparent) 
 				{
 					trns!.Position = i;
 					a = (trns.Position < trns.Length) ? trns.ReadUInt8() : byte.MaxValue;
@@ -293,7 +298,7 @@ public sealed class PNG : Texture
 				byte g = plte.ReadUInt8();
 				byte b = plte.ReadUInt8();
 
-				pixels[y * base.Width + x] = ((uint)a << 24) | ((uint)r << 16) | ((uint)g << 8) | ((uint)b << 0);
+				pixels[y * this.Width + x] = ((uint)a << 24) | ((uint)r << 16) | ((uint)g << 8) | ((uint)b << 0);
 			}
 
 			previousScanline = scanline;
@@ -302,8 +307,18 @@ public sealed class PNG : Texture
 		return pixels;
 	}
 
-	private unsafe PNG(string filename) 
+	public PNG(int width, int height, bool isTransparent, params uint[] colors) => 
+		(this.Width, this.Height, this.IsTransparent, this.Colors) = (width, height, isTransparent, colors ?? throw new ArgumentNullException())
+	;
+
+	public PNG(string filename) 
 	{
+		if (filename == null)
+			throw new ArgumentNullException();
+
+		if (!File.Exists(filename))
+			throw new FileNotFoundException();
+
 		using var reader = File.OpenRead(filename);
 
 		if (reader.ReadUInt64BigEndian() != SIGNATURE)
@@ -353,10 +368,10 @@ public sealed class PNG : Texture
 		zlib.CopyTo(decompressed);
 		decompressed.Position = 0;
 
-		base.Width = checked((int)width);
-		base.Height = checked((int)height);
-		base.IsTransparent = colorType.HasFlag(ColorType.Alpha);
-		base.Colors = colorType switch 
+		this.Width = checked((int)width);
+		this.Height = checked((int)height);
+		this.IsTransparent = colorType.HasFlag(ColorType.Alpha);
+		this.Colors = colorType switch 
 		{
 			ColorType.Color => ReadTrueColor(chunks, decompressed, depth),
 			ColorType.Color | ColorType.Alpha => ReadTrueColor(chunks, decompressed, depth),

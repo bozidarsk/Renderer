@@ -9,39 +9,40 @@ using Vulkan;
 
 namespace Renderer;
 
-public abstract class Texture : IDisposable
+public sealed class Texture : IDisposable
 {
-	public Vulkan.Image Image;
-	public Vulkan.ImageView ImageView;
-	public Vulkan.DeviceMemory Memory;
-	public Vulkan.Sampler Sampler;
+	internal readonly Vulkan.Image Image;
+	internal readonly Vulkan.ImageView ImageView;
+	internal readonly Vulkan.DeviceMemory Memory;
+	internal readonly Vulkan.Sampler Sampler;
 
-	public int Width { protected set; get; }
-	public int Height { protected set; get; }
-	public bool IsTransparent { protected set; get; }
-	public uint[] Colors { protected set; get; } // msb A8R8G8B8 lsb
+	public int Width { get; }
+	public int Height { get; }
+	public uint[] Colors { get; } // msb A8R8G8B8 lsb
 
-	public static Texture FromFile(string filename) 
+	public void Dispose() 
 	{
-		if (filename == null)
-			throw new ArgumentNullException();
-
-		if (!File.Exists(filename))
-			throw new FileNotFoundException();
-
-		string extension = Path.GetExtension(filename);
-
-		return extension switch 
-		{
-			".png" => PNG.FromFile(filename),
-			_ => throw new InvalidOperationException($"Failed to parse texture of type '{extension}'.")
-		};
+		Sampler.Dispose();
+		ImageView.Dispose();
+		Image.Dispose();
+		Memory.Dispose();
 	}
 
-	public abstract void Save(string filename);
-
-	public void Initialize(Vulkan.Program vk) 
+	public Texture(Vulkan.Program vk, string filename) 
 	{
+		var extension = Path.GetExtension(filename).ToLower();
+		switch (extension) 
+		{
+			case ".png":
+				var png = PNG.FromFile(filename);
+				this.Width = png.Width;
+				this.Height = png.Height;
+				this.Colors = png.Colors;
+				break;
+			default:
+				throw new InvalidOperationException($"Failed to parse texture of type '{extension}'.");
+		}
+
 		vk.CreateTexture(
 			ref Unsafe.As<uint, byte>(ref MemoryMarshal.GetArrayDataReference(Colors)),
 			Width,
@@ -53,13 +54,5 @@ public abstract class Texture : IDisposable
 			out Memory,
 			out Sampler
 		);
-	}
-
-	public void Dispose() 
-	{
-		Sampler.Dispose();
-		ImageView.Dispose();
-		Image.Dispose();
-		Memory.Dispose();
 	}
 }
