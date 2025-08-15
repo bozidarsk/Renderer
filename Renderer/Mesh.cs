@@ -59,14 +59,14 @@ public abstract class Mesh : IDisposable
 			throw new ArgumentNullException();
 
 		if (vertexData.Length == 0)
-			throw new ArgumentOutOfRangeException("Vertex array must have at least one vertex.");
+			throw new ArgumentOutOfRangeException(nameof(vertexData), "Vertex array must have at least one vertex.");
 
 		Type vertexDataType = vertexData.GetValue(0)!.GetType();
 		if (vertexDataType != vertexType)
 			throw new ArgumentException($"Vertex array elements must be '{vertexType}', not '{vertexDataType}'.");
 
-		if (indexData.Length == 0 || indexData.Length % 3 == 0)
-			throw new ArgumentOutOfRangeException("Indices count must be multiple of 3.");
+		if (indexData.Length == 0 || indexData.Length % 3 != 0)
+			throw new ArgumentOutOfRangeException(nameof(indexData), "Indices count must be multiple of 3.");
 
 		Type indexDataType = indexData.GetValue(0)!.GetType();
 		if (indexDataType != typeof(byte) && indexDataType != typeof(ushort) && indexDataType != typeof(uint))
@@ -74,10 +74,10 @@ public abstract class Mesh : IDisposable
 
 		uint maxIndex = 0;
 		for (int i = 0; i < indexData.Length; i++)
-			maxIndex = Math.Max(maxIndex, ((IConvertible)indexData.GetValue(i)!).ToUInt32(null));
+			maxIndex = Math.Max(maxIndex, Convert.ToUInt32(indexData.GetValue(i), null));
 
 		if (maxIndex >= vertexData.Length)
-			throw new ArgumentOutOfRangeException("Index array references a vertex out of bounds of the vertex array.");
+			throw new ArgumentException("Index array references a vertex out of bounds of the vertex array.");
 
 		if (indexType == null) 
 		{
@@ -90,25 +90,27 @@ public abstract class Mesh : IDisposable
 		}
 
 		this.VertexData = Array.CreateInstance(this.VertexType, vertexData.Length);
-		for (int i = 0; i < vertexData.Length; i++)
-			this.VertexData.SetValue(vertexData.GetValue(i)!, i);
+		Array.Copy(vertexData, this.VertexData, vertexData.Length);
 
-		this.IndexData = this.IndexType switch 
+		indexDataType = this.IndexType switch 
 		{
-			IndexType.UInt8 => Array.CreateInstance(typeof(byte), indexData.Length),
-			IndexType.UInt16 => Array.CreateInstance(typeof(ushort), indexData.Length),
-			IndexType.UInt32 => Array.CreateInstance(typeof(uint), indexData.Length),
+			IndexType.UInt8 => typeof(byte),
+			IndexType.UInt16 => typeof(ushort),
+			IndexType.UInt32 => typeof(uint),
 			_ => throw new InvalidOperationException("IndexType must be UInt8, UInt16 or UInt32.")
 		};
-
+		this.IndexData = Array.CreateInstance(indexDataType, indexData.Length);
 		for (int i = 0; i < indexData.Length; i++)
-			this.IndexData.SetValue(i, this.IndexType switch 
-				{
-					IndexType.UInt8 => ((IConvertible)indexData.GetValue(i)!).ToByte(null),
-					IndexType.UInt16 => ((IConvertible)indexData.GetValue(i)!).ToUInt16(null),
-					IndexType.UInt32 => ((IConvertible)indexData.GetValue(i)!).ToUInt32(null),
-					_ => throw new InvalidOperationException("IndexType must be UInt8, UInt16 or UInt32.")
-				}
+			this.IndexData.SetValue(Convert.ChangeType(this.IndexType switch 
+					{
+						IndexType.UInt8 => Convert.ToByte(indexData.GetValue(i), null),
+						IndexType.UInt16 => Convert.ToUInt16(indexData.GetValue(i), null),
+						IndexType.UInt32 => Convert.ToUInt32(indexData.GetValue(i), null),
+						_ => throw new InvalidOperationException("IndexType must be UInt8, UInt16 or UInt32.")
+					},
+					indexDataType
+				),
+				i
 			);
 
 		vk.CreateVertexBuffer(this.VertexData, out this.VertexBuffer, out this.VertexBufferMemory);
