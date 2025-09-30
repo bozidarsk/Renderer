@@ -8,7 +8,7 @@ using Vulkan;
 
 namespace Renderer;
 
-public abstract class Mesh : IDisposable
+public class Mesh : IDisposable
 {
 	internal readonly Vulkan.Buffer VertexBuffer;
 	internal readonly DeviceMemory VertexBufferMemory;
@@ -52,6 +52,8 @@ public abstract class Mesh : IDisposable
 				this.IndexType = IndexType.UInt32;
 		}
 	}
+
+	public Mesh(Vulkan.Program vk) : this(vk, typeof(DefaultVertex), typeof(byte), new DefaultVertex[] { default }, new byte[] { 0, 0, 0 }) {}
 
 	protected Mesh(Vulkan.Program vk, Type vertexType, Type? indexType, Array vertexData, Array indexData) : this(vertexType, indexType)
 	{
