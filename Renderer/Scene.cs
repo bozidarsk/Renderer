@@ -4,6 +4,7 @@ using System.Linq;
 
 using GLFW;
 using Vulkan;
+using Renderer.Physics;
 
 namespace Renderer;
 
@@ -28,6 +29,9 @@ public class Scene : IDisposable
 			foreach (var x in objects)
 				x.OnUpdate();
 
+			PhysicsEngine.ResolveDynamics(objects.Where(x => x.Enabled && x.HasComponent<Transform>() && x.HasComponent<RigidBody>()));
+			PhysicsEngine.ResolveCollisions(objects.Where(x => x.Enabled && x.HasComponent<Collider>()));
+
 			var renderable = objects.Where(x => x.Enabled && x.Renderable).ToArray();
 
 			foreach (var camera in objects.Where(x => x is Camera))
@@ -47,8 +51,8 @@ public class Scene : IDisposable
 
 	public void Dispose() 
 	{
-		foreach (var x in objects)
-			x.Dispose();
+		while (objects.Count > 0)
+			objects[0].Dispose();
 
 		this.Program.Dispose();
 		this.Window.Dispose();

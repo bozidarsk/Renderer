@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 
 using Vulkan;
+using Renderer.Physics;
 
 namespace Renderer;
 
@@ -33,9 +34,11 @@ public class SceneObject : IDisposable
 	public Action OnAwake;
 	public Action OnStart;
 	public Action OnUpdate;
+	public Action<SceneObject, Collision> OnCollision;
 	protected virtual void Awake() {}
 	protected virtual void Start() {}
 	protected virtual void Update() {}
+	protected virtual void Collision(SceneObject other, Collision collision) {}
 
 	public void AddComponent<T>(T component) where T : Component => components.Add(component);
 	public void AddComponents<T>(IEnumerable<T> components) where T : Component => this.components.AddRange(components);
@@ -72,6 +75,8 @@ public class SceneObject : IDisposable
 
 	public void Dispose() 
 	{
+		this.Scene.UnregisterObject(this);
+
 		foreach (var x in components.Where(x => x is IDisposable))
 			((IDisposable)x).Dispose();
 	}
@@ -81,6 +86,7 @@ public class SceneObject : IDisposable
 		this.OnAwake ??= () => this.Awake();
 		this.OnStart ??= () => this.Start();
 		this.OnUpdate ??= () => this.Update();
+		this.OnCollision ??= (other, collision) => this.Collision(other, collision);
 		this.Scene = scene;
 		this.Scene.RegisterObject(this);
 	}
