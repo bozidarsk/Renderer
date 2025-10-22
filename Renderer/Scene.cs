@@ -32,10 +32,10 @@ public class Scene : IDisposable
 			PhysicsEngine.ResolveDynamics(objects.Where(x => x.Enabled && x.HasComponent<Transform>() && x.HasComponent<RigidBody>()));
 			PhysicsEngine.ResolveCollisions(objects.Where(x => x.Enabled && x.HasComponent<Collider>()));
 
-			var renderable = objects.Where(x => x.Enabled && x.Renderable).ToArray();
+			var renderable = objects.Where(x => x.Enabled && x.Renderable && !(x is Camera)).ToArray();
 
-			foreach (var camera in objects.Where(x => x is Camera))
-				((Camera)camera).Render(renderable);
+			foreach (var camera in objects.OfType<Camera>())
+				camera.Render(renderable.Where(x => (x.Layer & camera.Layer) != 0));
 		}
 
 		this.Program.DeviceWaitIdle();

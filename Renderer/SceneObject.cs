@@ -12,6 +12,7 @@ public class SceneObject : IDisposable
 	public readonly Scene Scene;
 	private List<Component> components = new();
 
+	public CameraLayer Layer { set; get; } = CameraLayer.MainCamera;
 	public bool Enabled { set; get; } = true;
 
 	public Transform Transform => TryGetComponent<Transform>(out Transform transform) ? transform : throw new InvalidOperationException("Object does not have a Transform component.");

@@ -27,6 +27,11 @@ public sealed class Material
 				var x = (Texture)value;
 				uniforms[name] = (x.Sampler, x.ImageView);
 			}
+			else if (value is RenderTexture) 
+			{
+				var x = (RenderTexture)value;
+				uniforms[name] = (x.Sampler, x.ImageView);
+			}
 			else
 				throw new InvalidOperationException($"Cannot create a uniform variable of type '{value.GetType()}'.");
 		}
