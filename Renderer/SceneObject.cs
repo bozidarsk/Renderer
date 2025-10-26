@@ -51,20 +51,20 @@ public class SceneObject : IDisposable, IRenderable
 	public bool HasComponents<T1, T2>() 
 		where T1 : Component
 		where T2 : Component
-		=> components.Any(x => (x is T1) || (x is T2))
+		=> HasComponent<T1>() && HasComponent<T2>()
 	;
 	public bool HasComponents<T1, T2, T3>() 
 		where T1 : Component
 		where T2 : Component
 		where T3 : Component
-		=> components.Any(x => (x is T1) || (x is T2) || (x is T3))
+		=> HasComponent<T1>() && HasComponent<T2>() && HasComponent<T3>()
 	;
 	public bool HasComponents<T1, T2, T3, T4>() 
 		where T1 : Component
 		where T2 : Component
 		where T3 : Component
 		where T4 : Component
-		=> components.Any(x => (x is T1) || (x is T2) || (x is T3) || (x is T4))
+		=> HasComponent<T1>() && HasComponent<T2>() && HasComponent<T3>() && HasComponent<T4>()
 	;
 	public bool HasComponents<T1, T2, T3, T4, T5>() 
 		where T1 : Component
@@ -72,7 +72,7 @@ public class SceneObject : IDisposable, IRenderable
 		where T3 : Component
 		where T4 : Component
 		where T5 : Component
-		=> components.Any(x => (x is T1) || (x is T2) || (x is T3) || (x is T4) || (x is T5))
+		=> HasComponent<T1>() && HasComponent<T2>() && HasComponent<T3>() && HasComponent<T4>() && HasComponent<T5>()
 	;
 
 	public T GetComponent<T>() where T : Component
