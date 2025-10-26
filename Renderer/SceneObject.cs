@@ -16,7 +16,7 @@ public class SceneObject : IDisposable, IRenderable
 	public bool IsEnabled { set; get; } = true;
 
 	public Transform Transform => TryGetComponent<Transform>(out Transform transform) ? transform : throw new InvalidOperationException("Object does not have a Transform component.");
-	public bool IsRenderable => IsEnabled && HasComponent<Transform>() && HasComponent<MeshFilter>() && HasComponent<MeshRenderer>();
+	public bool IsRenderable => IsEnabled && HasComponents<Transform, MeshFilter, MeshRenderer>();
 
 	public Matrix4x4 Model => this.Transform;
 	public IReadOnlyDictionary<string, object> Uniforms => TryGetComponent<MeshRenderer>(out MeshRenderer mr) ? mr.Material.Uniforms : throw new InvalidOperationException("Object does not have a MeshRenderer component.");
@@ -47,7 +47,33 @@ public class SceneObject : IDisposable, IRenderable
 	public void AddComponent<T>(T component) where T : Component => components.Add(component);
 	public void AddComponents<T>(IEnumerable<T> components) where T : Component => this.components.AddRange(components);
 
-	public bool HasComponent<T>() where T : Component => components.Where(x => x is T).Any();
+	public bool HasComponent<T>() where T : Component => components.Any(x => x is T);
+	public bool HasComponents<T1, T2>() 
+		where T1 : Component
+		where T2 : Component
+		=> components.Any(x => (x is T1) || (x is T2))
+	;
+	public bool HasComponents<T1, T2, T3>() 
+		where T1 : Component
+		where T2 : Component
+		where T3 : Component
+		=> components.Any(x => (x is T1) || (x is T2) || (x is T3))
+	;
+	public bool HasComponents<T1, T2, T3, T4>() 
+		where T1 : Component
+		where T2 : Component
+		where T3 : Component
+		where T4 : Component
+		=> components.Any(x => (x is T1) || (x is T2) || (x is T3) || (x is T4))
+	;
+	public bool HasComponents<T1, T2, T3, T4, T5>() 
+		where T1 : Component
+		where T2 : Component
+		where T3 : Component
+		where T4 : Component
+		where T5 : Component
+		=> components.Any(x => (x is T1) || (x is T2) || (x is T3) || (x is T4) || (x is T5))
+	;
 
 	public T GetComponent<T>() where T : Component
 	{
@@ -67,13 +93,13 @@ public class SceneObject : IDisposable, IRenderable
 
 	public bool TryGetComponent<T>(out T component) where T : Component
 	{
-		component = (T)this.components.Where(x => x is T).SingleOrDefault()!;
+		component = (this.components.SingleOrDefault(x => x is T) as T)!;
 		return component != null;
 	}
 
 	public bool TryGetComponents<T>(out IEnumerable<T> components) where T : Component
 	{
-		components = this.components.Where(x => x is T).Select(x => (T)x);
+		components = this.components.OfType<T>().ToArray();
 		return components.Any();
 	}
 
@@ -81,8 +107,8 @@ public class SceneObject : IDisposable, IRenderable
 	{
 		this.Scene.UnregisterObject(this);
 
-		foreach (var x in components.Where(x => x is IDisposable))
-			((IDisposable)x).Dispose();
+		foreach (var x in components.OfType<IDisposable>())
+			x.Dispose();
 	}
 
 	public SceneObject(Scene scene) 

@@ -29,7 +29,7 @@ public class Scene : IDisposable
 			foreach (var x in objects)
 				x.OnUpdate();
 
-			PhysicsEngine.ResolveDynamics(objects.Where(x => x.IsEnabled && x.HasComponent<Transform>() && x.HasComponent<RigidBody>()));
+			PhysicsEngine.ResolveDynamics(objects.Where(x => x.IsEnabled && x.HasComponents<Transform, RigidBody>()));
 			PhysicsEngine.ResolveCollisions(objects.Where(x => x.IsEnabled && x.HasComponent<Collider>()));
 
 			var renderable = objects.Where(x => x.IsEnabled && x.IsRenderable && !(x is Camera)).ToArray();
