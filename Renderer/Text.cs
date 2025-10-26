@@ -9,6 +9,17 @@ public sealed class Text : SceneObject
 {
 	public required Font Font { set; get; }
 
+	new public CameraLayer Layer 
+	{
+		set 
+		{
+			outer.Layer = value;
+			inner.Layer = value;
+			base.Layer = value;
+		}
+		get => base.Layer;
+	}
+
 	public required Color Color 
 	{
 		set 
