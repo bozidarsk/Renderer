@@ -29,10 +29,10 @@ public class Scene : IDisposable
 			foreach (var x in objects)
 				x.OnUpdate();
 
-			PhysicsEngine.ResolveDynamics(objects.Where(x => x.Enabled && x.HasComponent<Transform>() && x.HasComponent<RigidBody>()));
-			PhysicsEngine.ResolveCollisions(objects.Where(x => x.Enabled && x.HasComponent<Collider>()));
+			PhysicsEngine.ResolveDynamics(objects.Where(x => x.IsEnabled && x.HasComponent<Transform>() && x.HasComponent<RigidBody>()));
+			PhysicsEngine.ResolveCollisions(objects.Where(x => x.IsEnabled && x.HasComponent<Collider>()));
 
-			var renderable = objects.Where(x => x.Enabled && x.Renderable && !(x is Camera)).ToArray();
+			var renderable = objects.Where(x => x.IsEnabled && x.IsRenderable && !(x is Camera)).ToArray();
 
 			foreach (var camera in objects.OfType<Camera>())
 				camera.Render(renderable.Where(x => (x.Layer & camera.Layer) != 0));

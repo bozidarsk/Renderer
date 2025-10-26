@@ -23,8 +23,8 @@ public sealed class Camera : SceneObject
 		this.Scene.Program.DrawFrame(
 			projection: this.Projection,
 			view: this.Transform,
-			objects: objects.Select(x => ((Matrix4x4)x.Transform, x.GetComponent<MeshRenderer>().Material.Uniforms, x.RenderInfo)),
-			texture: (this.Texture != null) ? (this.Texture.Extent, this.Texture.Framebuffer, this.Texture.Image) : null
+			objects: objects.OfType<IRenderable>(),
+			texture: this.Texture?.Info as RenderTextureInfo
 		);
 	}
 

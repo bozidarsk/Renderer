@@ -7,7 +7,7 @@ using Vulkan;
 
 namespace Renderer;
 
-public sealed class Texture : IDisposable
+public sealed class Texture : IDisposable, IInfoProvider
 {
 	public readonly Image Image;
 	public readonly ImageView ImageView;
@@ -22,6 +22,8 @@ public sealed class Texture : IDisposable
 
 	public int Width => (int)this.Extent.Width;
 	public int Height => (int)this.Extent.Height;
+
+	public Info Info => new TextureInfo(this.ImageView, this.Sampler);
 
 	private const Format DEFAULT_FORMAT = Format.B8G8R8A8UNorm;
 	private const ImageType DEFAULT_TYPE = ImageType.Generic2D;

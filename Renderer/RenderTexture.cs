@@ -4,7 +4,7 @@ using Vulkan;
 
 namespace Renderer;
 
-public sealed class RenderTexture : IDisposable
+public sealed class RenderTexture : IDisposable, IInfoProvider
 {
 	public Framebuffer Framebuffer { get; }
 	public Extent2D Extent { get; }
@@ -20,6 +20,8 @@ public sealed class RenderTexture : IDisposable
 	public DeviceMemory? ImageMemory => this.Texture.ImageMemory;
 	public Sampler Sampler => this.Texture.Sampler;
 	public Format ImageFormat => this.Texture.Format;
+
+	public Info Info => new RenderTextureInfo(this.Extent, this.Framebuffer, this.Image, this.ImageView, this.Sampler);
 
 	public void Dispose() 
 	{

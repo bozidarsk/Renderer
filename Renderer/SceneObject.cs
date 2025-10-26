@@ -7,28 +7,31 @@ using Renderer.Physics;
 
 namespace Renderer;
 
-public class SceneObject : IDisposable
+public class SceneObject : IDisposable, IRenderable
 {
 	public readonly Scene Scene;
 	private List<Component> components = new();
 
 	public CameraLayer Layer { set; get; } = CameraLayer.MainCamera;
-	public bool Enabled { set; get; } = true;
+	public bool IsEnabled { set; get; } = true;
 
 	public Transform Transform => TryGetComponent<Transform>(out Transform transform) ? transform : throw new InvalidOperationException("Object does not have a Transform component.");
-	public bool Renderable => Enabled && HasComponent<Transform>() && HasComponent<MeshFilter>() && HasComponent<MeshRenderer>();
+	public bool IsRenderable => IsEnabled && HasComponent<Transform>() && HasComponent<MeshFilter>() && HasComponent<MeshRenderer>();
 
-	public RenderInfo RenderInfo 
+	public Matrix4x4 Model => this.Transform;
+	public IReadOnlyDictionary<string, object> Uniforms => TryGetComponent<MeshRenderer>(out MeshRenderer mr) ? mr.Material.Uniforms : throw new InvalidOperationException("Object does not have a MeshRenderer component.");
+	Info IInfoProvider.Info => this.Info;
+	public RenderInfo Info 
 	{
 		get 
 		{
-			if (!Renderable)
+			if (!IsRenderable)
 				throw new InvalidOperationException("Cannot get RenderInfo for non-renderable object.");
 
 			var mesh = GetComponent<MeshFilter>().Mesh;
 			var material = GetComponent<MeshRenderer>().Material;
 
-			return new(mesh.VertexBuffer, mesh.VertexCount, mesh.VertexType, mesh.IndexBuffer, mesh.IndexCount, mesh.IndexType, material.Shaders);
+			return new RenderInfo(mesh.VertexBuffer, mesh.VertexCount, mesh.VertexType, mesh.IndexBuffer, mesh.IndexCount, mesh.IndexType, material.Shaders);
 		}
 	}
 
