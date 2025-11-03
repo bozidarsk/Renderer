@@ -3,7 +3,11 @@ namespace Renderer;
 [System.Flags]
 public enum CameraLayer 
 {
-	MainCamera = Camera0,
+	Main = Camera0,
+	MainCamera = Main,
+	UI = Camera1,
+	UICamera = UI,
+
 	Camera0 = 1 << 0,
 	Camera1 = 1 << 1,
 	Camera2 = 1 << 2,

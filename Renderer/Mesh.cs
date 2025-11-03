@@ -8,6 +8,9 @@ using Vulkan;
 
 namespace Renderer;
 
+// TODO: make a MeshInfo (like TextureInfo, RenderTextureInfo, ...)
+// TODO: generic type constraints (dont check at runtime), also avoid boxing T[] to Array
+
 public class Mesh : IDisposable
 {
 	internal readonly Vulkan.Buffer VertexBuffer;

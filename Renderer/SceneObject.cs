@@ -103,7 +103,7 @@ public class SceneObject : IDisposable, IRenderable
 		return components.Any();
 	}
 
-	public void Dispose() 
+	public virtual void Dispose() 
 	{
 		this.Scene.UnregisterObject(this);
 
