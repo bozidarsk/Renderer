@@ -2,8 +2,9 @@ using System;
 using System.Linq;
 
 using Vulkan;
+using Renderer;
 
-namespace Renderer;
+namespace Renderer.UI;
 
 public sealed class Text : SceneObject
 {
@@ -44,29 +45,27 @@ public sealed class Text : SceneObject
 		}
 	}
 
-	private SceneObject outer, inner;
+	private UIObject outer, inner;
 
 	private MeshFilter outerFilter, innerFilter;
 	private MeshRenderer outerRenderer, innerRenderer;
 
-	public Text(Scene scene) : this(scene, []) {}
-	public Text(Scene scene, params Component[] components) : base(scene, components)
+	public Text(Canvas canvas) : this(canvas, []) {}
+	public Text(Canvas canvas, params Component[] components) : base(canvas.Scene, components)
 	{
 		var thisTransform = this.Transform;
 
-		outer = new SceneObject(this.Scene,
+		outer = new UIObject(canvas,
 			thisTransform,
 			new MeshFilter(new Mesh(this.Scene.Program)),
 			new MeshRenderer(Material.FromShaders(vertex: "Renderer/Shaders/TextOuter.vert.hlsl", fragment: "Renderer/Shaders/TextOuter.frag.hlsl"))
-		);
+		) { MaskMaterial = Material.FromShaders(vertex: "Renderer/Shaders/TextOuter.vert.hlsl", fragment: "Renderer/Shaders/TextOuter-mask.frag.hlsl") };
 
-		inner = new SceneObject(this.Scene,
+		inner = new UIObject(canvas,
 			thisTransform,
 			new MeshFilter(new Mesh(this.Scene.Program)),
 			new MeshRenderer(Material.FromShaders(vertex: "Renderer/Shaders/TextInner.vert.hlsl", fragment: "Renderer/Shaders/TextInner.frag.hlsl"))
-		);
-
-		// outer.Enabled = false;
+		) { MaskMaterial = Material.FromShaders(vertex: "Renderer/Shaders/TextInner.vert.hlsl", fragment: "Renderer/Shaders/TextInner-mask.frag.hlsl") };
 
 		outerFilter = outer.GetComponent<MeshFilter>();
 		innerFilter = inner.GetComponent<MeshFilter>();

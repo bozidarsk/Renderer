@@ -5,8 +5,12 @@ public enum CameraLayer
 {
 	Main = Camera0,
 	MainCamera = Main,
+
 	UI = Camera1,
 	UICamera = UI,
+
+	UISample = Camera2,
+	UISampleCamera = UISample,
 
 	Camera0 = 1 << 0,
 	Camera1 = 1 << 1,
