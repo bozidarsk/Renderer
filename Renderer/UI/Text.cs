@@ -37,7 +37,7 @@ public sealed class Text : SceneObject
 			if (value == null)
 				throw new ArgumentNullException();
 
-			TextMesh mesh = this.Font.CreateMesh(this.Scene.Program, value);
+			TextMesh mesh = this.Font.CreateMesh(this.Scene.Renderer, value);
 			outerFilter.Mesh.Dispose();
 			outerFilter.Mesh = mesh.Outer;
 			innerFilter.Mesh.Dispose();
@@ -57,14 +57,14 @@ public sealed class Text : SceneObject
 
 		outer = new UIObject(canvas,
 			thisTransform,
-			new MeshFilter(new Mesh(this.Scene.Program)),
+			new MeshFilter(new Mesh(this.Scene.Renderer)),
 			new MeshRenderer(Material.FromShaders(vertex: "Renderer/Shaders/TextOuter.vert.hlsl", fragment: "Renderer/Shaders/TextOuter.frag.hlsl"))
 		)
 		{ MaskMaterial = Material.FromShaders(vertex: "Renderer/Shaders/TextOuter.vert.hlsl", fragment: "Renderer/Shaders/TextOuter-mask.frag.hlsl") };
 
 		inner = new UIObject(canvas,
 			thisTransform,
-			new MeshFilter(new Mesh(this.Scene.Program)),
+			new MeshFilter(new Mesh(this.Scene.Renderer)),
 			new MeshRenderer(Material.FromShaders(vertex: "Renderer/Shaders/TextInner.vert.hlsl", fragment: "Renderer/Shaders/TextInner.frag.hlsl"))
 		)
 		{ MaskMaterial = Material.FromShaders(vertex: "Renderer/Shaders/TextInner.vert.hlsl", fragment: "Renderer/Shaders/TextInner-mask.frag.hlsl") };

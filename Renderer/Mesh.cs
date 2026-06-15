@@ -56,11 +56,11 @@ public class Mesh : IDisposable
 		}
 	}
 
-	public Mesh(Vulkan.Program vk) : this(vk, typeof(DefaultVertex), typeof(byte), new DefaultVertex[] { default }, new byte[] { 0, 0, 0 }) { }
+	public Mesh(Renderer renderer) : this(renderer, typeof(DefaultVertex), typeof(byte), new DefaultVertex[] { default }, new byte[] { 0, 0, 0 }) { }
 
-	protected Mesh(Vulkan.Program vk, Type vertexType, Type? indexType, Array vertexData, Array indexData) : this(vertexType, indexType)
+	protected Mesh(Renderer renderer, Type vertexType, Type? indexType, Array vertexData, Array indexData) : this(vertexType, indexType)
 	{
-		if (vk == null || vertexData == null || indexData == null)
+		if (renderer == null || vertexData == null || indexData == null)
 			throw new ArgumentNullException();
 
 		if (vertexData.Length == 0)
@@ -118,13 +118,13 @@ public class Mesh : IDisposable
 				i
 			);
 
-		vk.CreateVertexBuffer(this.VertexData, out this.VertexBuffer, out this.VertexBufferMemory);
-		vk.CreateIndexBuffer(this.IndexData, out this.IndexBuffer, out this.IndexBufferMemory);
+		renderer.CreateVertexBuffer(this.VertexData, out this.VertexBuffer, out this.VertexBufferMemory);
+		renderer.CreateIndexBuffer(this.IndexData, out this.IndexBuffer, out this.IndexBufferMemory);
 	}
 
-	protected Mesh(Vulkan.Program vk, Type vertexType, Type? indexType, string filename) : this(vertexType, indexType)
+	protected Mesh(Renderer renderer, Type vertexType, Type? indexType, string filename) : this(vertexType, indexType)
 	{
-		if (vk == null || filename == null)
+		if (renderer == null || filename == null)
 			throw new ArgumentNullException();
 
 		if (!File.Exists(filename))
@@ -172,19 +172,19 @@ public class Mesh : IDisposable
 				throw new InvalidOperationException($"Failed to parse mesh of type '{extension}'.");
 		}
 
-		vk.CreateVertexBuffer(this.VertexData, out this.VertexBuffer, out this.VertexBufferMemory);
-		vk.CreateIndexBuffer(this.IndexData, out this.IndexBuffer, out this.IndexBufferMemory);
+		renderer.CreateVertexBuffer(this.VertexData, out this.VertexBuffer, out this.VertexBufferMemory);
+		renderer.CreateIndexBuffer(this.IndexData, out this.IndexBuffer, out this.IndexBufferMemory);
 	}
 }
 
 public sealed class Mesh<TVertex> : Mesh
 {
-	public Mesh(Vulkan.Program vk, string filename) : base(vk, typeof(TVertex), null, filename) { }
-	public Mesh(Vulkan.Program vk, Array vertexData, Array indexData) : base(vk, typeof(TVertex), null, vertexData, indexData) { }
+	public Mesh(Renderer renderer, string filename) : base(renderer, typeof(TVertex), null, filename) { }
+	public Mesh(Renderer renderer, Array vertexData, Array indexData) : base(renderer, typeof(TVertex), null, vertexData, indexData) { }
 }
 
 public sealed class Mesh<TVertex, TIndex> : Mesh
 {
-	public Mesh(Vulkan.Program vk, string filename) : base(vk, typeof(TVertex), typeof(TIndex), filename) { }
-	public Mesh(Vulkan.Program vk, Array vertexData, Array indexData) : base(vk, typeof(TVertex), typeof(TIndex), vertexData, indexData) { }
+	public Mesh(Renderer renderer, string filename) : base(renderer, typeof(TVertex), typeof(TIndex), filename) { }
+	public Mesh(Renderer renderer, Array vertexData, Array indexData) : base(renderer, typeof(TVertex), typeof(TIndex), vertexData, indexData) { }
 }

@@ -64,11 +64,11 @@ public class Canvas : SceneObject
 		);
 
 		renderCamera.Texture?.Dispose();
-		renderCamera.Texture = new(this.Scene.Program, Width, Height, Format.R8G8B8A8SRGB);
+		renderCamera.Texture = new(this.Scene.Renderer, Width, Height, Format.R8G8B8A8SRGB);
 		renderCamera.Projection = projection;
 
 		maskCamera.Texture?.Dispose();
-		maskCamera.Texture = new(this.Scene.Program, Width, Height, Format.R8G8B8A8UInt); // R8G8B8A8UInt
+		maskCamera.Texture = new(this.Scene.Renderer, Width, Height, Format.R8G8B8A8UInt); // R8G8B8A8UInt
 		maskCamera.Projection = projection;
 
 		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = renderCamera.Texture;
@@ -78,8 +78,8 @@ public class Canvas : SceneObject
 	private uint SampleId((int x, int y) position) => SampleId(position.x, position.y);
 	private uint SampleId(int x, int y)
 	{
-		CommandBuffer cmd = this.Scene.Program.BeginSingleTimeCommand();
-		this.Scene.Program.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, cmd);
+		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
+		this.Scene.Renderer.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, cmd);
 		cmd.CopyImageToBuffer(maskCamera.Texture!.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
 				bufferOffset: 0,
 				bufferRowLength: 0,
@@ -94,8 +94,8 @@ public class Canvas : SceneObject
 				imageExtent: new(width: 1, height: 1, depth: 1)
 			)
 		);
-		this.Scene.Program.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.TransferSrcOptimal, ImageLayout.ShaderReadOnlyOptimal, cmd);
-		this.Scene.Program.EndSingleTimeCommand(cmd);
+		this.Scene.Renderer.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.TransferSrcOptimal, ImageLayout.ShaderReadOnlyOptimal, cmd);
+		this.Scene.Renderer.EndSingleTimeCommand(cmd);
 
 		uint id;
 		unsafe { id = *((uint*)maskLocation); }
@@ -131,7 +131,7 @@ public class Canvas : SceneObject
 
 		canvasTexture = new SceneObject(this.Scene,
 			new Transform(),
-			new MeshFilter(new Mesh<CanvasVertex, byte>(this.Scene.Program, vertices, indices)),
+			new MeshFilter(new Mesh<CanvasVertex, byte>(this.Scene.Renderer, vertices, indices)),
 			new MeshRenderer(Material.FromShaders(vertex: "Renderer/Shaders/canvas.vert.hlsl", fragment: "Renderer/Shaders/canvas.frag.hlsl"))
 		)
 		{ Layer = CameraLayer.Main }; // TODO: user can change Layer
@@ -139,8 +139,8 @@ public class Canvas : SceneObject
 		Resize();
 
 		DeviceSize size = sizeof(uint);
-		this.Scene.Program.CreateBuffer(size, BufferUsage.TransferDst, out maskBuffer);
-		this.Scene.Program.CreateBufferMemory(maskBuffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out maskMemory);
+		this.Scene.Renderer.CreateBuffer(size, BufferUsage.TransferDst, out maskBuffer);
+		this.Scene.Renderer.CreateBufferMemory(maskBuffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out maskMemory);
 		maskLocation = maskMemory.Map(size: size, offset: default, flags: default);
 
 		this.Scene.Window.OnMouseButton += (s, e) =>

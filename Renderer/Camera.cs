@@ -28,7 +28,7 @@ public class Camera : SceneObject, IDisposable
 			foreach (var x in uiObjects)
 				x.SwitchToMaskMaterial();
 
-		this.Scene.Program.DrawFrame(
+		this.Scene.Renderer.DrawFrame(
 			projection: this.Projection,
 			view: TryGetComponent<Transform>(out Transform transform) ? transform : Matrix4x4.Identity,
 			objects: objects.OfType<IRenderable>(),

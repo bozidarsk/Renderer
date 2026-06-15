@@ -61,7 +61,7 @@ public sealed class Texture : IDisposable, IInfoProvider
 	}
 #pragma warning restore
 
-	public Texture(Vulkan.Program vk, string filename) : this(0, 0, Format.B8G8R8A8UNorm, ImageType.Generic2D)
+	public Texture(Renderer renderer, string filename) : this(0, 0, Format.B8G8R8A8UNorm, ImageType.Generic2D)
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
@@ -80,7 +80,7 @@ public sealed class Texture : IDisposable, IInfoProvider
 				throw new InvalidOperationException($"Failed to parse texture of type '{extension}'.");
 		}
 
-		vk.CreateTexture(
+		renderer.CreateTexture(
 			ref MemoryMarshal.GetArrayDataReference(data),
 			this.Width,
 			this.Height,
@@ -93,9 +93,9 @@ public sealed class Texture : IDisposable, IInfoProvider
 		);
 	}
 
-	public Texture(Program vk, Extent2D extent, ref byte data, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(extent, format, type)
+	public Texture(Renderer renderer, Extent2D extent, ref byte data, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(extent, format, type)
 	{
-		vk.CreateTexture(
+		renderer.CreateTexture(
 			ref data,
 			this.Width,
 			this.Height,
@@ -108,9 +108,9 @@ public sealed class Texture : IDisposable, IInfoProvider
 		);
 	}
 
-	public Texture(Program vk, Extent2D extent, ref Color data, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(extent, format, type)
+	public Texture(Renderer renderer, Extent2D extent, ref Color data, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(extent, format, type)
 	{
-		vk.CreateTexture(
+		renderer.CreateTexture(
 			ref Unsafe.As<Color, byte>(ref data),
 			this.Width,
 			this.Height,
@@ -123,9 +123,9 @@ public sealed class Texture : IDisposable, IInfoProvider
 		);
 	}
 
-	public Texture(Program vk, int width, int height, ref byte data, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(width, height, format, type)
+	public Texture(Renderer renderer, int width, int height, ref byte data, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(width, height, format, type)
 	{
-		vk.CreateTexture(
+		renderer.CreateTexture(
 			ref data,
 			this.Width,
 			this.Height,
@@ -138,9 +138,9 @@ public sealed class Texture : IDisposable, IInfoProvider
 		);
 	}
 
-	public Texture(Program vk, int width, int height, ref Color data, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(width, height, format, type)
+	public Texture(Renderer renderer, int width, int height, ref Color data, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(width, height, format, type)
 	{
-		vk.CreateTexture(
+		renderer.CreateTexture(
 			ref Unsafe.As<Color, byte>(ref data),
 			this.Width,
 			this.Height,
@@ -153,19 +153,19 @@ public sealed class Texture : IDisposable, IInfoProvider
 		);
 	}
 
-	public Texture(Program vk, Extent2D extent, ImageUsage usage, ImageAspect aspect = DEFAULT_ASPECT, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(extent, format, type, usage, aspect)
+	public Texture(Renderer renderer, Extent2D extent, ImageUsage usage, ImageAspect aspect = DEFAULT_ASPECT, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(extent, format, type, usage, aspect)
 	{
-		vk.CreateImage(this.Width, this.Height, type, usage, this.Format, out this.Image);
-		vk.CreateImageMemory(this.Image, out this.ImageMemory);
-		vk.CreateImageView(this.Image, this.Format, aspect, out this.ImageView);
-		vk.CreateSampler(out this.Sampler);
+		renderer.CreateImage(this.Width, this.Height, type, usage, this.Format, out this.Image);
+		renderer.CreateImageMemory(this.Image, out this.ImageMemory);
+		renderer.CreateImageView(this.Image, this.Format, aspect, out this.ImageView);
+		renderer.CreateSampler(out this.Sampler);
 	}
 
-	public Texture(Program vk, int width, int height, ImageUsage usage, ImageAspect aspect = DEFAULT_ASPECT, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(width, height, format, type, usage, aspect)
+	public Texture(Renderer renderer, int width, int height, ImageUsage usage, ImageAspect aspect = DEFAULT_ASPECT, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE) : this(width, height, format, type, usage, aspect)
 	{
-		vk.CreateImage(this.Width, this.Height, type, usage, this.Format, out this.Image);
-		vk.CreateImageMemory(this.Image, out this.ImageMemory);
-		vk.CreateImageView(this.Image, this.Format, aspect, out this.ImageView);
-		vk.CreateSampler(out this.Sampler);
+		renderer.CreateImage(this.Width, this.Height, type, usage, this.Format, out this.Image);
+		renderer.CreateImageMemory(this.Image, out this.ImageMemory);
+		renderer.CreateImageView(this.Image, this.Format, aspect, out this.ImageView);
+		renderer.CreateSampler(out this.Sampler);
 	}
 }

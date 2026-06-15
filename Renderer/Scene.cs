@@ -10,7 +10,7 @@ namespace Renderer;
 
 public class Scene : IDisposable
 {
-	public readonly Vulkan.Program Program;
+	public readonly Renderer Renderer;
 	public readonly GLFW.Window Window;
 
 	private readonly List<SceneObject> objects = new();
@@ -38,7 +38,7 @@ public class Scene : IDisposable
 				camera.Render(renderable.Where(x => (x.Layer & camera.Layer) != 0));
 		}
 
-		this.Program.DeviceWaitIdle();
+		this.Renderer.DeviceWaitIdle();
 	}
 
 	internal void RegisterObject(SceneObject x)
@@ -54,7 +54,7 @@ public class Scene : IDisposable
 		while (objects.Count > 0)
 			objects[0].Dispose();
 
-		this.Program.Dispose();
+		this.Renderer.Dispose();
 		this.Window.Dispose();
 		GLFW.Program.Terminate();
 	}
@@ -69,11 +69,11 @@ public class Scene : IDisposable
 		Window.SetHint(Hint.ClientApi, 0);
 
 		this.Window = new(width, height);
-		this.Program = new(this.Window);
+		this.Renderer = new(this.Window);
 
 		this.OnDebugMessage += onDebugMessage;
-		this.Program.OnDebugMessage += (s, e) => this.OnDebugMessage?.Invoke(s, e);
+		this.Renderer.OnDebugMessage += (s, e) => this.OnDebugMessage?.Invoke(s, e);
 
-		this.Program.Initialize();
+		this.Renderer.Initialize();
 	}
 }

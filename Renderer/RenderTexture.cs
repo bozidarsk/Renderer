@@ -33,21 +33,21 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 		DepthTexture.Dispose();
 	}
 
-	public RenderTexture(Program vk, int width, int height, Format format) : this(vk, new((uint)width, (uint)height), format) { }
-	public RenderTexture(Program vk, Extent2D extent, Format format)
+	public RenderTexture(Renderer renderer, int width, int height, Format format) : this(renderer, new((uint)width, (uint)height), format) { }
+	public RenderTexture(Renderer renderer, Extent2D extent, Format format)
 	{
 		this.Extent = extent;
 
-		var depthFormat = vk.FindSupportedFormat(
+		var depthFormat = renderer.FindSupportedFormat(
 			[Format.D32SFloat, Format.D32SFloatS8UInt, Format.D24UNormS8UInt],
 			ImageTiling.Optimal,
 			FormatFeatures.DepthStencilAttachment
 		);
 
-		this.Texture = new(vk, extent, ImageUsage.ColorAttachment | ImageUsage.Sampled | ImageUsage.TransferSrc, ImageAspect.Color, format, ImageType.Generic2D);
-		this.DepthTexture = new(vk, extent, ImageUsage.DepthStencilAttachment, ImageAspect.Depth, depthFormat, ImageType.Generic2D);
+		this.Texture = new(renderer, extent, ImageUsage.ColorAttachment | ImageUsage.Sampled | ImageUsage.TransferSrc, ImageAspect.Color, format, ImageType.Generic2D);
+		this.DepthTexture = new(renderer, extent, ImageUsage.DepthStencilAttachment, ImageAspect.Depth, depthFormat, ImageType.Generic2D);
 
-		vk.TransitionImageLayout(this.Image, ImageLayout.Undefined, ImageLayout.ShaderReadOnlyOptimal);
+		renderer.TransitionImageLayout(this.Image, ImageLayout.Undefined, ImageLayout.ShaderReadOnlyOptimal);
 
 		var colorAttachment = new AttachmentDescription(
 			flags: default,
@@ -112,7 +112,7 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 			dependencies: [dependency]
 		);
 
-		this.RenderPass = renderPassCreateInfo.CreateRenderPass(vk.Device, vk.Allocator);
+		this.RenderPass = renderPassCreateInfo.CreateRenderPass(renderer.Device, renderer.Allocator);
 
 		using var framebufferCreateInfo = new FramebufferCreateInfo(
 			type: StructureType.FramebufferCreateInfo,
@@ -125,6 +125,6 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 			layers: 1
 		);
 
-		this.Framebuffer = framebufferCreateInfo.CreateFramebuffer(vk.Device, vk.Allocator);
+		this.Framebuffer = framebufferCreateInfo.CreateFramebuffer(renderer.Device, renderer.Allocator);
 	}
 }
