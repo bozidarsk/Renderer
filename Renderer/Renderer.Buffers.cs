@@ -67,7 +67,7 @@ public partial class Renderer
 			bufferRowLength: 0,
 			bufferImageHeight: 0,
 			imageSubresource: new(
-				aspect: ImageAspect.Color,
+				aspect: aspect,
 				mipLevel: 0,
 				baseArrayLayer: 0,
 				layerCount: 1
