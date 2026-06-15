@@ -586,7 +586,6 @@ public partial class Renderer : IDisposable
 	public virtual void Initialize()
 	{
 		InitializeInstance();
-		ExtensionDelegates.Initialize(instance);
 		InitializeDebugMessages();
 
 		instance.CreateSurface(window);
