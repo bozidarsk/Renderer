@@ -13,7 +13,7 @@ namespace Renderer;
 public partial class Renderer : IDisposable
 {
 	protected readonly GLFW.Window window;
-	protected readonly AllocationCallbacksHandle allocator = default;
+	protected readonly AllocationCallbacks? allocator;
 
 	protected Queue<IDisposable>[] toBeDisposed;
 	protected uint graphicsQueueFamilyIndex, presentationQueueFamilyIndex;
@@ -47,7 +47,7 @@ public partial class Renderer : IDisposable
 	protected ImageView depthImageView;
 	protected DeviceMemory depthImageMemory;
 
-	public AllocationCallbacksHandle Allocator => allocator;
+	public AllocationCallbacks? Allocator => allocator;
 	public Device Device => (device != null) ? device : throw new NullReferenceException("Device has not been initialized.");
 	public RenderPass RenderPass => (renderPass != null) ? renderPass : throw new NullReferenceException("RenderPass has not been initialized.");
 
@@ -649,9 +649,10 @@ public partial class Renderer : IDisposable
 	}
 
 #pragma warning disable CS8618
-	public Renderer(GLFW.Window window)
+	public Renderer(GLFW.Window window, AllocationCallbacks? allocator = null)
 	{
 		this.window = window;
+		this.allocator = allocator;
 
 		this.debugMessageCallback = (DebugUtilsMessageSeverity severity, DebugUtilsMessageType type, in DebugUtilsMessengerCallbackData data, nint userData) =>
 		{
@@ -659,13 +660,5 @@ public partial class Renderer : IDisposable
 			return false;
 		};
 	}
-
-	public Renderer(GLFW.Window window, AllocationCallbacksHandle allocator) : this(window) =>
-		this.allocator = allocator
-	;
-
-	public Renderer(GLFW.Window window, ref AllocationCallbacks allocator) : this(window) =>
-		this.allocator = new(ref allocator)
-	;
 #pragma warning restore
 }
