@@ -25,7 +25,7 @@ public class SceneObject : IDisposable, IRenderable
 	Info IInfoProvider.Info => GenerateRenderInfo();
 	RenderInfo IInfoProvider<RenderInfo>.Info => GenerateRenderInfo();
 
-	private RenderInfo GenerateRenderInfo() 
+	private RenderInfo GenerateRenderInfo()
 	{
 		if (!IsRenderable)
 			throw new InvalidOperationException("Cannot get RenderInfo for non-renderable object.");
@@ -40,34 +40,34 @@ public class SceneObject : IDisposable, IRenderable
 	public Action OnStart;
 	public Action OnUpdate;
 	public Action<SceneObject, Collision> OnCollision;
-	protected virtual void Awake() {}
-	protected virtual void Start() {}
-	protected virtual void Update() {}
-	protected virtual void Collision(SceneObject other, Collision collision) {}
+	protected virtual void Awake() { }
+	protected virtual void Start() { }
+	protected virtual void Update() { }
+	protected virtual void Collision(SceneObject other, Collision collision) { }
 
 	public void AddComponent<T>(T component) where T : Component => components.Add(component);
 	public void AddComponents<T>(IEnumerable<T> components) where T : Component => this.components.AddRange(components);
 
 	public bool HasComponent<T>() where T : Component => components.Any(x => x is T);
-	public bool HasComponents<T1, T2>() 
+	public bool HasComponents<T1, T2>()
 		where T1 : Component
 		where T2 : Component
 		=> HasComponent<T1>() && HasComponent<T2>()
 	;
-	public bool HasComponents<T1, T2, T3>() 
+	public bool HasComponents<T1, T2, T3>()
 		where T1 : Component
 		where T2 : Component
 		where T3 : Component
 		=> HasComponent<T1>() && HasComponent<T2>() && HasComponent<T3>()
 	;
-	public bool HasComponents<T1, T2, T3, T4>() 
+	public bool HasComponents<T1, T2, T3, T4>()
 		where T1 : Component
 		where T2 : Component
 		where T3 : Component
 		where T4 : Component
 		=> HasComponent<T1>() && HasComponent<T2>() && HasComponent<T3>() && HasComponent<T4>()
 	;
-	public bool HasComponents<T1, T2, T3, T4, T5>() 
+	public bool HasComponents<T1, T2, T3, T4, T5>()
 		where T1 : Component
 		where T2 : Component
 		where T3 : Component
@@ -104,7 +104,7 @@ public class SceneObject : IDisposable, IRenderable
 		return components.Any();
 	}
 
-	public virtual void Dispose() 
+	public virtual void Dispose()
 	{
 		this.Scene.UnregisterObject(this);
 
@@ -112,7 +112,7 @@ public class SceneObject : IDisposable, IRenderable
 			x.Dispose();
 	}
 
-	public SceneObject(Scene scene) 
+	public SceneObject(Scene scene)
 	{
 		this.OnAwake ??= () => this.Awake();
 		this.OnStart ??= () => this.Start();

@@ -13,9 +13,9 @@ public class Canvas : SceneObject
 	public int Height { private set; get; }
 	public float Scale { set; get; } = 0.01f;
 
-	new public CameraLayer Layer 
+	new public CameraLayer Layer
 	{
-		set 
+		set
 		{
 			renderCamera.Layer = value;
 			maskCamera.Layer = value;
@@ -32,9 +32,9 @@ public class Canvas : SceneObject
 	private nint maskLocation;
 
 	private uint nextId = 0;
-	internal uint NextId 
+	internal uint NextId
 	{
-		get 
+		get
 		{
 			if (nextId == uint.MaxValue)
 				throw new InvalidOperationException("Canvas ran out of ui element ids.");
@@ -47,7 +47,7 @@ public class Canvas : SceneObject
 	internal void RegisterObject(UIObject x) => objects.Add(x);
 	internal void UnregisterObject(UIObject x) => objects.Remove(x);
 
-	private void Resize() 
+	private void Resize()
 	{
 		(this.Width, this.Height) = this.Scene.Window.Size;
 
@@ -76,7 +76,7 @@ public class Canvas : SceneObject
 
 	private uint SampleId((double x, double y) position) => SampleId((int)position.x, (int)position.y);
 	private uint SampleId((int x, int y) position) => SampleId(position.x, position.y);
-	private uint SampleId(int x, int y) 
+	private uint SampleId(int x, int y)
 	{
 		CommandBuffer cmd = this.Scene.Program.BeginSingleTimeCommand();
 		this.Scene.Program.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, cmd);
@@ -103,7 +103,7 @@ public class Canvas : SceneObject
 		return id;
 	}
 
-	public override void Dispose() 
+	public override void Dispose()
 	{
 		renderCamera.Dispose();
 		renderCamera.Texture!.Dispose();
@@ -114,7 +114,7 @@ public class Canvas : SceneObject
 		base.Dispose();
 	}
 
-	public Canvas(Scene scene) : this(scene, []) {}
+	public Canvas(Scene scene) : this(scene, []) { }
 	public Canvas(Scene scene, params Component[] components) : base(scene, components)
 	{
 		renderCamera = new Camera(base.Scene) { Layer = this.Layer };
@@ -127,13 +127,14 @@ public class Canvas : SceneObject
 			new() { Position = new(-1, -1, 0), UV = new(0, 1) }
 		];
 
-		byte[] indices = [ 0, 1, 2, 2, 3, 0 ];
+		byte[] indices = [0, 1, 2, 2, 3, 0];
 
 		canvasTexture = new SceneObject(this.Scene,
 			new Transform(),
 			new MeshFilter(new Mesh<CanvasVertex, byte>(this.Scene.Program, vertices, indices)),
 			new MeshRenderer(Material.FromShaders(vertex: "Renderer/Shaders/canvas.vert.hlsl", fragment: "Renderer/Shaders/canvas.frag.hlsl"))
-		) { Layer = CameraLayer.Main }; // TODO: user can change Layer
+		)
+		{ Layer = CameraLayer.Main }; // TODO: user can change Layer
 
 		Resize();
 
@@ -142,7 +143,7 @@ public class Canvas : SceneObject
 		this.Scene.Program.CreateBufferMemory(maskBuffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out maskMemory);
 		maskLocation = maskMemory.Map(size: size, offset: default, flags: default);
 
-		this.Scene.Window.OnMouseButton += (s, e) => 
+		this.Scene.Window.OnMouseButton += (s, e) =>
 		{
 			uint id = SampleId(this.Scene.Window.CursorPosition);
 

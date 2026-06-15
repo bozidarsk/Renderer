@@ -13,9 +13,8 @@ public class Transform : Component
 	public void Rotate(Quaternion q) => matrix *= Matrix4x4.Rotate(q);
 	public void TRS(Vector3 t, Quaternion q, Vector3 s) => matrix *= Matrix4x4.TRS(t, q, s);
 
-	public static implicit operator Matrix4x4 (Transform x) => x.matrix;
+	public static implicit operator Matrix4x4(Transform x) => x.matrix;
 
 	public Transform() => matrix = Matrix4x4.Identity;
 	public Transform(Matrix4x4 matrix) => this.matrix = matrix;
 }
-

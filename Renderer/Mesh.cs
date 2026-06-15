@@ -25,7 +25,7 @@ public class Mesh : IDisposable
 	internal readonly Array IndexData;
 	internal int IndexCount => this.IndexData.Length;
 
-	public void Dispose() 
+	public void Dispose()
 	{
 		VertexBuffer.Dispose();
 		VertexBufferMemory.Dispose();
@@ -33,9 +33,9 @@ public class Mesh : IDisposable
 		IndexBufferMemory.Dispose();
 	}
 
-	#pragma warning disable CS8618
-	private Mesh(Type vertexType, Type? indexType) 
-	#pragma warning restore
+#pragma warning disable CS8618
+	private Mesh(Type vertexType, Type? indexType)
+#pragma warning restore
 	{
 		this.VertexType = vertexType;
 
@@ -45,7 +45,7 @@ public class Mesh : IDisposable
 		if (indexType != null && indexType != typeof(byte) && indexType != typeof(ushort) && indexType != typeof(uint))
 			throw new ArgumentException($"IndexType must be byte, ushort or uint, not '{indexType}'.");
 
-		if (indexType != null) 
+		if (indexType != null)
 		{
 			if (indexType == typeof(byte))
 				this.IndexType = IndexType.UInt8;
@@ -56,7 +56,7 @@ public class Mesh : IDisposable
 		}
 	}
 
-	public Mesh(Vulkan.Program vk) : this(vk, typeof(DefaultVertex), typeof(byte), new DefaultVertex[] { default }, new byte[] { 0, 0, 0 }) {}
+	public Mesh(Vulkan.Program vk) : this(vk, typeof(DefaultVertex), typeof(byte), new DefaultVertex[] { default }, new byte[] { 0, 0, 0 }) { }
 
 	protected Mesh(Vulkan.Program vk, Type vertexType, Type? indexType, Array vertexData, Array indexData) : this(vertexType, indexType)
 	{
@@ -84,9 +84,9 @@ public class Mesh : IDisposable
 		if (maxIndex >= vertexData.Length)
 			throw new ArgumentException("Index array references a vertex out of bounds of the vertex array.");
 
-		if (indexType == null) 
+		if (indexType == null)
 		{
-			this.IndexType = maxIndex switch 
+			this.IndexType = maxIndex switch
 			{
 				<= byte.MaxValue => IndexType.UInt8,
 				> byte.MaxValue and <= ushort.MaxValue => IndexType.UInt16,
@@ -97,7 +97,7 @@ public class Mesh : IDisposable
 		this.VertexData = Array.CreateInstance(this.VertexType, vertexData.Length);
 		Array.Copy(vertexData, this.VertexData, vertexData.Length);
 
-		indexDataType = this.IndexType switch 
+		indexDataType = this.IndexType switch
 		{
 			IndexType.UInt8 => typeof(byte),
 			IndexType.UInt16 => typeof(ushort),
@@ -106,13 +106,13 @@ public class Mesh : IDisposable
 		};
 		this.IndexData = Array.CreateInstance(indexDataType, indexData.Length);
 		for (int i = 0; i < indexData.Length; i++)
-			this.IndexData.SetValue(Convert.ChangeType(this.IndexType switch 
-					{
-						IndexType.UInt8 => Convert.ToByte(indexData.GetValue(i), null),
-						IndexType.UInt16 => Convert.ToUInt16(indexData.GetValue(i), null),
-						IndexType.UInt32 => Convert.ToUInt32(indexData.GetValue(i), null),
-						_ => throw new InvalidOperationException("IndexType must be UInt8, UInt16 or UInt32.")
-					},
+			this.IndexData.SetValue(Convert.ChangeType(this.IndexType switch
+			{
+				IndexType.UInt8 => Convert.ToByte(indexData.GetValue(i), null),
+				IndexType.UInt16 => Convert.ToUInt16(indexData.GetValue(i), null),
+				IndexType.UInt32 => Convert.ToUInt32(indexData.GetValue(i), null),
+				_ => throw new InvalidOperationException("IndexType must be UInt8, UInt16 or UInt32.")
+			},
 					indexDataType
 				),
 				i
@@ -132,16 +132,16 @@ public class Mesh : IDisposable
 
 		var extension = Path.GetExtension(filename).ToLower();
 
-		switch (extension) 
+		switch (extension)
 		{
 			case ".obj":
 				var obj = OBJ.FromFile(filename);
 
 				this.VertexData = Array.CreateInstance(this.VertexType, obj.Vertices.Count);
 
-				if (indexType == null) 
+				if (indexType == null)
 				{
-					this.IndexType = obj.Indices.Max() switch 
+					this.IndexType = obj.Indices.Max() switch
 					{
 						<= byte.MaxValue => IndexType.UInt8,
 						> byte.MaxValue and <= ushort.MaxValue => IndexType.UInt16,
@@ -149,7 +149,7 @@ public class Mesh : IDisposable
 					};
 				}
 
-				for (int i = 0; i < this.VertexData.Length; i++) 
+				for (int i = 0; i < this.VertexData.Length; i++)
 				{
 					var v = this.VertexData.GetValue(i);
 
@@ -160,7 +160,7 @@ public class Mesh : IDisposable
 					this.VertexData.SetValue(v, i);
 				}
 
-				this.IndexData = this.IndexType switch 
+				this.IndexData = this.IndexType switch
 				{
 					IndexType.UInt8 => obj.Indices.Select(x => checked((byte)x)).ToArray(),
 					IndexType.UInt16 => obj.Indices.Select(x => checked((ushort)x)).ToArray(),
@@ -179,12 +179,12 @@ public class Mesh : IDisposable
 
 public sealed class Mesh<TVertex> : Mesh
 {
-	public Mesh(Vulkan.Program vk, string filename) : base(vk, typeof(TVertex), null, filename) {}
-	public Mesh(Vulkan.Program vk, Array vertexData, Array indexData) : base(vk, typeof(TVertex), null, vertexData, indexData) {}
+	public Mesh(Vulkan.Program vk, string filename) : base(vk, typeof(TVertex), null, filename) { }
+	public Mesh(Vulkan.Program vk, Array vertexData, Array indexData) : base(vk, typeof(TVertex), null, vertexData, indexData) { }
 }
 
 public sealed class Mesh<TVertex, TIndex> : Mesh
 {
-	public Mesh(Vulkan.Program vk, string filename) : base(vk, typeof(TVertex), typeof(TIndex), filename) {}
-	public Mesh(Vulkan.Program vk, Array vertexData, Array indexData) : base(vk, typeof(TVertex), typeof(TIndex), vertexData, indexData) {}
+	public Mesh(Vulkan.Program vk, string filename) : base(vk, typeof(TVertex), typeof(TIndex), filename) { }
+	public Mesh(Vulkan.Program vk, Array vertexData, Array indexData) : base(vk, typeof(TVertex), typeof(TIndex), vertexData, indexData) { }
 }

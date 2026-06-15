@@ -6,9 +6,9 @@ using Vulkan;
 
 namespace Renderer;
 
-public static class EarClipping 
+public static class EarClipping
 {
-	public static IEnumerable<int> Triangulate(IReadOnlyList<Vector2> vertices, IList<int> indices, IEnumerable<IList<int>>? holes, bool isClockwise) 
+	public static IEnumerable<int> Triangulate(IReadOnlyList<Vector2> vertices, IList<int> indices, IEnumerable<IList<int>>? holes, bool isClockwise)
 	{
 		if (vertices == null || indices == null)
 			throw new ArgumentNullException();
@@ -19,7 +19,7 @@ public static class EarClipping
 		// Build a working list of polygon indices
 		var merged = new List<int>(indices);
 
-		foreach (var hole in holes) 
+		foreach (var hole in holes)
 		{
 			if (hole == null || hole.Count < 3)
 				continue;
@@ -38,11 +38,11 @@ public static class EarClipping
 		return Triangulate(vertices, merged, isClockwise);
 	}
 
-	private static bool PointInPolygon(Vector2 point, IReadOnlyList<Vector2> vertices, IList<int> indices) 
+	private static bool PointInPolygon(Vector2 point, IReadOnlyList<Vector2> vertices, IList<int> indices)
 	{
 		bool inside = false;
 
-		for (int i = 0, j = indices.Count - 1; i < indices.Count; j = i++) 
+		for (int i = 0, j = indices.Count - 1; i < indices.Count; j = i++)
 		{
 			Vector2 vi = vertices[indices[i]];
 			Vector2 vj = vertices[indices[j]];
@@ -56,10 +56,10 @@ public static class EarClipping
 		return inside;
 	}
 
-	private static void CreateBridge(IReadOnlyList<Vector2> vertices, List<int> polygon, IList<int> hole) 
+	private static void CreateBridge(IReadOnlyList<Vector2> vertices, List<int> polygon, IList<int> hole)
 	{
 		// --- Ensure hole winding is opposite to polygon ---
-		if (IsClockwise(vertices, polygon) == IsClockwise(vertices, hole)) 
+		if (IsClockwise(vertices, polygon) == IsClockwise(vertices, hole))
 		{
 			// reverse hole order (use a local copy so we don't mutate caller)
 			hole = hole.Reverse().ToList();
@@ -67,7 +67,7 @@ public static class EarClipping
 
 		// 1. Pick rightmost vertex of the hole
 		int holeIndex = 0;
-		for (int i = 1; i < hole.Count; i++) 
+		for (int i = 1; i < hole.Count; i++)
 		{
 			if (vertices[hole[i]].x > vertices[hole[holeIndex]].x)
 				holeIndex = i;
@@ -79,7 +79,7 @@ public static class EarClipping
 		int bridgeIndex = -1;
 		float minDist = float.MaxValue;
 
-		for (int i = 0; i < polygon.Count; i++) 
+		for (int i = 0; i < polygon.Count; i++)
 		{
 			Vector2 p = vertices[polygon[i]];
 			if (p.x <= holePoint.x) continue; // heuristic: prefer right side
@@ -88,7 +88,7 @@ public static class EarClipping
 				continue;
 
 			float d = Vector2.DistanceSquared(holePoint, p);
-			if (d < minDist) 
+			if (d < minDist)
 			{
 				minDist = d;
 				bridgeIndex = i;
@@ -96,16 +96,16 @@ public static class EarClipping
 		}
 
 		// fallback: pick closest visible vertex
-		if (bridgeIndex == -1) 
+		if (bridgeIndex == -1)
 		{
-			for (int i = 0; i < polygon.Count; i++) 
+			for (int i = 0; i < polygon.Count; i++)
 			{
 				Vector2 p = vertices[polygon[i]];
 				if (!Visible(holePoint, p, vertices, polygon, hole))
 					continue;
 
 				float d = Vector2.DistanceSquared(holePoint, p);
-				if (d < minDist) 
+				if (d < minDist)
 				{
 					minDist = d;
 					bridgeIndex = i;
@@ -149,7 +149,7 @@ public static class EarClipping
 	/// <summary>
 	/// Checks if segment (a,b) is visible (does not cross polygon/hole edges).
 	/// </summary>
-	private static bool Visible(Vector2 a, Vector2 b, IReadOnlyList<Vector2> verts, IList<int> poly, IList<int> hole) 
+	private static bool Visible(Vector2 a, Vector2 b, IReadOnlyList<Vector2> verts, IList<int> poly, IList<int> hole)
 	{
 		// check against polygon edges
 		if (!SegmentClear(a, b, verts, poly))
@@ -162,9 +162,9 @@ public static class EarClipping
 		return true;
 	}
 
-	private static bool SegmentClear(Vector2 a, Vector2 b, IReadOnlyList<Vector2> verts, IList<int> loop) 
+	private static bool SegmentClear(Vector2 a, Vector2 b, IReadOnlyList<Vector2> verts, IList<int> loop)
 	{
-		for (int i = 0; i < loop.Count; i++) 
+		for (int i = 0; i < loop.Count; i++)
 		{
 			int j = (i + 1) % loop.Count;
 			Vector2 v1 = verts[loop[i]];
@@ -184,7 +184,7 @@ public static class EarClipping
 	/// <summary>
 	/// Segment intersection test (excluding collinear overlaps).
 	/// </summary>
-	private static bool SegmentsIntersect(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2) 
+	private static bool SegmentsIntersect(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2)
 	{
 		float o1 = Orientation(p1, p2, q1);
 		float o2 = Orientation(p1, p2, q2);
@@ -195,18 +195,18 @@ public static class EarClipping
 		return false;
 	}
 
-	private static int Orientation(Vector2 a, Vector2 b, Vector2 c) 
+	private static int Orientation(Vector2 a, Vector2 b, Vector2 c)
 	{
 		float val = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
 		if (Math.Abs(val) < 1e-6f) return 0; // collinear
-		return (val > 0) ? 1 : 2;			// 1=clockwise, 2=counterclockwise
+		return (val > 0) ? 1 : 2;           // 1=clockwise, 2=counterclockwise
 	}
 
-	private static bool IsClockwise(IReadOnlyList<Vector2> vertices, IList<int> loop) 
+	private static bool IsClockwise(IReadOnlyList<Vector2> vertices, IList<int> loop)
 	{
 		float sum = 0f;
 
-		for (int i = 0; i < loop.Count; i++) 
+		for (int i = 0; i < loop.Count; i++)
 		{
 			Vector2 v1 = vertices[loop[i]];
 			Vector2 v2 = vertices[loop[(i + 1) % loop.Count]];
@@ -216,14 +216,14 @@ public static class EarClipping
 		return sum > 0f;
 	}
 
-	private static void RemoveCollinear(IReadOnlyList<Vector2> vertices, List<int> polygon, float epsilon = 1e-6f) 
+	private static void RemoveCollinear(IReadOnlyList<Vector2> vertices, List<int> polygon, float epsilon = 1e-6f)
 	{
 		if (polygon.Count <= 3)
 			return;
 
 		var cleaned = new List<int>(polygon.Count);
 
-		for (int i = 0; i < polygon.Count; i++) 
+		for (int i = 0; i < polygon.Count; i++)
 		{
 			int prev = polygon[(i - 1 + polygon.Count) % polygon.Count];
 			int curr = polygon[i];
@@ -242,14 +242,14 @@ public static class EarClipping
 		polygon.AddRange(cleaned);
 	}
 
-	private static bool IsCollinear(Vector2 a, Vector2 b, Vector2 c, float epsilon) 
+	private static bool IsCollinear(Vector2 a, Vector2 b, Vector2 c, float epsilon)
 	{
 		// area of the triangle abc
 		float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 		return Math.Abs(area) < epsilon;
 	}
 
-	public static IEnumerable<int> Triangulate(IReadOnlyList<Vector2> vertices, IList<int> indices, bool isClockwise) 
+	public static IEnumerable<int> Triangulate(IReadOnlyList<Vector2> vertices, IList<int> indices, bool isClockwise)
 	{
 		if (vertices == null || indices == null)
 			throw new ArgumentNullException();
@@ -263,11 +263,11 @@ public static class EarClipping
 		if (indices.Count < 3)
 			throw new ArgumentOutOfRangeException("Polygon must have at least 3 points.");
 
-		while (indices.Count > 3) 
+		while (indices.Count > 3)
 		{
 			bool found = false;
 
-			for (int i = 0; i < indices.Count && !found; i++) 
+			for (int i = 0; i < indices.Count && !found; i++)
 			{
 				int i0 = indices[(i + 0) % indices.Count];
 				int i1 = indices[(i + 1) % indices.Count];
@@ -301,7 +301,7 @@ public static class EarClipping
 		yield return indices[1];
 		yield return indices[2];
 
-		static bool anyInsideTriangle(IEnumerable<Vector2> points, Vector2 a, Vector2 b, Vector2 c) => points.Any(x => 
+		static bool anyInsideTriangle(IEnumerable<Vector2> points, Vector2 a, Vector2 b, Vector2 c) => points.Any(x =>
 			{
 				float cross1 = Vector2.Cross(b - a, x - a).z;
 				float cross2 = Vector2.Cross(c - b, x - b).z;

@@ -1,6 +1,6 @@
 namespace Renderer.Physics;
 
-public enum ForceMode 
+public enum ForceMode
 {
 	Force,
 	Acceleration,

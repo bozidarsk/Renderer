@@ -2,19 +2,19 @@
 
 #include <common.hlsl>
 
-struct CanvasVertex 
+struct CanvasVertex
 {
 	float3 position;
 	float2 uv;
 };
 
-struct CanvasFragment 
+struct CanvasFragment
 {
 	float4 position : SV_POSITION;
 	float2 uv;
 };
 
-CanvasFragment main(CanvasVertex input) 
+CanvasFragment main(CanvasVertex input)
 {
 	CanvasFragment output;
 

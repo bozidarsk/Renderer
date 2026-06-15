@@ -7,7 +7,7 @@ using Vulkan;
 
 namespace Renderer;
 
-public sealed class OBJ 
+public sealed class OBJ
 {
 	private List<Vector3> vertices = new();
 	public IReadOnlyList<Vector3> Vertices => vertices;
@@ -21,11 +21,11 @@ public sealed class OBJ
 	private List<uint> indices = new();
 	public IReadOnlyList<uint> Indices => indices;
 
-	public static OBJ FromFile(string filename) => 
+	public static OBJ FromFile(string filename) =>
 		(filename != null && File.Exists(filename)) ? new OBJ(filename) : throw new ArgumentException($"Invalid filename '{filename}'.")
 	;
 
-	private void RemoveDuplicates() 
+	private void RemoveDuplicates()
 	{
 		var map = new Dictionary<VertexData, uint>();
 
@@ -34,9 +34,9 @@ public sealed class OBJ
 		var normals = new List<Vector3>();
 		var indices = new List<uint>();
 
-		for (int i = 0; i < this.indices.Count; i++) 
+		for (int i = 0; i < this.indices.Count; i++)
 		{
-			var vertex = new VertexData() 
+			var vertex = new VertexData()
 			{
 				v = (this.vertices.Count != 0) ? this.vertices[i] : default,
 				t = (this.textures.Count != 0) ? this.textures[i] : default,
@@ -45,7 +45,7 @@ public sealed class OBJ
 
 			var index = (uint)i;
 
-			if (!map.TryGetValue(vertex, out index)) 
+			if (!map.TryGetValue(vertex, out index))
 			{
 				map[vertex] = (uint)vertices.Count;
 				vertices.Add(vertex.v);
@@ -62,7 +62,7 @@ public sealed class OBJ
 		this.indices = indices;
 	}
 
-	private bool IsValid() 
+	private bool IsValid()
 	{
 		if (vertices.Count != normals.Count && normals.Count != 0)
 			return false;
@@ -77,7 +77,7 @@ public sealed class OBJ
 		return indices.Count % 3 == 0;
 	}
 
-	private OBJ(string filename) 
+	private OBJ(string filename)
 	{
 		var lines = File.ReadAllLines(filename);
 
@@ -85,11 +85,11 @@ public sealed class OBJ
 		var textures = new List<Vector2>();
 		var normals = new List<Vector3>();
 
-		foreach (var line in lines) 
+		foreach (var line in lines)
 		{
 			var tokens = line.Split(' ');
 
-			switch (tokens[0]) 
+			switch (tokens[0])
 			{
 				case "v":
 					vertices.Add(new(float.Parse(tokens[1]), float.Parse(tokens[2]), float.Parse(tokens[3])));
@@ -104,7 +104,7 @@ public sealed class OBJ
 					if (tokens.Length != 1 + 3)
 						throw new NotImplementedException("Faces must be triangulated.");
 
-					foreach (var face in tokens.Skip(1)) 
+					foreach (var face in tokens.Skip(1))
 					{
 						getFaceIndices(face, out int? vi, out int? ti, out int? ni);
 
@@ -139,13 +139,13 @@ public sealed class OBJ
 		if (!IsValid())
 			throw new FormatException("Failed to parse obj file.");
 
-		static void getFaceIndices(string face, out int? vi, out int? ti, out int? ni) 
+		static void getFaceIndices(string face, out int? vi, out int? ti, out int? ni)
 		{
 			var tokens = face.Split('/');
 
 			(vi, ni, ti) = (null, null, null);
 
-			switch (tokens.Length) 
+			switch (tokens.Length)
 			{
 				case 1:
 					vi = int.Parse(tokens[0]);
@@ -165,7 +165,7 @@ public sealed class OBJ
 		}
 	}
 
-	private struct VertexData 
+	private struct VertexData
 	{
 		public Vector3 v;
 		public Vector2 t;

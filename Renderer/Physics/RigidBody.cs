@@ -10,9 +10,9 @@ public class RigidBody : Component
 	public Vector3 Gravity { set; get; }
 	public Vector3 Force { set; get; }
 
-	public void AddForce(Vector3 value, ForceMode mode = ForceMode.Force) 
+	public void AddForce(Vector3 value, ForceMode mode = ForceMode.Force)
 	{
-		switch (mode) 
+		switch (mode)
 		{
 			case ForceMode.Force:
 				Force += value;

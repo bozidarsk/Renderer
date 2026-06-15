@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace Renderer;
 
-public sealed class PNG 
+public sealed class PNG
 {
 	public int Width { get; }
 	public int Height { get; }
@@ -18,7 +18,7 @@ public sealed class PNG
 
 	private const ulong SIGNATURE = 0x89504e470d0a1a0a;
 
-	public static PNG FromFile(string filename) 
+	public static PNG FromFile(string filename)
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
@@ -29,7 +29,7 @@ public sealed class PNG
 		return new(filename);
 	}
 
-	public void Save(string filename) 
+	public void Save(string filename)
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
@@ -52,11 +52,11 @@ public sealed class PNG
 
 		{
 			using var chunk = new MemoryStream();
-			for (int y = 0; y < this.Height; y++) 
+			for (int y = 0; y < this.Height; y++)
 			{
 				chunk.Write((byte)FilterType.None);
 
-				for (int x = 0; x < this.Width; x++) 
+				for (int x = 0; x < this.Width; x++)
 				{
 					uint color = this.Colors[y * this.Width + x];
 					chunk.Write((byte)(color >> 16));
@@ -76,13 +76,13 @@ public sealed class PNG
 		}
 	}
 
-	private void WriteChunk(Stream writer, ChunkType type, Stream data, bool compress) 
+	private void WriteChunk(Stream writer, ChunkType type, Stream data, bool compress)
 	{
 		data.Position = 0;
 
 		using var finalData = !compress ? data : new MemoryStream();
 
-		if (compress) 
+		if (compress)
 		{
 			using var zlib = new ZLibStream(finalData, CompressionMode.Compress, leaveOpen: true);
 			data.CopyTo(zlib);
@@ -110,7 +110,7 @@ public sealed class PNG
 		writer.WriteBigEndian(crc32.GetCurrentHashAsUInt32());
 	}
 
-	private Stream ReadChunk(Stream reader, out ChunkType type, out uint length, out uint crc) 
+	private Stream ReadChunk(Stream reader, out ChunkType type, out uint length, out uint crc)
 	{
 		length = reader.ReadUInt32BigEndian();
 		type = (ChunkType)reader.ReadUInt32BigEndian();
@@ -136,12 +136,12 @@ public sealed class PNG
 		return new MemoryStream(data);
 	}
 
-	private static int PaethPredictor(int a, int b, int c) 
+	private static int PaethPredictor(int a, int b, int c)
 	{
 		// a = left, b = above, c = upper left
 		int p = a + b - c;        // Initial estimate
 		int pa = Math.Abs(p - a); // Distance to a
-		int pb = Math.Abs(p - b); // Distance to b  
+		int pb = Math.Abs(p - b); // Distance to b
 		int pc = Math.Abs(p - c); // Distance to c
 
 		// Return nearest of a, b, c, breaking ties in order a, b, c
@@ -153,24 +153,24 @@ public sealed class PNG
 			return c;
 	}
 
-	private uint[] ReadTrueColor(Dictionary<ChunkType, Stream> chunks, Stream data, int depth) 
+	private uint[] ReadTrueColor(Dictionary<ChunkType, Stream> chunks, Stream data, int depth)
 	{
 		var pixels = new uint[this.Width * this.Height];
 		int stride = this.IsTransparent ? 4 : 3;
 		byte[]? previousScanline = null;
 
-		for (int y = 0; y < this.Height; y++) 
+		for (int y = 0; y < this.Height; y++)
 		{
 			var filterType = (FilterType)data.ReadUInt8();
 			byte[] scanline = data.ReadBytes(checked((int)(this.Width * stride)));
 
-			switch (filterType) 
+			switch (filterType)
 			{
 				case FilterType.None:
 					break;
 				case FilterType.Sub:
 					for (int i = stride; i < scanline.Length; i++)
-						 scanline[i] = (byte)(scanline[i] + scanline[i - stride]);
+						scanline[i] = (byte)(scanline[i] + scanline[i - stride]);
 					break;
 				case FilterType.Up:
 					if (previousScanline != null)
@@ -191,7 +191,7 @@ public sealed class PNG
 					{
 						int left = (i >= stride) ? scanline[i - stride] : 0;
 						int above = (previousScanline != null) ? previousScanline[i] : 0;
-						int upperLeft = (i >= stride && previousScanline != null) ? 
+						int upperLeft = (i >= stride && previousScanline != null) ?
 						previousScanline[i - stride] : 0;
 
 						int predictor = PaethPredictor(left, above, upperLeft);
@@ -202,13 +202,13 @@ public sealed class PNG
 					throw new FormatException($"Invalid filter type '{filterType}'.");
 			}
 
-			for (int x = 0; x < this.Width; x++) 
+			for (int x = 0; x < this.Width; x++)
 			{
 				int index = x * stride;
-				pixels[y * this.Width + x] = 
-					(uint)((this.IsTransparent ? scanline[index + 3] : byte.MaxValue) << 24) | 
-					(uint)((uint)scanline[index + 0] << 16) | 
-					(uint)((uint)scanline[index + 1] << 8) | 	
+				pixels[y * this.Width + x] =
+					(uint)((this.IsTransparent ? scanline[index + 3] : byte.MaxValue) << 24) |
+					(uint)((uint)scanline[index + 0] << 16) |
+					(uint)((uint)scanline[index + 1] << 8) |
 					(uint)((uint)scanline[index + 2] << 0)
 				;
 			}
@@ -219,7 +219,7 @@ public sealed class PNG
 		return pixels;
 	}
 
-	private uint[] ReadIndexed(Dictionary<ChunkType, Stream> chunks, Stream data, int depth) 
+	private uint[] ReadIndexed(Dictionary<ChunkType, Stream> chunks, Stream data, int depth)
 	{
 		if (depth != 1 && depth != 2 && depth != 4 && depth != 8)
 			throw new FormatException($"Invalid depth '{depth}'.");
@@ -235,18 +235,18 @@ public sealed class PNG
 		int stride = 1;
 		byte[]? previousScanline = null;
 
-		for (int y = 0; y < this.Height; y++) 
+		for (int y = 0; y < this.Height; y++)
 		{
 			var filterType = (FilterType)data.ReadUInt8();
 			byte[] scanline = data.ReadBytes(checked((int)(this.Width / (8 / depth))));
 
-			switch (filterType) 
+			switch (filterType)
 			{
 				case FilterType.None:
 					break;
 				case FilterType.Sub:
 					for (int i = stride; i < scanline.Length; i++)
-						 scanline[i] = (byte)(scanline[i] + scanline[i - stride]);
+						scanline[i] = (byte)(scanline[i] + scanline[i - stride]);
 					break;
 				case FilterType.Up:
 					if (previousScanline != null)
@@ -267,7 +267,7 @@ public sealed class PNG
 					{
 						int left = (i >= stride) ? scanline[i - stride] : 0;
 						int above = (previousScanline != null) ? previousScanline[i] : 0;
-						int upperLeft = (i >= stride && previousScanline != null) ? 
+						int upperLeft = (i >= stride && previousScanline != null) ?
 						previousScanline[i - stride] : 0;
 
 						int predictor = PaethPredictor(left, above, upperLeft);
@@ -278,7 +278,7 @@ public sealed class PNG
 					throw new FormatException($"Invalid filter type '{filterType}'.");
 			}
 
-			for (int x = 0; x < this.Width; x++) 
+			for (int x = 0; x < this.Width; x++)
 			{
 				int ppb = 8 / (int)depth;
 				long index = x / ppb;
@@ -286,7 +286,7 @@ public sealed class PNG
 
 				long i = ((long)scanline[index] >> (int)(depth * (ppb - (x % ppb) - 1))) & mask;
 
-				if (this.IsTransparent) 
+				if (this.IsTransparent)
 				{
 					trns!.Position = i;
 					a = (trns.Position < trns.Length) ? trns.ReadUInt8() : byte.MaxValue;
@@ -307,11 +307,11 @@ public sealed class PNG
 		return pixels;
 	}
 
-	public PNG(int width, int height, bool isTransparent, params uint[] colors) => 
+	public PNG(int width, int height, bool isTransparent, params uint[] colors) =>
 		(this.Width, this.Height, this.IsTransparent, this.Colors) = (width, height, isTransparent, colors ?? throw new ArgumentNullException())
 	;
 
-	public PNG(string filename) 
+	public PNG(string filename)
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
@@ -342,7 +342,7 @@ public sealed class PNG
 			data = ReadChunk(reader, out chunkType, out length, out crc)
 		)
 		{
-			if (chunkType == ChunkType.IHDR) 
+			if (chunkType == ChunkType.IHDR)
 			{
 				width = data.ReadUInt32BigEndian();
 				height = data.ReadUInt32BigEndian();
@@ -371,7 +371,7 @@ public sealed class PNG
 		this.Width = checked((int)width);
 		this.Height = checked((int)height);
 		this.IsTransparent = colorType.HasFlag(ColorType.Alpha);
-		this.Colors = colorType switch 
+		this.Colors = colorType switch
 		{
 			ColorType.Color => ReadTrueColor(chunks, decompressed, depth),
 			ColorType.Color | ColorType.Alpha => ReadTrueColor(chunks, decompressed, depth),

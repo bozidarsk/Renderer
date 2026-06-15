@@ -2,7 +2,7 @@ using Vulkan;
 
 namespace Renderer.Physics;
 
-public struct Collision 
+public struct Collision
 {
 	public required Vector3 Normal { get; init; }
 	public bool IsSourceTrigger { internal set; get; }

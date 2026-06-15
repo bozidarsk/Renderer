@@ -2,14 +2,14 @@
 
 #include <common.hlsl>
 
-struct OuterVertex 
+struct OuterVertex
 {
 	float3 position;
 	float2 uv;
 	float3 normal;
 };
 
-struct OuterFragment 
+struct OuterFragment
 {
 	float4 position : SV_POSITION;
 	float2 uv;
@@ -17,7 +17,7 @@ struct OuterFragment
 	float3 worldPosition;
 };
 
-OuterFragment main(OuterVertex input) 
+OuterFragment main(OuterVertex input)
 {
 	OuterFragment output;
 

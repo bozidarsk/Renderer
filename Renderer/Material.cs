@@ -6,16 +6,16 @@ using Vulkan;
 
 namespace Renderer;
 
-public sealed class Material 
+public sealed class Material
 {
 	public readonly ShaderInfo[] Shaders;
 	private readonly Dictionary<string, object> uniforms = new();
 
 	public IReadOnlyDictionary<string, object> Uniforms => uniforms;
 
-	public object this[string name] 
+	public object this[string name]
 	{
-		set 
+		set
 		{
 			if (name == null || value == null)
 				throw new ArgumentNullException();
@@ -24,11 +24,11 @@ public sealed class Material
 		}
 	}
 
-	public static Material FromShaders(string? vertex, string? fragment) => 
+	public static Material FromShaders(string? vertex, string? fragment) =>
 		new(vertex ?? "Renderer/Vulkan/Shaders/default.vert.hlsl", fragment ?? "Renderer/Vulkan/Shaders/default.frag.hlsl")
 	;
 
-	private Material(params string[] shaderPaths) 
+	private Material(params string[] shaderPaths)
 	{
 		if (shaderPaths == null)
 			throw new ArgumentNullException();

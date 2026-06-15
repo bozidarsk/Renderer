@@ -17,12 +17,12 @@ public class Scene : IDisposable
 
 	public event DebugEventHandler? OnDebugMessage;
 
-	public void Run() 
+	public void Run()
 	{
 		foreach (var x in objects)
 			x.OnStart();
 
-		while (!this.Window.ShouldClose) 
+		while (!this.Window.ShouldClose)
 		{
 			Input.PollEvents();
 
@@ -41,15 +41,15 @@ public class Scene : IDisposable
 		this.Program.DeviceWaitIdle();
 	}
 
-	internal void RegisterObject(SceneObject x) 
+	internal void RegisterObject(SceneObject x)
 	{
 		x.OnAwake();
 		objects.Add(x);
 	}
 
-	internal void UnregisterObject(SceneObject x) => objects.Remove(x); 
+	internal void UnregisterObject(SceneObject x) => objects.Remove(x);
 
-	public void Dispose() 
+	public void Dispose()
 	{
 		while (objects.Count > 0)
 			objects[0].Dispose();
@@ -59,9 +59,9 @@ public class Scene : IDisposable
 		GLFW.Program.Terminate();
 	}
 
-	public Scene() : this(null) {}
-	public Scene(int width, int height) : this(null, width, height) {}
-	public Scene(DebugEventHandler? onDebugMessage, int width = 1280, int height = 720) 
+	public Scene() : this(null) { }
+	public Scene(int width, int height) : this(null, width, height) { }
+	public Scene(DebugEventHandler? onDebugMessage, int width = 1280, int height = 720)
 	{
 		if (!GLFW.Program.Initialize())
 			throw new InvalidOperationException("GLFW failed to initialize.");

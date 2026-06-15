@@ -16,18 +16,18 @@ public class UIObject : SceneObject
 	public event MouseButtonEventHandler? OnMouseButton;
 	internal void RaiseMouseButtonEvent(object? sender, MouseButtonEventArgs args) => OnMouseButton?.Invoke(sender, args);
 
-	internal void SwitchToMaskMaterial() 
+	internal void SwitchToMaskMaterial()
 	{
 		var mr = GetComponent<MeshRenderer>();
 		normalMaterial = mr.Material;
 		mr.Material = MaskMaterial;
 	}
 
-	internal void SwitchToNormalMaterial() 
+	internal void SwitchToNormalMaterial()
 	{
 		var mr = GetComponent<MeshRenderer>();
 
-		if (normalMaterial == null) 
+		if (normalMaterial == null)
 		{
 			normalMaterial = mr.Material;
 			return;
@@ -36,13 +36,13 @@ public class UIObject : SceneObject
 		mr.Material = normalMaterial;
 	}
 
-	public override void Dispose() 
+	public override void Dispose()
 	{
 		this.Canvas.UnregisterObject(this);
 		base.Dispose();
 	}
 
-	public UIObject(Canvas canvas) : this(canvas, []) {}
+	public UIObject(Canvas canvas) : this(canvas, []) { }
 	public UIObject(Canvas canvas, params Component[] components) : base(canvas.Scene, components)
 	{
 		this.Id = canvas.NextId;

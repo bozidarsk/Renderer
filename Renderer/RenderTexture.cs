@@ -25,7 +25,7 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 
 	public Info Info => new RenderTextureInfo(this.Extent, this.RenderPass, this.Framebuffer, this.Image, this.ImageView, this.Sampler);
 
-	public void Dispose() 
+	public void Dispose()
 	{
 		RenderPass.Dispose();
 		Framebuffer.Dispose();
@@ -33,13 +33,13 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 		DepthTexture.Dispose();
 	}
 
-	public RenderTexture(Program vk, int width, int height, Format format) : this(vk, new((uint)width, (uint)height), format) {}
-	public RenderTexture(Program vk, Extent2D extent, Format format) 
+	public RenderTexture(Program vk, int width, int height, Format format) : this(vk, new((uint)width, (uint)height), format) { }
+	public RenderTexture(Program vk, Extent2D extent, Format format)
 	{
 		this.Extent = extent;
 
 		var depthFormat = vk.FindSupportedFormat(
-			[ Format.D32SFloat, Format.D32SFloatS8UInt, Format.D24UNormS8UInt ],
+			[Format.D32SFloat, Format.D32SFloatS8UInt, Format.D24UNormS8UInt],
 			ImageTiling.Optimal,
 			FormatFeatures.DepthStencilAttachment
 		);
@@ -87,7 +87,7 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 			flags: default,
 			pipelineBindPoint: PipelineBindPoint.Graphics,
 			inputAttachments: null,
-			colorAttachments: [ colorAttachmentRef ],
+			colorAttachments: [colorAttachmentRef],
 			resolveAttachments: null,
 			depthStencilAttachment: depthAttachmentRef,
 			preserveAttachments: null
@@ -107,9 +107,9 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 			type: StructureType.RenderPassCreateInfo,
 			next: default,
 			flags: default,
-			attachments: [ colorAttachment, depthAttachment ],
-			subpasses: [ subpass ],
-			dependencies: [ dependency ]
+			attachments: [colorAttachment, depthAttachment],
+			subpasses: [subpass],
+			dependencies: [dependency]
 		);
 
 		this.RenderPass = renderPassCreateInfo.CreateRenderPass(vk.Device, vk.Allocator);
@@ -119,7 +119,7 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 			next: default,
 			flags: default,
 			renderPass: this.RenderPass,
-			attachments: [ this.Texture.ImageView, this.DepthTexture.ImageView ],
+			attachments: [this.Texture.ImageView, this.DepthTexture.ImageView],
 			width: this.Extent.Width,
 			height: this.Extent.Height,
 			layers: 1

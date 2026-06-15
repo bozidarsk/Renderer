@@ -10,9 +10,9 @@ public sealed class Text : SceneObject
 {
 	public required Font Font { set; get; }
 
-	new public CameraLayer Layer 
+	new public CameraLayer Layer
 	{
-		set 
+		set
 		{
 			outer.Layer = value;
 			inner.Layer = value;
@@ -21,18 +21,18 @@ public sealed class Text : SceneObject
 		get => base.Layer;
 	}
 
-	public required Color Color 
+	public required Color Color
 	{
-		set 
+		set
 		{
 			outerRenderer.Material["COLOR"] = value;
 			innerRenderer.Material["COLOR"] = value;
 		}
 	}
 
-	public string Value 
+	public string Value
 	{
-		set 
+		set
 		{
 			if (value == null)
 				throw new ArgumentNullException();
@@ -50,7 +50,7 @@ public sealed class Text : SceneObject
 	private MeshFilter outerFilter, innerFilter;
 	private MeshRenderer outerRenderer, innerRenderer;
 
-	public Text(Canvas canvas) : this(canvas, []) {}
+	public Text(Canvas canvas) : this(canvas, []) { }
 	public Text(Canvas canvas, params Component[] components) : base(canvas.Scene, components)
 	{
 		var thisTransform = this.Transform;
@@ -59,13 +59,15 @@ public sealed class Text : SceneObject
 			thisTransform,
 			new MeshFilter(new Mesh(this.Scene.Program)),
 			new MeshRenderer(Material.FromShaders(vertex: "Renderer/Shaders/TextOuter.vert.hlsl", fragment: "Renderer/Shaders/TextOuter.frag.hlsl"))
-		) { MaskMaterial = Material.FromShaders(vertex: "Renderer/Shaders/TextOuter.vert.hlsl", fragment: "Renderer/Shaders/TextOuter-mask.frag.hlsl") };
+		)
+		{ MaskMaterial = Material.FromShaders(vertex: "Renderer/Shaders/TextOuter.vert.hlsl", fragment: "Renderer/Shaders/TextOuter-mask.frag.hlsl") };
 
 		inner = new UIObject(canvas,
 			thisTransform,
 			new MeshFilter(new Mesh(this.Scene.Program)),
 			new MeshRenderer(Material.FromShaders(vertex: "Renderer/Shaders/TextInner.vert.hlsl", fragment: "Renderer/Shaders/TextInner.frag.hlsl"))
-		) { MaskMaterial = Material.FromShaders(vertex: "Renderer/Shaders/TextInner.vert.hlsl", fragment: "Renderer/Shaders/TextInner-mask.frag.hlsl") };
+		)
+		{ MaskMaterial = Material.FromShaders(vertex: "Renderer/Shaders/TextInner.vert.hlsl", fragment: "Renderer/Shaders/TextInner-mask.frag.hlsl") };
 
 		outerFilter = outer.GetComponent<MeshFilter>();
 		innerFilter = inner.GetComponent<MeshFilter>();

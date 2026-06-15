@@ -19,19 +19,19 @@ internal struct OuterTextVertex : IVertex
 internal struct InnerTextVertex : IVertex
 {
 	public Vector3 Position { set; get; }
-	public Vector2 UV { set {} }
-	public Vector3 Normal { set {} }
+	public Vector2 UV { set { } }
+	public Vector3 Normal { set { } }
 }
 
 internal sealed record TextMesh(Mesh<OuterTextVertex> Outer, Mesh<InnerTextVertex> Inner);
 
-public sealed class Font 
+public sealed class Font
 {
 	private readonly Glyph[] glyphs;
 	private readonly Dictionary<uint, int> map;
 	private readonly float scale;
 
-	private static string[] searchDirectories = 
+	private static string[] searchDirectories =
 	[
 	#if LINUX
 		"/usr/share/fonts",
@@ -46,7 +46,7 @@ public sealed class Font
 	#endif
 	];
 
-	internal TextMesh CreateMesh(Vulkan.Program vk, string text) 
+	internal TextMesh CreateMesh(Vulkan.Program vk, string text)
 	{
 		if (text == null)
 			throw new ArgumentNullException();
@@ -64,7 +64,7 @@ public sealed class Font
 		return CreateMesh(vk, indices);
 	}
 
-	private TextMesh CreateMesh(Vulkan.Program vk, Span<int> glyphIndices) 
+	private TextMesh CreateMesh(Vulkan.Program vk, Span<int> glyphIndices)
 	{
 		var outerVertices = new List<OuterTextVertex>();
 		var innerVertices = new List<InnerTextVertex>();
@@ -73,7 +73,7 @@ public sealed class Font
 
 		var offset = Vector3.Zero;
 
-		for (int i = 0; i < glyphIndices.Length; i++) 
+		for (int i = 0; i < glyphIndices.Length; i++)
 		{
 			var g = glyphs[glyphIndices[i]];
 
@@ -100,28 +100,28 @@ public sealed class Font
 		);
 	}
 
-	private static (IEnumerable<OuterTextVertex>, IEnumerable<int>) CreateOuterMesh(Glyph g, Vector3 offset, float scale) 
+	private static (IEnumerable<OuterTextVertex>, IEnumerable<int>) CreateOuterMesh(Glyph g, Vector3 offset, float scale)
 	{
 		var vertices = new OuterTextVertex[g.OuterIndices.Length];
 		var indices = new int[g.OuterIndices.Length];
 
-		for (int i = 0; i < g.OuterIndices.Length - 2; i += 3) 
+		for (int i = 0; i < g.OuterIndices.Length - 2; i += 3)
 		{
-			vertices[i + 0] = new OuterTextVertex() 
+			vertices[i + 0] = new OuterTextVertex()
 			{
 				Position = new Vector3(g.Vertices[g.OuterIndices[i + 0]].x, g.Vertices[g.OuterIndices[i + 0]].y, 0) * scale + offset,
 				UV = new(0, 0),
 				Normal = Vector3.Forward
 			};
 
-			vertices[i + 1] = new OuterTextVertex() 
+			vertices[i + 1] = new OuterTextVertex()
 			{
 				Position = new Vector3(g.Vertices[g.OuterIndices[i + 1]].x, g.Vertices[g.OuterIndices[i + 1]].y, 0) * scale + offset,
 				UV = new(0.5f, 0),
 				Normal = Vector3.Forward
 			};
 
-			vertices[i + 2] = new OuterTextVertex() 
+			vertices[i + 2] = new OuterTextVertex()
 			{
 				Position = new Vector3(g.Vertices[g.OuterIndices[i + 2]].x, g.Vertices[g.OuterIndices[i + 2]].y, 0) * scale + offset,
 				UV = new(1, 1),
@@ -136,17 +136,17 @@ public sealed class Font
 		return (vertices, indices);
 	}
 
-	private static (IEnumerable<InnerTextVertex>, IEnumerable<int>) CreateInnerMesh(Glyph g, Vector3 offset, float scale) 
+	private static (IEnumerable<InnerTextVertex>, IEnumerable<int>) CreateInnerMesh(Glyph g, Vector3 offset, float scale)
 	{
 		return (g.Vertices.Select(x => new InnerTextVertex() { Position = new Vector3(x.x, x.y, 0) * scale + offset }), g.InnerIndices);
 	}
 
-	private static string? Search(string filename) 
+	private static string? Search(string filename)
 	{
 		if (Path.GetExtension(filename) == "")
 			filename += ".ttf";
 
-		foreach (var directory in searchDirectories) 
+		foreach (var directory in searchDirectories)
 		{
 			string? found = Directory.EnumerateFiles(directory, filename, SearchOption.AllDirectories).FirstOrDefault();
 
@@ -157,7 +157,7 @@ public sealed class Font
 		return null;
 	}
 
-	private static Table ReadTable(Stream reader) 
+	private static Table ReadTable(Stream reader)
 	{
 		Tag tag = (Tag)reader.ReadUInt32BigEndian();
 		uint checkSum = reader.ReadUInt32BigEndian();
@@ -166,14 +166,14 @@ public sealed class Font
 		return new(tag, checkSum, offset, length);
 	}
 
-	private static void Triangulate(List<Vector2> vertices, List<int> outerIndices, List<int> innerIndices) 
+	private static void Triangulate(List<Vector2> vertices, List<int> outerIndices, List<int> innerIndices)
 	{
 		var innerContours = new List<(int start, int end, bool isClockwise)>();
 		var outerContours = new List<(int start, int end, bool isClockwise)>();
 
-		for ((int start, int end) = (0, 0); end < innerIndices.Count; end += 2) 
+		for ((int start, int end) = (0, 0); end < innerIndices.Count; end += 2)
 		{
-			while (innerIndices[end++] != -1);
+			while (innerIndices[end++] != -1) ;
 			end -= 2;
 
 			innerContours.Add((start, end, isClockwise(innerIndices, start, end)));
@@ -181,9 +181,9 @@ public sealed class Font
 			start = end + 2;
 		}
 
-		for ((int start, int end) = (0, 0); end < outerIndices.Count; end += 2) 
+		for ((int start, int end) = (0, 0); end < outerIndices.Count; end += 2)
 		{
-			while (outerIndices[end++] != -1);
+			while (outerIndices[end++] != -1) ;
 			end -= 2;
 
 			outerContours.Add((start, end, isClockwise(outerIndices, start, end)));
@@ -194,26 +194,26 @@ public sealed class Font
 		var clipper = new ClipperD(6);
 		var solution = new PolyTreeD();
 
-		foreach (var indices in innerContours.Select(x => innerIndices.Take(new Range(x.start, x.end + 1)))) 
+		foreach (var indices in innerContours.Select(x => innerIndices.Take(new Range(x.start, x.end + 1))))
 		{
 			clipper.AddSubject(
 				Clipper.MakePath(
 					indices
 					.Select(x => vertices[x])
-					.Select<Vector2, double[]>(x => [ (double)x.x, (double)x.y ])
+					.Select<Vector2, double[]>(x => [(double)x.x, (double)x.y])
 					.SelectMany(x => x)
 					.ToArray()
 				)
 			);
 		}
 
-		foreach (var indices in outerContours.Select(x => outerIndices.Take(new Range(x.start, x.end + 1)))) 
+		foreach (var indices in outerContours.Select(x => outerIndices.Take(new Range(x.start, x.end + 1))))
 		{
 			clipper.AddClip(
 				Clipper.MakePath(
 					indices
 					.Select(x => vertices[x])
-					.Select<Vector2, double[]>(x => [ (double)x.x, (double)x.y ])
+					.Select<Vector2, double[]>(x => [(double)x.x, (double)x.y])
 					.SelectMany(x => x)
 					.ToArray()
 				)
@@ -226,7 +226,7 @@ public sealed class Font
 		var holes = new List<List<int>>();
 
 		// !!!!!! TODO: will fail if there is a polygon inside a hole inside a polygon !!!!!!
-		foreach ((var path, var isHole) in getPaths(solution)) 
+		foreach ((var path, var isHole) in getPaths(solution))
 		{
 			if (!isHole)
 				polygons.Add(new(getIndices(path)));
@@ -236,12 +236,12 @@ public sealed class Font
 
 		innerIndices.Clear();
 
-		try 
+		try
 		{
 			foreach (var x in polygons)
 				innerIndices.AddRange(EarClipping.Triangulate(vertices, x, holes, isClockwise: false));
 		}
-		catch (InvalidOperationException) 
+		catch (InvalidOperationException)
 		{
 			Console.WriteLine("Failed to triangulate a font glyph:");
 			Console.WriteLine($"polygons: {polygons.Count}");
@@ -249,10 +249,10 @@ public sealed class Font
 			Console.WriteLine($"innerContours: {innerContours.Count}");
 			Console.WriteLine($"outerContours: {outerContours.Count}");
 
-			foreach (var indices in innerContours.Select(x => innerIndices.Take(new Range(x.start, x.end + 1)))) 
+			foreach (var indices in innerContours.Select(x => innerIndices.Take(new Range(x.start, x.end + 1))))
 				Console.WriteLine($"i_{{inner}}=[ {indices.Select(x => x.ToString()).Aggregate((current, next) => $"{current}, {next}")} ]");
 
-			foreach (var indices in outerContours.Select(x => outerIndices.Take(new Range(x.start, x.end + 1)))) 
+			foreach (var indices in outerContours.Select(x => outerIndices.Take(new Range(x.start, x.end + 1))))
 				Console.WriteLine($"i_{{outer}}=[ {indices.Select(x => x.ToString()).Aggregate((current, next) => $"{current}, {next}")} ]");
 
 			Console.WriteLine($"v = [ {vertices.Select(v => $"({v.x}, {v.y})").Aggregate((current, next) => $"{current}, {next}")} ]");
@@ -272,26 +272,26 @@ public sealed class Font
 		if (innerIndices.Count % 3 != 0)
 			throw new InvalidOperationException("Inner indices count must be multiple of 3.");
 
-		IEnumerable<(PathD path, bool isHole)> getPaths(PolyPathD current) 
+		IEnumerable<(PathD path, bool isHole)> getPaths(PolyPathD current)
 		{
 			if (current.Polygon != null)
 				yield return (current.Polygon, current.IsHole);
 
-			for (int i = 0; i < current.Count; i++) 
+			for (int i = 0; i < current.Count; i++)
 			{
 				foreach (var x in getPaths(current[i]))
 					yield return x;
 			}
 		}
 
-		IEnumerable<int> getIndices(PathD path) 
+		IEnumerable<int> getIndices(PathD path)
 		{
-			foreach (var point in path) 
+			foreach (var point in path)
 			{
 				var x = new Vector2((float)point.x, (float)point.y);
 				int index = vertices.IndexOf(x);
 
-				if (index == -1) 
+				if (index == -1)
 				{
 					vertices.Add(x);
 					index = vertices.Count - 1;
@@ -301,12 +301,12 @@ public sealed class Font
 			}
 		}
 
-		bool isClockwise(List<int> indices, int start, int end) 
+		bool isClockwise(List<int> indices, int start, int end)
 		{
 			float area = 0;
 			int n = end - start + 1;
 
-			for (int i = 0; i < n; i++) 
+			for (int i = 0; i < n; i++)
 			{
 				int j = (i + 1) % n;
 
@@ -321,7 +321,7 @@ public sealed class Font
 		}
 	}
 
-	private static Glyph CreateGlyph(Span<int> xcoords, Span<int> ycoords, Span<OutlineFlags> flags, Span<int> contours, int spacing) 
+	private static Glyph CreateGlyph(Span<int> xcoords, Span<int> ycoords, Span<OutlineFlags> flags, Span<int> contours, int spacing)
 	{
 		if (xcoords.Length != ycoords.Length || xcoords.Length != flags.Length)
 			throw new ArgumentOutOfRangeException();
@@ -335,7 +335,7 @@ public sealed class Font
 		for (int i = 0; i < xcoords.Length; i++)
 			vertices.Add(new((float)xcoords[i], (float)ycoords[i]));
 
-		foreach (var end in contours) 
+		foreach (var end in contours)
 		{
 			int pointOffset, length = end - start + 1;
 
@@ -343,7 +343,7 @@ public sealed class Font
 				if (flags[start + pointOffset].HasFlag(OutlineFlags.OnCurve))
 					break;
 
-			for (int i = 0; i < length + 1; i++) 
+			for (int i = 0; i < length + 1; i++)
 			{
 				int current = start + ((i + pointOffset) % length);
 				int next = start + ((i + pointOffset + 1) % length);
@@ -356,7 +356,7 @@ public sealed class Font
 				if (flags[current].HasFlag(OutlineFlags.OnCurve))
 					innerIndices.Add(current);
 
-				if (i < length && flags[current].HasFlag(OutlineFlags.OnCurve) == flags[next].HasFlag(OutlineFlags.OnCurve)) 
+				if (i < length && flags[current].HasFlag(OutlineFlags.OnCurve) == flags[next].HasFlag(OutlineFlags.OnCurve))
 				{
 					vertices.Add((vertices[current] + vertices[next]) / 2f);
 
@@ -379,7 +379,7 @@ public sealed class Font
 		return new(vertices.ToArray(), outerIndices.ToArray(), innerIndices.ToArray(), (float)spacing);
 	}
 
-	private static Glyph ReadGlyph(Stream reader, int index, Span<uint> locations, Span<int> advanceWidths) 
+	private static Glyph ReadGlyph(Stream reader, int index, Span<uint> locations, Span<int> advanceWidths)
 	{
 		if (index < 0 || index >= locations.Length)
 			throw new ArgumentOutOfRangeException();
@@ -393,7 +393,7 @@ public sealed class Font
 		reader.Position = (long)offset;
 		Glyph g;
 
-		switch ((short)reader.ReadUInt16BigEndian()) 
+		switch ((short)reader.ReadUInt16BigEndian())
 		{
 			case 0:
 				throw new FormatException($"Glyph {index} has no contours.");
@@ -410,7 +410,7 @@ public sealed class Font
 		return g;
 	}
 
-	private static Glyph ReadSimpleGlyph(Stream reader, int spacing) 
+	private static Glyph ReadSimpleGlyph(Stream reader, int spacing)
 	{
 		int contoursCount = (int)(short)reader.ReadUInt16BigEndian();
 		short xMin = (short)reader.ReadUInt16BigEndian();
@@ -421,7 +421,7 @@ public sealed class Font
 		Span<int> contourEndIndices = stackalloc int[contoursCount];
 		int pointsCount = 0;
 
-		for (int i = 0; i < contourEndIndices.Length; i++) 
+		for (int i = 0; i < contourEndIndices.Length; i++)
 		{
 			contourEndIndices[i] = (int)reader.ReadUInt16BigEndian();
 			pointsCount = Math.Max(pointsCount, contourEndIndices[i] + 1);
@@ -431,7 +431,7 @@ public sealed class Font
 
 		Span<OutlineFlags> flags = stackalloc OutlineFlags[pointsCount];
 
-		for (int i = 0; i < flags.Length; i++) 
+		for (int i = 0; i < flags.Length; i++)
 		{
 			OutlineFlags x = (OutlineFlags)reader.ReadUInt8();
 			flags[i] = x;
@@ -449,11 +449,11 @@ public sealed class Font
 
 		return CreateGlyph(xcoords, ycoords, flags, contourEndIndices, spacing);
 
-		static void readCoords(Stream reader, Span<OutlineFlags> flags, OutlineFlags sizeFlag, OutlineFlags signOrSkipFlag, Span<int> coordinates) 
+		static void readCoords(Stream reader, Span<OutlineFlags> flags, OutlineFlags sizeFlag, OutlineFlags signOrSkipFlag, Span<int> coordinates)
 		{
 			int value = 0;
 
-			for (int i = 0; i < coordinates.Length; i++) 
+			for (int i = 0; i < coordinates.Length; i++)
 			{
 				if (flags[i].HasFlag(sizeFlag))
 					value += flags[i].HasFlag(signOrSkipFlag) ? reader.ReadUInt8() : -reader.ReadUInt8();
@@ -465,12 +465,12 @@ public sealed class Font
 		}
 	}
 
-	private static Glyph ReadCompoundGlyph(Stream reader, int spacing) 
+	private static Glyph ReadCompoundGlyph(Stream reader, int spacing)
 	{
 		return new([], [], [], 0);
 	}
 
-	private static Dictionary<uint, int> ReadCharacterMap(Stream reader) 
+	private static Dictionary<uint, int> ReadCharacterMap(Stream reader)
 	{
 		long tableOffset = reader.Position;
 
@@ -478,13 +478,13 @@ public sealed class Font
 		uint subtablesCount = reader.ReadUInt16BigEndian();
 		uint subtableOffset = uint.MaxValue;
 
-		for (uint i = 0; i < subtablesCount; i++) 
+		for (uint i = 0; i < subtablesCount; i++)
 		{
 			uint platformId = reader.ReadUInt16BigEndian();
 			uint platformSpecificId = reader.ReadUInt16BigEndian();
 			uint offset = reader.ReadUInt32BigEndian();
 
-			if (platformId == 0) 
+			if (platformId == 0)
 			{
 				if (platformSpecificId == 4)
 					subtableOffset = offset;
@@ -502,13 +502,13 @@ public sealed class Font
 
 		var map = new Dictionary<uint, int>();
 
-		switch (format) 
+		switch (format)
 		{
 			case 12:
 				reader.Position += 2 + 4 + 4;
 				uint groupCount = reader.ReadUInt32BigEndian();
 
-				for (uint i = 0; i < groupCount; i++) 
+				for (uint i = 0; i < groupCount; i++)
 				{
 					uint startCharCode = reader.ReadUInt32BigEndian();
 					uint endCharCode = reader.ReadUInt32BigEndian();
@@ -516,7 +516,7 @@ public sealed class Font
 
 					uint charCount = endCharCode - startCharCode + 1;
 
-					for (uint charCodeOffset = 0; charCodeOffset < charCount; charCodeOffset++) 
+					for (uint charCodeOffset = 0; charCodeOffset < charCount; charCodeOffset++)
 					{
 						uint charCode = startCharCode + charCodeOffset;
 						uint glyphIndex = startGlyphIndex + charCodeOffset;
@@ -532,7 +532,7 @@ public sealed class Font
 		return map;
 	}
 
-	private static Table FindTable(Span<Table> tables, Tag tag) 
+	private static Table FindTable(Span<Table> tables, Tag tag)
 	{
 		foreach (var x in tables)
 			if (x.Tag == tag)
@@ -541,7 +541,7 @@ public sealed class Font
 		throw new FormatException($"Cannot find '{tag}' table.");
 	}
 
-	public Font(string filename) 
+	public Font(string filename)
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
@@ -591,7 +591,7 @@ public sealed class Font
 			Table hmtx = FindTable(tables, Tag.hmtx);
 			reader.Position = (long)hmtx.Offset;
 
-			for (int i = 0; i < advanceWidthsCount; i++) 
+			for (int i = 0; i < advanceWidthsCount; i++)
 			{
 				advanceWidths[i] = reader.ReadUInt16BigEndian();
 				reader.Position += 2;
@@ -607,7 +607,7 @@ public sealed class Font
 			Table loca = FindTable(tables, Tag.loca);
 			Table glyf = FindTable(tables, Tag.glyf);
 
-			for (int i = 0; i < glyphLocations.Length; i++) 
+			for (int i = 0; i < glyphLocations.Length; i++)
 			{
 				reader.Position = (long)(loca.Offset + (i * glyphOffsetSize));
 				glyphLocations[i] = glyf.Offset + ((glyphOffsetSize == 2) ? (uint)reader.ReadUInt16BigEndian() * 2 : reader.ReadUInt32BigEndian());

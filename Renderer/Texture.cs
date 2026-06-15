@@ -30,7 +30,7 @@ public sealed class Texture : IDisposable, IInfoProvider
 	private const ImageUsage DEFAULT_USAGE = ImageUsage.TransferDst | ImageUsage.Sampled;
 	private const ImageAspect DEFAULT_ASPECT = ImageAspect.Color;
 
-	public void Dispose() 
+	public void Dispose()
 	{
 		Image.Dispose();
 		ImageView.Dispose();
@@ -38,8 +38,8 @@ public sealed class Texture : IDisposable, IInfoProvider
 		Sampler.Dispose();
 	}
 
-	#pragma warning disable CS8618
-	private Texture(Extent2D extent, Format format, ImageType type, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT) 
+#pragma warning disable CS8618
+	private Texture(Extent2D extent, Format format, ImageType type, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT)
 	{
 		this.Extent = extent;
 		this.Format = format;
@@ -48,7 +48,7 @@ public sealed class Texture : IDisposable, IInfoProvider
 		this.Aspect = aspect;
 	}
 
-	private Texture(int width, int height, Format format, ImageType type, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT) 
+	private Texture(int width, int height, Format format, ImageType type, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT)
 	{
 		if (width < 0 || height < 0)
 			throw new ArgumentOutOfRangeException();
@@ -59,7 +59,7 @@ public sealed class Texture : IDisposable, IInfoProvider
 		this.Usage = usage;
 		this.Aspect = aspect;
 	}
-	#pragma warning restore
+#pragma warning restore
 
 	public Texture(Vulkan.Program vk, string filename) : this(0, 0, Format.B8G8R8A8UNorm, ImageType.Generic2D)
 	{
@@ -69,7 +69,7 @@ public sealed class Texture : IDisposable, IInfoProvider
 		Array data;
 
 		var extension = Path.GetExtension(filename).ToLower();
-		switch (extension) 
+		switch (extension)
 		{
 			case ".png":
 				var png = PNG.FromFile(filename);

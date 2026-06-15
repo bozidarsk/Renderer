@@ -9,12 +9,12 @@ namespace Renderer;
 
 public class Camera : SceneObject, IDisposable
 {
-	public Matrix4x4 Projection { set; get; } = Matrix4x4.Perspective(fov: 60, ratio: 16f/9f, near: 0.1f, far: 10);
+	public Matrix4x4 Projection { set; get; } = Matrix4x4.Perspective(fov: 60, ratio: 16f / 9f, near: 0.1f, far: 10);
 	public RenderTexture? Texture { set; get; } = null;
 	public bool MaskUIObjects { set; get; } = false;
 
-	internal void Render(params SceneObject[] objects) => Render((objects is IEnumerable<SceneObject> x) ? x :  throw new ArgumentException());
-	internal void Render(IEnumerable<SceneObject> objects) 
+	internal void Render(params SceneObject[] objects) => Render((objects is IEnumerable<SceneObject> x) ? x : throw new ArgumentException());
+	internal void Render(IEnumerable<SceneObject> objects)
 	{
 		if (objects == null)
 			throw new ArgumentNullException();
@@ -40,6 +40,6 @@ public class Camera : SceneObject, IDisposable
 				x.SwitchToNormalMaterial();
 	}
 
-	public Camera(Scene scene) : base(scene) {}
-	public Camera(Scene scene, params Component[] components) : base(scene, components) {}
+	public Camera(Scene scene) : base(scene) { }
+	public Camera(Scene scene, params Component[] components) : base(scene, components) { }
 }

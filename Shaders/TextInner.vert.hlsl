@@ -2,17 +2,17 @@
 
 #include <common.hlsl>
 
-struct InnerVertex 
+struct InnerVertex
 {
 	float3 position;
 };
 
-struct InnerFragment 
+struct InnerFragment
 {
 	float4 position : SV_POSITION;
 };
 
-InnerFragment main(InnerVertex input) 
+InnerFragment main(InnerVertex input)
 {
 	InnerFragment output;
 

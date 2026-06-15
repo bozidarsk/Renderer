@@ -14,7 +14,7 @@ public abstract class Collider : Component
 
 	protected Matrix4x4 transform = Matrix4x4.Identity;
 
-	internal static bool ResolveCollision(SceneObject source, SceneObject target, out Collision collision) 
+	internal static bool ResolveCollision(SceneObject source, SceneObject target, out Collision collision)
 	{
 		var a = source.GetComponent<Collider>();
 		var b = target.GetComponent<Collider>();
@@ -30,7 +30,7 @@ public abstract class Collider : Component
 
 		bool hit;
 
-		if (false);
+		if (false) ;
 		else if ((a is SphereCollider) && (b is SphereCollider)) hit = CollisionResolver.Resolve((SphereCollider)a, (SphereCollider)b, out collision);
 		else if ((a is BoxCollider) && (b is SphereCollider)) hit = CollisionResolver.Resolve((BoxCollider)a, (SphereCollider)b, out collision);
 		else if ((a is SphereCollider) && (b is BoxCollider)) hit = CollisionResolver.Resolve((BoxCollider)b, (SphereCollider)a, out collision);
@@ -49,15 +49,15 @@ public abstract class Collider : Component
 
 public sealed class SphereCollider : Collider
 {
-	public Vector3 Center 
+	public Vector3 Center
 	{
 		set => (transform.tx, transform.ty, transform.tz) = (value.x, value.y, value.z);
 		get => transform.t.xyz;
 	}
 
-	public float Radius 
+	public float Radius
 	{
-		set 
+		set
 		{
 			var x = transform.x.xyz.Normalized * value;
 			var y = transform.y.xyz.Normalized * value;
@@ -79,15 +79,15 @@ public sealed class SphereCollider : Collider
 
 public sealed class BoxCollider : Collider
 {
-	public Vector3 Center 
+	public Vector3 Center
 	{
 		set => (transform.tx, transform.ty, transform.tz) = (value.x, value.y, value.z);
 		get => transform.t.xyz;
 	}
 
-	public Vector3 Size 
+	public Vector3 Size
 	{
-		set 
+		set
 		{
 			var x = transform.x.xyz.Normalized * value.x;
 			var y = transform.y.xyz.Normalized * value.y;
@@ -100,7 +100,7 @@ public sealed class BoxCollider : Collider
 		get => new(transform.x.xyz.Length * 2, transform.y.xyz.Length * 2, transform.z.xyz.Length * 2);
 	}
 
-	public Quaternion Rotation 
+	public Quaternion Rotation
 	{
 		set => transform *= Matrix4x4.Rotate(value);
 		get => throw new NotImplementedException();

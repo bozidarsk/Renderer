@@ -2,9 +2,9 @@ using System.IO;
 
 namespace Renderer;
 
-public static class StreamExtensions 
+public static class StreamExtensions
 {
-	public static byte[] ReadBytes(this Stream reader, int length) 
+	public static byte[] ReadBytes(this Stream reader, int length)
 	{
 		var bytes = new byte[length];
 		reader.ReadExactly(bytes, 0, length);
@@ -13,13 +13,13 @@ public static class StreamExtensions
 
 	public static void Write(this Stream writer, byte x) => writer.WriteByte(x);
 
-	public static void Write(this Stream writer, ushort x) 
+	public static void Write(this Stream writer, ushort x)
 	{
 		writer.WriteByte((byte)(x >> 0));
 		writer.WriteByte((byte)(x >> 8));
 	}
 
-	public static void Write(this Stream writer, uint x) 
+	public static void Write(this Stream writer, uint x)
 	{
 		writer.WriteByte((byte)(x >> 0));
 		writer.WriteByte((byte)(x >> 8));
@@ -27,7 +27,7 @@ public static class StreamExtensions
 		writer.WriteByte((byte)(x >> 24));
 	}
 
-	public static void Write(this Stream writer, ulong x) 
+	public static void Write(this Stream writer, ulong x)
 	{
 		writer.WriteByte((byte)(x >> 0));
 		writer.WriteByte((byte)(x >> 8));
@@ -39,13 +39,13 @@ public static class StreamExtensions
 		writer.WriteByte((byte)(x >> 56));
 	}
 
-	public static void WriteBigEndian(this Stream writer, ushort x) 
+	public static void WriteBigEndian(this Stream writer, ushort x)
 	{
 		writer.WriteByte((byte)(x >> 8));
 		writer.WriteByte((byte)(x >> 0));
 	}
 
-	public static void WriteBigEndian(this Stream writer, uint x) 
+	public static void WriteBigEndian(this Stream writer, uint x)
 	{
 		writer.WriteByte((byte)(x >> 24));
 		writer.WriteByte((byte)(x >> 16));
@@ -53,7 +53,7 @@ public static class StreamExtensions
 		writer.WriteByte((byte)(x >> 0));
 	}
 
-	public static void WriteBigEndian(this Stream writer, ulong x) 
+	public static void WriteBigEndian(this Stream writer, ulong x)
 	{
 		writer.WriteByte((byte)(x >> 56));
 		writer.WriteByte((byte)(x >> 48));
@@ -67,7 +67,7 @@ public static class StreamExtensions
 
 	public static byte ReadUInt8(this Stream stream) => (byte)stream.ReadByte();
 
-	public static ushort ReadUInt16(this Stream reader) 
+	public static ushort ReadUInt16(this Stream reader)
 	{
 		ushort x = 0;
 		x |= (ushort)((int)reader.ReadByte() << 0);
@@ -75,7 +75,7 @@ public static class StreamExtensions
 		return x;
 	}
 
-	public static uint ReadUInt32(this Stream reader) 
+	public static uint ReadUInt32(this Stream reader)
 	{
 		uint x = 0;
 		x |= (uint)reader.ReadByte() << 0;
@@ -85,7 +85,7 @@ public static class StreamExtensions
 		return x;
 	}
 
-	public static ulong ReadUInt64(this Stream reader) 
+	public static ulong ReadUInt64(this Stream reader)
 	{
 		ulong x = 0;
 		x |= (ulong)reader.ReadByte() << 0;
@@ -99,7 +99,7 @@ public static class StreamExtensions
 		return x;
 	}
 
-	public static ushort ReadUInt16BigEndian(this Stream reader) 
+	public static ushort ReadUInt16BigEndian(this Stream reader)
 	{
 		ushort x = 0;
 		x |= (ushort)((int)reader.ReadByte() << 8);
@@ -107,7 +107,7 @@ public static class StreamExtensions
 		return x;
 	}
 
-	public static uint ReadUInt32BigEndian(this Stream reader) 
+	public static uint ReadUInt32BigEndian(this Stream reader)
 	{
 		uint x = 0;
 		x |= (uint)reader.ReadByte() << 24;
@@ -117,7 +117,7 @@ public static class StreamExtensions
 		return x;
 	}
 
-	public static ulong ReadUInt64BigEndian(this Stream reader) 
+	public static ulong ReadUInt64BigEndian(this Stream reader)
 	{
 		ulong x = 0;
 		x |= (ulong)reader.ReadByte() << 56;
