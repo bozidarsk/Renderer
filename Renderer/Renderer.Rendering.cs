@@ -33,7 +33,6 @@ public partial class Renderer
 		else (info, code) = shaderCode[path];
 
 		using ShaderModuleCreateInfo shaderModuleCreateInfo = new(
-			type: StructureType.ShaderModuleCreateInfo,
 			next: default,
 			flags: default,
 			code: code!
@@ -54,7 +53,6 @@ public partial class Renderer
 				obj.Shaders[i] = info;
 
 				return new PipelineShaderStageCreateInfo(
-					type: StructureType.PipelineShaderStageCreateInfo,
 					next: default,
 					flags: default,
 					stage: (ShaderStage)info.Stage!,
@@ -66,7 +64,6 @@ public partial class Renderer
 		).ToArray();
 
 		using var vertexInput = new PipelineVertexInputStateCreateInfo(
-			type: StructureType.PipelineVertexInputStateCreateInfo,
 			next: default,
 			flags: default,
 			vertexBindingDescriptions: obj.BindingDescriptions,
@@ -74,7 +71,6 @@ public partial class Renderer
 		);
 
 		var inputAssembly = new PipelineInputAssemblyStateCreateInfo(
-			type: StructureType.PipelineInputAssemblyStateCreateInfo,
 			next: default,
 			flags: default,
 			topology: PrimitiveTopology.TriangleList,
@@ -82,7 +78,6 @@ public partial class Renderer
 		);
 
 		using var viewport = new PipelineViewportStateCreateInfo(
-			type: StructureType.PipelineViewportStateCreateInfo,
 			next: default,
 			flags: default,
 			viewports:
@@ -106,7 +101,6 @@ public partial class Renderer
 		);
 
 		var rasterization = new PipelineRasterizationStateCreateInfo(
-			type: StructureType.PipelineRasterizationStateCreateInfo,
 			next: default,
 			flags: default,
 			depthClampEnable: false,
@@ -122,7 +116,6 @@ public partial class Renderer
 		);
 
 		using var multisample = new PipelineMultisampleStateCreateInfo(
-			type: StructureType.PipelineMultisampleStateCreateInfo,
 			next: default,
 			flags: default,
 			rasterizationSamples: SampleCount.Bit1,
@@ -134,7 +127,6 @@ public partial class Renderer
 		);
 
 		var depthStencil = new PipelineDepthStencilStateCreateInfo(
-			type: StructureType.PipelineDepthStencilStateCreateInfo,
 			next: default,
 			flags: default,
 			depthTestEnable: true,
@@ -153,7 +145,6 @@ public partial class Renderer
 		var blendOp = obj.BlendOp ?? BlendOp.Add;
 
 		using var colorBlend = new PipelineColorBlendStateCreateInfo(
-			type: StructureType.PipelineColorBlendStateCreateInfo,
 			next: default,
 			flags: default,
 			logicOpEnable: false,
@@ -175,14 +166,12 @@ public partial class Renderer
 		);
 
 		using var dynamicState = new PipelineDynamicStateCreateInfo(
-			type: StructureType.PipelineDynamicStateCreateInfo,
 			next: default,
 			flags: default,
 			dynamicStates: null
 		);
 
 		using var graphicsPipelineCreateInfo = new GraphicsPipelineCreateInfo(
-			type: StructureType.GraphicsPipelineCreateInfo,
 			next: default,
 			flags: default,
 			stages: stages,
@@ -222,7 +211,6 @@ public partial class Renderer
 	)
 	{
 		using var renderPassInfo = new RenderPassBeginInfo(
-			type: StructureType.RenderPassBeginInfo,
 			next: default,
 			renderPass: renderPass,
 			framebuffer: framebuffer,
@@ -241,7 +229,6 @@ public partial class Renderer
 		);
 
 		using var globalDescriptorWrite = new WriteDescriptorSet(
-			type: StructureType.WriteDescriptorSet,
 			next: default,
 			destinationSet: default,
 			destinationBinding: 0,
@@ -286,7 +273,6 @@ public partial class Renderer
 			if (hasUniforms)
 			{
 				using var objectDescriptorWrite = new WriteDescriptorSet(
-					type: StructureType.WriteDescriptorSet,
 					next: default,
 					destinationSet: default,
 					destinationBinding: 1,
@@ -313,7 +299,6 @@ public partial class Renderer
 			if (textures.Length > 0)
 			{
 				using var texturesDescriptorWrite = new WriteDescriptorSet(
-					type: StructureType.WriteDescriptorSet,
 					next: default,
 					destinationSet: default,
 					destinationBinding: 2,
@@ -353,7 +338,6 @@ public partial class Renderer
 		var cameraPosition = view.t.xyz;
 
 		using var beginInfo = new CommandBufferBeginInfo(
-			type: StructureType.CommandBufferBeginInfo,
 			next: default,
 			usage: default,
 			inheritanceInfo: null
@@ -370,7 +354,6 @@ public partial class Renderer
 		cmd.End();
 
 		using var submitInfo = new SubmitInfo(
-			type: StructureType.SubmitInfo,
 			next: default,
 			waitSemaphores: (texture == null) ? [imageAvailableSemaphore[currentFrame]] : null,
 			waitDstStageMasks: (texture == null) ? [PipelineStage.ColorAttachmentOutput] : null,
@@ -383,7 +366,6 @@ public partial class Renderer
 		if (texture == null)
 		{
 			using var presentInfo = new PresentInfo(
-				type: StructureType.PresentInfo,
 				next: default,
 				waitSemaphores: [renderFinishedSemaphore[imageIndex]],
 				swapchains: [swapchain],

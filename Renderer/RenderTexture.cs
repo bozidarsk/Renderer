@@ -104,7 +104,6 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 		);
 
 		using var renderPassCreateInfo = new RenderPassCreateInfo(
-			type: StructureType.RenderPassCreateInfo,
 			next: default,
 			flags: default,
 			attachments: [colorAttachment, depthAttachment],
@@ -115,7 +114,6 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 		this.RenderPass = renderPassCreateInfo.CreateRenderPass(renderer.Device, renderer.Allocator);
 
 		using var framebufferCreateInfo = new FramebufferCreateInfo(
-			type: StructureType.FramebufferCreateInfo,
 			next: default,
 			flags: default,
 			renderPass: this.RenderPass,

@@ -101,7 +101,6 @@ public partial class Renderer : IDisposable
 	protected virtual void InitializeDebugMessages()
 	{
 		var debugCreateInfo = new DebugUtilsMessengerCreateInfo(
-			type: StructureType.DebugUtilsMessengerCreateInfoExt,
 			next: default,
 			flags: default,
 			messageSeverity: DebugUtilsMessageSeverity.Info | DebugUtilsMessageSeverity.Verbose | DebugUtilsMessageSeverity.Warning | DebugUtilsMessageSeverity.Error,
@@ -116,7 +115,6 @@ public partial class Renderer : IDisposable
 	protected virtual void InitializeInstance()
 	{
 		using var appInfo = new ApplicationInfo(
-			type: StructureType.ApplicationInfo,
 			next: default,
 			applicationName: "Vulkan Test",
 			applicationVersion: MakeVersion(1, 0, 0),
@@ -131,7 +129,6 @@ public partial class Renderer : IDisposable
 		extensions.Add("VK_KHR_get_physical_device_properties2");
 
 		using var instanceCreateInfo = new InstanceCreateInfo(
-			type: StructureType.InstanceCreateInfo,
 			next: default,
 			flags: InstanceCreateFlags.NumeratePortability,
 			applicationInfo: appInfo,
@@ -152,7 +149,6 @@ public partial class Renderer : IDisposable
 		presentationQueueFamilyIndex = find(physicalDevice.QueueFamilyProperties, (i, x) => instance.Surface.IsSupported(physicalDevice, (uint)i));
 
 		using var graphicsDeviceQueueCreateInfo = new DeviceQueueCreateInfo(
-			type: StructureType.DeviceQueueCreateInfo,
 			next: default,
 			flags: default,
 			queueFamilyIndex: graphicsQueueFamilyIndex,
@@ -160,7 +156,6 @@ public partial class Renderer : IDisposable
 		);
 
 		using var presentationDeviceQueueCreateInfo = new DeviceQueueCreateInfo(
-			type: StructureType.DeviceQueueCreateInfo,
 			next: default,
 			flags: default,
 			queueFamilyIndex: presentationQueueFamilyIndex,
@@ -168,25 +163,21 @@ public partial class Renderer : IDisposable
 		);
 
 		var extendedDynamicStateFeatures = new PhysicalDeviceExtendedDynamicStateFeatures(
-			type: StructureType.PhysicalDeviceExtendedDynamicStateFeatures,
 			next: default,
 			extendedDynamicState: true
 		);
 
 		var indexTypeUInt8Features = new PhysicalDeviceIndexTypeUInt8Features(
-			type: StructureType.PhysicalDeviceIndexTypeUInt8Features,
 			next: (nint)(&extendedDynamicStateFeatures),
 			indexTypeUInt8: true
 		);
 
 		var vertexInputDynamicStateFeatures = new PhysicalDeviceVertexInputDynamicStateFeatures(
-			type: StructureType.PhysicalDeviceVertexInputDynamicStateFeaturesExt,
 			next: (nint)(&indexTypeUInt8Features),
 			vertexInputDynamicState: true
 		);
 
 		using var deviceCreateInfo = new DeviceCreateInfo(
-			type: StructureType.DeviceCreateInfo,
 			next: (nint)(&indexTypeUInt8Features)/*(nint)(&vertexInputDynamicStateFeatures)*/,
 			flags: default,
 			queueCreateInfos: (graphicsQueueFamilyIndex != presentationQueueFamilyIndex) ? [graphicsDeviceQueueCreateInfo, presentationDeviceQueueCreateInfo] : [graphicsDeviceQueueCreateInfo],
@@ -231,7 +222,6 @@ public partial class Renderer : IDisposable
 			imageCount = swapchainProperties.Capabilities.MaxImageCount;
 
 		using var swapchainCreateInfo = new SwapchainCreateInfo(
-			type: StructureType.SwapchainCreateInfo,
 			next: default,
 			flags: default,
 			surface: instance.Surface,
@@ -290,7 +280,6 @@ public partial class Renderer : IDisposable
 		);
 
 		using var descriptorSetLayoutCreateInfo = new DescriptorSetLayoutCreateInfo(
-			type: StructureType.DescriptorSetLayoutCreateInfo,
 			next: default,
 			flags: DescriptorSetLayoutCreateFlags.PushDescriptor,
 			bindings: [globalUniformsBinding, objectUniformsBinding, samplersBinding]
@@ -305,7 +294,6 @@ public partial class Renderer : IDisposable
 	protected virtual void InitializeDescriptorPool()
 	{
 		using var descriptorPoolCreateInfo = new DescriptorPoolCreateInfo(
-			type: StructureType.DescriptorPoolCreateInfo,
 			next: default,
 			flags: DescriptorPoolCreateFlags.FreeDescriptorSet,
 			maxSets: maxFrames,
@@ -318,7 +306,6 @@ public partial class Renderer : IDisposable
 	protected virtual void InitialzieDescriptorSets()
 	{
 		using var descriptorSetAllocateInfo = new DescriptorSetAllocateInfo(
-			type: StructureType.DescriptorSetAllocateInfo,
 			next: default,
 			descriptorPool: descriptorPool,
 			setLayouts: descriptorSetLayouts
@@ -349,7 +336,6 @@ public partial class Renderer : IDisposable
 	protected virtual void InitializePipelineLayout()
 	{
 		using var pipelineLayoutCreateInfo = new PipelineLayoutCreateInfo(
-			type: StructureType.PipelineLayoutCreateInfo,
 			next: default,
 			flags: default,
 			setLayouts: [descriptorSetLayouts[0]],
@@ -368,7 +354,6 @@ public partial class Renderer : IDisposable
 		);
 
 		using var imageCreateInfo = new ImageCreateInfo(
-			type: StructureType.ImageCreateInfo,
 			next: default,
 			flags: default,
 			imageType: ImageType.Generic2D,
@@ -388,7 +373,6 @@ public partial class Renderer : IDisposable
 
 		var memoryRequirements = depthImage.MemoryRequirements;
 		var allocateInfo = new MemoryAllocateInfo(
-			type: StructureType.MemoryAllocateInfo,
 			next: default,
 			allocationSize: memoryRequirements.Size,
 			memoryTypeIndex: FindMemoryType(memoryRequirements.MemoryType, MemoryProperty.DeviceLocal)
@@ -398,7 +382,6 @@ public partial class Renderer : IDisposable
 		depthImageMemory.Bind(depthImage);
 
 		var imageViewCreateInfo = new ImageViewCreateInfo(
-			type: StructureType.ImageViewCreateInfo,
 			next: default,
 			flags: default,
 			image: depthImage,
@@ -474,7 +457,6 @@ public partial class Renderer : IDisposable
 		);
 
 		using var renderPassCreateInfo = new RenderPassCreateInfo(
-			type: StructureType.RenderPassCreateInfo,
 			next: default,
 			flags: default,
 			attachments: [colorAttachment, depthAttachment],
@@ -492,7 +474,6 @@ public partial class Renderer : IDisposable
 		for (int i = 0; i < framebuffers.Length; i++)
 		{
 			using var framebufferCreateInfo = new FramebufferCreateInfo(
-				type: StructureType.FramebufferCreateInfo,
 				next: default,
 				flags: default,
 				renderPass: renderPass,
@@ -509,7 +490,6 @@ public partial class Renderer : IDisposable
 	protected virtual void InitializeCommandPool()
 	{
 		var commandPoolCreateInfo = new CommandPoolCreateInfo(
-			type: StructureType.CommandPoolCreateInfo,
 			next: default,
 			flags: CommandPoolCreateFlags.ResetCommandBuffer,
 			queueFamilyIndex: graphicsQueueFamilyIndex
@@ -521,7 +501,6 @@ public partial class Renderer : IDisposable
 	protected virtual void InitializeCommandBuffers()
 	{
 		var commandBufferAllocateInfo = new CommandBufferAllocateInfo(
-			type: StructureType.CommandBufferAllocateInfo,
 			next: default,
 			commandPool: commandPool,
 			level: CommandBufferLevel.Primary,
@@ -534,13 +513,11 @@ public partial class Renderer : IDisposable
 	protected virtual void InitializeSyncObjects()
 	{
 		var semaphoreCreateInfo = new SemaphoreCreateInfo(
-			type: StructureType.SemaphoreCreateInfo,
 			next: default,
 			flags: default
 		);
 
 		var fenceCreateInfo = new FenceCreateInfo(
-			type: StructureType.FenceCreateInfo,
 			next: default,
 			flags: FenceCreateFlags.Signaled
 		);

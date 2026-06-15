@@ -15,7 +15,6 @@ public partial class Renderer
 	public void CreateBuffer(DeviceSize size, BufferUsage usage, out Buffer buffer)
 	{
 		using var createInfo = new BufferCreateInfo(
-			type: StructureType.BufferCreateInfo,
 			next: default,
 			flags: default,
 			size: size,
@@ -32,7 +31,6 @@ public partial class Renderer
 		var memoryRequirements = buffer.MemoryRequirements;
 
 		var allocateInfo = new MemoryAllocateInfo(
-			type: StructureType.MemoryAllocateInfo,
 			next: default,
 			allocationSize: memoryRequirements.Size,
 			memoryTypeIndex: FindMemoryType(memoryRequirements.MemoryType, properties)
@@ -216,7 +214,6 @@ public partial class Renderer
 	public void CreateImage(int width, int height, ImageType type, ImageUsage usage, Format format, out Image image)
 	{
 		using var createInfo = new ImageCreateInfo(
-			type: StructureType.ImageCreateInfo,
 			next: default,
 			flags: default,
 			imageType: type,
@@ -240,7 +237,6 @@ public partial class Renderer
 		var mem = image.MemoryRequirements;
 
 		var allocateInfo = new MemoryAllocateInfo(
-			type: StructureType.MemoryAllocateInfo,
 			next: default,
 			allocationSize: mem.Size,
 			memoryTypeIndex: FindMemoryType(mem.MemoryType, MemoryProperty.DeviceLocal)
@@ -253,7 +249,6 @@ public partial class Renderer
 	public void CreateImageView(Image image, Format format, ImageAspect aspect, out ImageView imageView)
 	{
 		var createInfo = new ImageViewCreateInfo(
-			type: StructureType.ImageViewCreateInfo,
 			next: default,
 			flags: default,
 			image: image,
@@ -275,7 +270,6 @@ public partial class Renderer
 	public void CreateSampler(out Sampler sampler)
 	{
 		var createInfo = new SamplerCreateInfo(
-			type: StructureType.SamplerCreateInfo,
 			next: default,
 			flags: default,
 			magFilter: Filter.Linear,
@@ -318,7 +312,6 @@ public partial class Renderer
 			cmd = BeginSingleTimeCommand();
 
 		var barrier = new ImageMemoryBarrier(
-			type: StructureType.ImageMemoryBarrier,
 			next: default,
 			srcAccess: sourceAccess,
 			dstAccess: destinationAccess,
@@ -443,7 +436,6 @@ public partial class Renderer
 	public CommandBuffer BeginSingleTimeCommand()
 	{
 		var allocateInfo = new CommandBufferAllocateInfo(
-			type: StructureType.CommandBufferAllocateInfo,
 			next: default,
 			commandPool: commandPool,
 			level: CommandBufferLevel.Primary,
@@ -453,7 +445,6 @@ public partial class Renderer
 		var cmd = allocateInfo.CreateCommandBuffers(device, commandPool).Single();
 
 		using var beginInfo = new CommandBufferBeginInfo(
-			type: StructureType.CommandBufferBeginInfo,
 			next: default,
 			usage: CommandBufferUsage.OneTimeSubmit,
 			inheritanceInfo: null
@@ -468,7 +459,6 @@ public partial class Renderer
 		cmd.End();
 
 		using var submitInfo = new SubmitInfo(
-			type: StructureType.SubmitInfo,
 			next: default,
 			waitSemaphores: null,
 			waitDstStageMasks: null,
