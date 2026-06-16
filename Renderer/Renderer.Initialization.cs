@@ -339,7 +339,7 @@ public partial class Renderer : IDisposable
 			next: default,
 			flags: default,
 			setLayouts: [descriptorSetLayouts[0]],
-			pushConstantRanges: [new(stage: ShaderStage.All, offset: 0, size: 128)]
+			pushConstantRanges: [new(stage: ShaderStage.All, offset: 0, size: physicalDevice.Properties.Limits.MaxPushConstantsSize)]
 		);
 
 		pipelineLayout = pipelineLayoutCreateInfo.CreatePipelineLayout(device, allocator);
