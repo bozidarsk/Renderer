@@ -48,8 +48,9 @@ public partial class Renderer : IDisposable
 	protected DeviceMemory depthImageMemory;
 
 	public AllocationCallbacks? Allocator => allocator;
-	public Device Device => (device != null) ? device : throw new NullReferenceException("Device has not been initialized.");
-	public RenderPass RenderPass => (renderPass != null) ? renderPass : throw new NullReferenceException("RenderPass has not been initialized.");
+	public Instance Instance => instance ?? throw new NullReferenceException("Instance has not been initialized.");
+	public PhysicalDevice PhysicalDevice => physicalDevice ?? throw new NullReferenceException("PhysicalDevice has not been initialized.");
+	public Device Device => device ?? throw new NullReferenceException("Device has not been initialized.");
 
 	public static uint MakeVersion(int major, int minor, int patch) => ((((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
 	public static uint MakeApiVersion(int variant, int major, int minor, int patch) => ((((uint)variant) << 29) | (((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
