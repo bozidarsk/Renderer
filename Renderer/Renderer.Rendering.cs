@@ -348,7 +348,7 @@ public partial class Renderer
 		if (texture is RenderTextureInfo rt)
 		{
 			StartRenderPass(rt.RenderPass, rt.Framebuffer, rt.Extent, cameraPosition, objects);
-			TransitionImageLayout(rt.Image, ImageLayout.PresentSrc, ImageLayout.ShaderReadOnlyOptimal, cmd);
+			TransitionImageLayout(rt.Image, ImageLayout.PresentSrc, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);
 		}
 		else StartRenderPass(renderPass, framebuffers[imageIndex], extent, cameraPosition, objects);
 		cmd.End();

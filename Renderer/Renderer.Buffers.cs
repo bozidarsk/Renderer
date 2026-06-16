@@ -303,6 +303,7 @@ public partial class Renderer
 		Access destinationAccess,
 		PipelineStage destinationStage,
 
+		ImageAspect aspect = ImageAspect.Color,
 		CommandBuffer? cmd = null
 	)
 	{
@@ -321,7 +322,7 @@ public partial class Renderer
 			dstQueueFamilyIndex: ~0u,
 			image: image,
 			subresourceRange: new(
-				aspect: ImageAspect.Color,
+				aspect: aspect,
 				baseMipLevel: 0,
 				levelCount: 1,
 				baseArrayLayer: 0,
@@ -342,7 +343,7 @@ public partial class Renderer
 			EndSingleTimeCommand(cmd);
 	}
 
-	public void TransitionImageLayout(Image image, ImageLayout from, ImageLayout to, CommandBuffer? cmd = null)
+	public void TransitionImageLayout(Image image, ImageLayout from, ImageLayout to, ImageAspect aspect = ImageAspect.Color, CommandBuffer? cmd = null)
 	{
 		Access sourceAccess, destinationAccess;
 		PipelineStage sourceStage, destinationStage;
@@ -430,7 +431,7 @@ public partial class Renderer
 		else
 			throw new InvalidOperationException($"Unsupported layer transition from '{from}' to '{to}'.");
 
-		TransitionImageLayout(image, from, sourceAccess, sourceStage, to, destinationAccess, destinationStage, cmd);
+		TransitionImageLayout(image, from, sourceAccess, sourceStage, to, destinationAccess, destinationStage, aspect, cmd);
 	}
 
 	public CommandBuffer BeginSingleTimeCommand()

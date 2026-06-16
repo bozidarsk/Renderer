@@ -79,7 +79,7 @@ public class Canvas : SceneObject
 	private uint SampleId(int x, int y)
 	{
 		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
-		this.Scene.Renderer.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, cmd);
+		this.Scene.Renderer.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, ImageAspect.Color, cmd);
 		cmd.CopyImageToBuffer(maskCamera.Texture!.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
 				bufferOffset: 0,
 				bufferRowLength: 0,
@@ -94,7 +94,7 @@ public class Canvas : SceneObject
 				imageExtent: new(width: 1, height: 1, depth: 1)
 			)
 		);
-		this.Scene.Renderer.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.TransferSrcOptimal, ImageLayout.ShaderReadOnlyOptimal, cmd);
+		this.Scene.Renderer.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.TransferSrcOptimal, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);
 		this.Scene.Renderer.EndSingleTimeCommand(cmd);
 
 		uint id;
