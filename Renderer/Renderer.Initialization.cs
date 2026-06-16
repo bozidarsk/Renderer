@@ -146,7 +146,7 @@ public partial class Renderer : IDisposable
 	protected virtual unsafe void InitializeDevice()
 	{
 		graphicsQueueFamilyIndex = find(physicalDevice.QueueFamilyProperties, static (i, x) => x.QueueFlags.HasFlag(QueueFlags.Graphics));
-		presentationQueueFamilyIndex = find(physicalDevice.QueueFamilyProperties, (i, x) => instance.Surface.IsSupported(physicalDevice, (uint)i));
+		presentationQueueFamilyIndex = find(physicalDevice.QueueFamilyProperties, (i, x) => instance.Surface!.IsSupported(physicalDevice, (uint)i));
 
 		using var graphicsDeviceQueueCreateInfo = new DeviceQueueCreateInfo(
 			next: default,
@@ -209,7 +209,7 @@ public partial class Renderer : IDisposable
 	{
 		(int framebufferWidth, int framebufferHeight) = window.FramebufferSize;
 
-		SwapchainProperties swapchainProperties = new(physicalDevice, instance.Surface);
+		SwapchainProperties swapchainProperties = new(physicalDevice, instance.Surface!);
 		SurfaceFormat surfaceFormat = swapchainProperties.GetSurfaceFormat(Format.R8G8B8A8SRGB, ColorSpace.SRGBNonlinear);
 		PresentMode presentMode = swapchainProperties.GetPresentMode(PresentMode.Mailbox);
 		uint imageCount = swapchainProperties.Capabilities.MinImageCount + 1;
@@ -224,7 +224,7 @@ public partial class Renderer : IDisposable
 		using var swapchainCreateInfo = new SwapchainCreateInfo(
 			next: default,
 			flags: default,
-			surface: instance.Surface,
+			surface: instance.Surface!,
 			minImageCount: imageCount,
 			imageFormat: swapchainImageFormat,
 			imageColorSpace: surfaceFormat.ColorSpace,
