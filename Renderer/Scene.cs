@@ -15,7 +15,7 @@ public class Scene : IDisposable
 
 	private readonly List<SceneObject> objects = new();
 
-	public event DebugEventHandler? OnDebugMessage;
+	public event EventHandler<DebugUtilsMessengerEventArgs>? DebugUtilsMessageReceived;
 
 	public void Run()
 	{
@@ -59,9 +59,8 @@ public class Scene : IDisposable
 		GLFW.Program.Terminate();
 	}
 
-	public Scene() : this(null) { }
-	public Scene(int width, int height) : this(null, width, height) { }
-	public Scene(DebugEventHandler? onDebugMessage, int width = 1280, int height = 720)
+	public Scene() : this(1280, 720) { }
+	public Scene(int width, int height)
 	{
 		if (!GLFW.Program.Initialize())
 			throw new InvalidOperationException("GLFW failed to initialize.");
@@ -71,8 +70,7 @@ public class Scene : IDisposable
 		this.Window = new(width, height);
 		this.Renderer = new(this.Window);
 
-		this.OnDebugMessage += onDebugMessage;
-		this.Renderer.OnDebugMessage += (s, e) => this.OnDebugMessage?.Invoke(s, e);
+		this.Renderer.DebugUtilsMessageReceived += (s, e) => this.DebugUtilsMessageReceived?.Invoke(s, e);
 
 		this.Renderer.Initialize();
 	}

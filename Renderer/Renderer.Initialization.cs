@@ -55,8 +55,8 @@ public partial class Renderer : IDisposable
 	public static uint MakeVersion(int major, int minor, int patch) => ((((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
 	public static uint MakeApiVersion(int variant, int major, int minor, int patch) => ((((uint)variant) << 29) | (((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
 
-	private readonly DebugUtilsMessengerCallback debugMessageCallback;
-	public event DebugEventHandler? OnDebugMessage;
+	private readonly DebugUtilsMessengerCallback debugUtilsMessengerCallback;
+	public event EventHandler<DebugUtilsMessengerEventArgs>? DebugUtilsMessageReceived;
 
 	public uint FindMemoryType(uint typeFilter, MemoryProperty properties)
 	{
@@ -99,20 +99,6 @@ public partial class Renderer : IDisposable
 		throw new NullReferenceException("Failed to find supported format.");
 	}
 
-	protected virtual void InitializeDebugMessages()
-	{
-		var debugCreateInfo = new DebugUtilsMessengerCreateInfo(
-			next: default,
-			flags: default,
-			messageSeverity: DebugUtilsMessageSeverity.Info | DebugUtilsMessageSeverity.Verbose | DebugUtilsMessageSeverity.Warning | DebugUtilsMessageSeverity.Error,
-			messageType: DebugUtilsMessageType.General | DebugUtilsMessageType.Validation | DebugUtilsMessageType.Performance,
-			userCallback: debugMessageCallback,
-			userData: default
-		);
-
-		debugUtilsMessenger = debugCreateInfo.CreateDebugUtilsMessanger(instance, allocator);
-	}
-
 	protected virtual void InitializeInstance()
 	{
 		using var appInfo = new ApplicationInfo(
@@ -138,6 +124,20 @@ public partial class Renderer : IDisposable
 		);
 
 		instance = instanceCreateInfo.CreateInstance(allocator);
+	}
+
+	protected virtual void InitializeDebugUtilsMessenger()
+	{
+		var debugUtilsMessengerCreateInfo = new DebugUtilsMessengerCreateInfo(
+			next: default,
+			flags: default,
+			messageSeverity: DebugUtilsMessageSeverity.Info | DebugUtilsMessageSeverity.Verbose | DebugUtilsMessageSeverity.Warning | DebugUtilsMessageSeverity.Error,
+			messageType: DebugUtilsMessageType.General | DebugUtilsMessageType.Validation | DebugUtilsMessageType.Performance,
+			userCallback: debugUtilsMessengerCallback,
+			userData: default
+		);
+
+		debugUtilsMessenger = debugUtilsMessengerCreateInfo.CreateDebugUtilsMessanger(instance, allocator);
 	}
 
 	protected virtual void InitializePhysicalDevice() =>
@@ -564,7 +564,7 @@ public partial class Renderer : IDisposable
 	public virtual void Initialize()
 	{
 		InitializeInstance();
-		InitializeDebugMessages();
+		InitializeDebugUtilsMessenger();
 
 		instance.CreateSurface(window);
 
@@ -655,9 +655,9 @@ public partial class Renderer : IDisposable
 		this.window = window;
 		this.allocator = allocator;
 
-		this.debugMessageCallback = (DebugUtilsMessageSeverity severity, DebugUtilsMessageType type, in DebugUtilsMessengerCallbackData data, nint userData) =>
+		this.debugUtilsMessengerCallback = (DebugUtilsMessageSeverity severity, DebugUtilsMessageType type, in DebugUtilsMessengerCallbackData data, nint userData) =>
 		{
-			OnDebugMessage?.Invoke(this, new(severity, type, data.Message, data.MessageIdName, data.MessageIdNumber, data.QueueLabels, data.CommandBufferLabels, data.Objects, userData));
+			DebugUtilsMessageReceived?.Invoke(this, new(severity, type, data.Message, data.MessageIdName, data.MessageIdNumber, data.QueueLabels, data.CommandBufferLabels, data.Objects, userData));
 			return false;
 		};
 	}
