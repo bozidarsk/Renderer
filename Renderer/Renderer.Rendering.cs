@@ -258,7 +258,6 @@ public partial class Renderer
 		RenderPass renderPass,
 		Framebuffer framebuffer,
 		Extent2D extent,
-		Vector3 cameraPosition,
 		IEnumerable<SceneObject> objects
 	)
 	{
@@ -320,12 +319,11 @@ public partial class Renderer
 			cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, globalDescriptorWrite);
 
 			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 0, size: 64, ref Unsafe.As<Matrix4x4, byte>(ref model));
-			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 64, size: 12, ref Unsafe.As<Vector3, byte>(ref cameraPosition));
 
 			if (obj is UIObject uiObj)
 			{
 				uint id = uiObj.Id;
-				cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 76, size: 4, ref Unsafe.As<uint, byte>(ref id));
+				cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 64, size: 4, ref Unsafe.As<uint, byte>(ref id));
 			}
 
 			var uniformsSize = CreateUniformsBuffer(material.Uniforms, out Buffer? uniformsBuffer, out DeviceMemory? uniformsMemory);
@@ -391,12 +389,11 @@ public partial class Renderer
 		while (toBeDisposed[currentFrame].Count > 0)
 			toBeDisposed[currentFrame].Dequeue().Dispose();
 
-		Marshal.StructureToPtr(new GlobalUniforms(view.Inverse, projection), globalUniformsLocations[currentFrame], false);
+		Marshal.StructureToPtr(new GlobalUniforms(view.Inverse, projection, view.t.xyz), globalUniformsLocations[currentFrame], false);
 
 		uint imageIndex = (texture == null) ? swapchain.GetNextImage(imageAvailableSemaphore[currentFrame]) : ~0u;
 
 		var cmd = commandBuffers[currentFrame];
-		var cameraPosition = view.t.xyz;
 
 		using var beginInfo = new CommandBufferBeginInfo(
 			next: default,
@@ -408,10 +405,10 @@ public partial class Renderer
 		cmd.Begin(beginInfo);
 		if (texture is RenderTexture rt)
 		{
-			StartRenderPass(rt.RenderPass, rt.Framebuffer, rt.Extent, cameraPosition, objects);
+			StartRenderPass(rt.RenderPass, rt.Framebuffer, rt.Extent, objects);
 			TransitionImageLayout(rt.Image, ImageLayout.PresentSrc, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);
 		}
-		else StartRenderPass(renderPass, framebuffers[imageIndex], extent, cameraPosition, objects);
+		else StartRenderPass(renderPass, framebuffers[imageIndex], extent, objects);
 		cmd.End();
 
 		using var submitInfo = new SubmitInfo(
