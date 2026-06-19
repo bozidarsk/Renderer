@@ -1,6 +1,6 @@
 #pragma stage fragment
 #pragma cull none
-#pragma blend disable
+#pragma blend disabled
 
 #include <common.hlsl>
 

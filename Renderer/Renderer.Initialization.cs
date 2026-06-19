@@ -107,7 +107,7 @@ public partial class Renderer : IDisposable
 			applicationVersion: MakeVersion(1, 0, 0),
 			engineName: "No Engine",
 			engineVersion: MakeVersion(1, 0, 0),
-			apiVersion: MakeApiVersion(0, 1, 0, 0)
+			apiVersion: MakeApiVersion(0, 1, 4, 0)
 		);
 
 		var extensions = new List<string>(GLFW.Program.RequiredInstanceExtensions!);
@@ -178,12 +178,55 @@ public partial class Renderer : IDisposable
 			vertexInputDynamicState: true
 		);
 
+		var extendedDynamicState3Features = new PhysicalDeviceExtendedDynamicState3Features(
+			next: (nint)(&vertexInputDynamicStateFeatures),
+			tessellationDomainOrigin: false,
+			depthClampEnable: false,
+			polygonMode: false,
+			rasterizationSamples: false,
+			sampleMask: false,
+			alphaToCoverageEnable: false,
+			alphaToOneEnable: false,
+			logicOpEnable: false,
+			colorBlendEnable: true,
+			colorBlendEquation: true,
+			colorWriteMask: false,
+			rasterizationStream: false,
+			conservativeRasterizationMode: false,
+			extraPrimitiveOverestimationSize: false,
+			depthClipEnable: false,
+			sampleLocationsEnable: false,
+			colorBlendAdvanced: false,
+			provokingVertexMode: false,
+			lineRasterizationMode: false,
+			lineStippleEnable: false,
+			depthClipNegativeOneToOne: false,
+			viewportWScalingEnable: false,
+			viewportSwizzle: false,
+			coverageToColorEnable: false,
+			coverageToColorLocation: false,
+			coverageModulationMode: false,
+			coverageModulationTableEnable: false,
+			coverageModulationTable: false,
+			coverageReductionMode: false,
+			representativeFragmentTestEnable: false,
+			shadingRateImageEnable: false
+		);
+
 		using var deviceCreateInfo = new DeviceCreateInfo(
-			next: (nint)(&indexTypeUInt8Features)/*(nint)(&vertexInputDynamicStateFeatures)*/,
+			next: (nint)(&extendedDynamicState3Features),
 			flags: default,
 			queueCreateInfos: (graphicsQueueFamilyIndex != presentationQueueFamilyIndex) ? [graphicsDeviceQueueCreateInfo, presentationDeviceQueueCreateInfo] : [graphicsDeviceQueueCreateInfo],
 			enabledLayerNames: null,
-			enabledExtensionNames: ["VK_KHR_swapchain"/*, "VK_EXT_vertex_input_dynamic_state"*/, "VK_EXT_index_type_uint8", "VK_EXT_extended_dynamic_state", "VK_KHR_push_descriptor"],
+			enabledExtensionNames:
+			[
+				"VK_KHR_swapchain",
+				"VK_EXT_vertex_input_dynamic_state",
+				"VK_EXT_index_type_uint8",
+				"VK_EXT_extended_dynamic_state",
+				"VK_EXT_extended_dynamic_state3",
+				"VK_KHR_push_descriptor",
+			],
 			enabledFeatures: physicalDevice.Features
 		);
 
@@ -643,6 +686,12 @@ public partial class Renderer : IDisposable
 
 		foreach (var x in descriptorSetLayouts)
 			x.Dispose();
+
+		foreach ((var shader, var module, var stage) in compiledShaders)
+		{
+			stage.Dispose();
+			module.Dispose();
+		}
 
 		device.Dispose();
 		debugUtilsMessenger.Dispose();

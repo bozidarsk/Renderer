@@ -31,8 +31,8 @@ public class Camera : SceneObject, IDisposable
 		this.Scene.Renderer.DrawFrame(
 			projection: this.Projection,
 			view: TryGetComponent<Transform>(out Transform transform) ? transform : Matrix4x4.Identity,
-			objects: objects.OfType<IRenderable>(),
-			texture: this.Texture?.Info as RenderTextureInfo
+			objects: objects,
+			texture: this.Texture
 		);
 
 		if (uiObjects != null)

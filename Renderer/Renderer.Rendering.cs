@@ -10,66 +10,125 @@ using Vulkan;
 using Vulkan.ShaderCompiler;
 
 using Buffer = Vulkan.Buffer;
+using Renderer.UI;
 
 namespace Renderer;
 
 public partial class Renderer
 {
-	protected Dictionary<string, (ShaderInfo, byte[])> shaderCode = new();
-	protected Dictionary<RenderInfo, Pipeline> graphicsPipelines = new();
+	private readonly Compiler shaderCompiler = new();
+	private readonly List<(Shader Shader, ShaderModule Module, PipelineShaderStageCreateInfo Stage)> compiledShaders = new();
+	private readonly Dictionary<Type, (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes)> vertexInputDescriptions = new();
+	private readonly Dictionary<(RenderPass, ShaderProgram), Pipeline> graphicsPipelines = new();
 
-	protected ShaderModule CreateShaderModule(ref ShaderInfo info)
+	public ShaderProgram CreateShaderProgram(string[] filenames)
 	{
-		if (info == null) throw new ArgumentNullException();
+		if (filenames == null)
+			throw new ArgumentNullException();
 
-		string path = Path.GetFullPath(info.File);
-		byte[]? code;
+		var shaders = new Shader[filenames.Length];
+		var modules = new ShaderModule[filenames.Length];
+		var stages = new PipelineShaderStageCreateInfo[filenames.Length];
 
-		if (!shaderCode.ContainsKey(path))
+		for (int i = 0; i < filenames.Length; i++)
 		{
-			code = Compiler.Compile(ref info);
-			shaderCode.Add(path, (info, code!));
-		}
-		else (info, code) = shaderCode[path];
+			string filename = Path.GetFullPath(filenames[i]);
 
-		using ShaderModuleCreateInfo shaderModuleCreateInfo = new(
-			next: default,
-			flags: default,
-			code: code!
-		);
+			var query = compiledShaders.Where(x => x.Shader.File == filename);
+			Shader shader;
 
-		return shaderModuleCreateInfo.CreateShaderModule(device, allocator);
-	}
-
-	protected virtual Pipeline CreateGraphicsPipeline(RenderInfo obj, RenderPass renderPass)
-	{
-		var modules = new ShaderModule[obj.Shaders.Length];
-
-		var stages = obj.Shaders.Index().Select(x =>
+			if (!query.Any())
 			{
-				(int i, ShaderInfo info) = x;
+				shader = shaderCompiler.Compile(filename);
 
-				modules[i] = CreateShaderModule(ref info);
-				obj.Shaders[i] = info;
-
-				return new PipelineShaderStageCreateInfo(
+				using ShaderModuleCreateInfo shaderModuleCreateInfo = new(
 					next: default,
 					flags: default,
-					stage: (ShaderStage)info.Stage!,
-					module: modules[i],
-					name: info.EntryPoint!,
+					code: shader.Code
+				);
+
+				var module = shaderModuleCreateInfo.CreateShaderModule(device, allocator);
+				var stage = new PipelineShaderStageCreateInfo(
+					next: default,
+					flags: default,
+					stage: shader.Stage,
+					module: module,
+					name: shader.EntryPoint,
 					specializationInfo: null
 				);
+
+				compiledShaders.Add((shader, module, stage));
+				(shaders[i], modules[i], stages[i]) = (shader, module, stage);
 			}
+			else
+			{
+				(shaders[i], modules[i], stages[i]) = query.First();
+			}
+		}
+
+		return new(shaders, modules, stages);
+	}
+
+	public (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes) CreateVertexInputDescriptions(Type vertexType)
+	{
+		if (vertexType == null)
+			throw new ArgumentNullException();
+
+		VertexInputBindingDescription[] bindingDescriptions = [
+			new(
+				binding: 0,
+				stride: (uint)Marshal.SizeOf(vertexType),
+				inputRate: VertexInputRate.Vertex
+			)
+		];
+
+		VertexInputAttributeDescription[] attributeDescriptions =
+			vertexType
+			.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+			.Index()
+			.Select(x =>
+				new VertexInputAttributeDescription(
+					location: (uint)x.Index,
+					binding: 0,
+					format: x.Item.FieldType switch
+					{
+						Type t when t == typeof(float) => Format.R32SFloat,
+						Type t when t == typeof(double) => Format.R64SFloat,
+						Type t when t == typeof(Vulkan.Color) => Format.R32G32B32A32SFloat,
+						Type t when t == typeof(Vulkan.Vector2) => Format.R32G32SFloat,
+						Type t when t == typeof(Vulkan.Vector3) => Format.R32G32B32SFloat,
+						Type t when t == typeof(Vulkan.Vector4) => Format.R32G32B32A32SFloat,
+						Type t when t == typeof(Vulkan.Vector2Int) => Format.R32G32SInt,
+						Type t when t == typeof(Vulkan.Vector3Int) => Format.R32G32B32SInt,
+						Type t when t == typeof(Vulkan.Vector4Int) => Format.R32G32B32A32SInt,
+						_ => throw new ArgumentOutOfRangeException(nameof(Type), $"Cannot map field type '{x.Item.FieldType.FullName!}' to a format.")
+					},
+					offset: (uint)Marshal.OffsetOf(x.Item.DeclaringType!, x.Item.Name)
+				)
+			)
+			.ToArray()
+		;
+
+		VertexInputBindingDescription2[] bindingDescriptions2 = bindingDescriptions.Select(x =>
+			new VertexInputBindingDescription2(
+				next: default,
+				description: x,
+				divisor: 1
+			)
 		).ToArray();
 
-		using var vertexInput = new PipelineVertexInputStateCreateInfo(
-			next: default,
-			flags: default,
-			vertexBindingDescriptions: obj.BindingDescriptions,
-			vertexAttributeDescriptions: obj.AttributeDescriptions
-		);
+		VertexInputAttributeDescription2[] attributeDescriptions2 = attributeDescriptions.Select(x =>
+			new VertexInputAttributeDescription2(
+				next: default,
+				description: x
+			)
+		).ToArray();
 
+		return (bindingDescriptions2, attributeDescriptions2);
+	}
+
+	public Pipeline CreateGraphicsPipeline(RenderPass renderPass, ShaderProgram shaderProgram)
+	{
 		var inputAssembly = new PipelineInputAssemblyStateCreateInfo(
 			next: default,
 			flags: default,
@@ -106,8 +165,8 @@ public partial class Renderer
 			depthClampEnable: false,
 			rasterizerDiscardEnable: false,
 			polygonMode: PolygonMode.Fill,
-			cullMode: obj.CullMode ?? CullMode.Back,
-			frontFace: obj.FrontFace ?? FrontFace.CounterClockwise,
+			cullMode: shaderProgram.CullMode ?? CullMode.Back,
+			frontFace: shaderProgram.FrontFace ?? FrontFace.CounterClockwise,
 			depthBiasEnable: false,
 			depthBiasConstantFactor: 0f,
 			depthBiasClamp: 0f,
@@ -140,10 +199,6 @@ public partial class Renderer
 			maxDepthBounds: 1f
 		);
 
-		var srcFactor = obj.SourceBlendFactor ?? BlendFactor.One;
-		var destFactor = obj.DestinationBlendFactor ?? BlendFactor.Zero;
-		var blendOp = obj.BlendOp ?? BlendOp.Add;
-
 		using var colorBlend = new PipelineColorBlendStateCreateInfo(
 			next: default,
 			flags: default,
@@ -152,13 +207,13 @@ public partial class Renderer
 			attachments:
 			[
 				new(
-					blendEnable: !(obj.DisableBlending ?? false),
-					srcColorBlendFactor: srcFactor,
-					dstColorBlendFactor: destFactor,
-					colorBlendOp: blendOp,
-					srcAlphaBlendFactor: srcFactor,
-					dstAlphaBlendFactor: destFactor,
-					alphaBlendOp: blendOp,
+					blendEnable: !(shaderProgram.DisableBlending ?? false),
+					srcColorBlendFactor: shaderProgram.SourceBlendFactor ?? BlendFactor.One,
+					dstColorBlendFactor: shaderProgram.DestinationBlendFactor ?? BlendFactor.Zero,
+					colorBlendOp: shaderProgram.BlendOp ?? BlendOp.Add,
+					srcAlphaBlendFactor: shaderProgram.SourceBlendFactor ?? BlendFactor.One,
+					dstAlphaBlendFactor: shaderProgram.DestinationBlendFactor ?? BlendFactor.Zero,
+					alphaBlendOp: shaderProgram.BlendOp ?? BlendOp.Add,
 					colorWriteMask: ColorComponent.R | ColorComponent.G | ColorComponent.B | ColorComponent.A
 				)
 			],
@@ -168,14 +223,17 @@ public partial class Renderer
 		using var dynamicState = new PipelineDynamicStateCreateInfo(
 			next: default,
 			flags: default,
-			dynamicStates: null
+			dynamicStates:
+			[
+				DynamicState.VertexInput,
+			]
 		);
 
 		using var graphicsPipelineCreateInfo = new GraphicsPipelineCreateInfo(
 			next: default,
 			flags: default,
-			stages: stages,
-			vertexInputState: vertexInput,
+			stages: shaderProgram.Stages,
+			vertexInputState: default,
 			inputAssemblyState: inputAssembly,
 			tessellationState: null,
 			viewportState: viewport,
@@ -193,12 +251,6 @@ public partial class Renderer
 
 		var pipeline = graphicsPipelineCreateInfo.CreateGraphicsPipeline(device, allocator);
 
-		foreach (var x in stages)
-			x.Dispose();
-
-		foreach (var x in modules)
-			x.Dispose();
-
 		return pipeline;
 	}
 
@@ -207,7 +259,7 @@ public partial class Renderer
 		Framebuffer framebuffer,
 		Extent2D extent,
 		Vector3 cameraPosition,
-		IEnumerable<IRenderable> objects
+		IEnumerable<SceneObject> objects
 	)
 	{
 		using var renderPassInfo = new RenderPassBeginInfo(
@@ -245,29 +297,38 @@ public partial class Renderer
 
 		foreach (var obj in objects)
 		{
-			var model = obj.Model;
-			var uniforms = obj.Uniforms;
-			var info = obj.Info;
-			var id = obj.Id;
+			Matrix4x4 model = obj.Transform;
+			var material = obj.GetComponent<MeshRenderer>().Material;
+			var mesh = obj.GetComponent<MeshFilter>().Mesh;
 
-			Pipeline graphicsPipeline;
-
-			if (!graphicsPipelines.TryGetValue(info, out graphicsPipeline!))
+			if (!graphicsPipelines.TryGetValue((renderPass, material.ShaderProgram), out var graphicsPipeline))
 			{
-				graphicsPipeline = CreateGraphicsPipeline(info, renderPass);
-				graphicsPipelines[info] = graphicsPipeline;
+				graphicsPipeline = CreateGraphicsPipeline(renderPass, material.ShaderProgram);
+				graphicsPipelines[(renderPass, material.ShaderProgram)] = graphicsPipeline;
+			}
+
+			if (!vertexInputDescriptions.TryGetValue(mesh.VertexType, out var vertexInputDescription))
+			{
+				vertexInputDescription = CreateVertexInputDescriptions(mesh.VertexType);
+				vertexInputDescriptions[mesh.VertexType] = vertexInputDescription;
 			}
 
 			cmd.BindPipeline(graphicsPipeline, PipelineBindPoint.Graphics);
-			cmd.BindVertexBuffers(info.VertexBuffer);
-			cmd.BindIndexBuffer(info.IndexBuffer, info.IndexType);
+			cmd.SetVertexInput(vertexInputDescription.Bindings, vertexInputDescription.Attributes);
+			cmd.BindVertexBuffers(mesh.VertexBuffer);
+			cmd.BindIndexBuffer(mesh.IndexBuffer, mesh.IndexType);
 			cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, globalDescriptorWrite);
 
 			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 0, size: 64, ref Unsafe.As<Matrix4x4, byte>(ref model));
 			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 64, size: 12, ref Unsafe.As<Vector3, byte>(ref cameraPosition));
-			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 76, size: 4, ref Unsafe.As<uint, byte>(ref id));
 
-			var uniformsSize = CreateUniformsBuffer(uniforms, out Buffer? uniformsBuffer, out DeviceMemory? uniformsMemory);
+			if (obj is UIObject uiObj)
+			{
+				uint id = uiObj.Id;
+				cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 76, size: 4, ref Unsafe.As<uint, byte>(ref id));
+			}
+
+			var uniformsSize = CreateUniformsBuffer(material.Uniforms, out Buffer? uniformsBuffer, out DeviceMemory? uniformsMemory);
 			bool hasUniforms = uniformsSize != 0;
 
 			if (hasUniforms)
@@ -289,9 +350,9 @@ public partial class Renderer
 				toBeDisposed[currentFrame].Enqueue(uniformsMemory!);
 			}
 
-			var textures = uniforms
+			var textures = material.Uniforms
 				.Select(x => x.Value)
-				.OfType<TextureInfo>()
+				.OfType<Texture>()
 				.Select(x => new DescriptorImageInfo(sampler: x.Sampler, imageView: x.ImageView, imageLayout: ImageLayout.ShaderReadOnlyOptimal))
 				.ToArray()
 			;
@@ -312,14 +373,14 @@ public partial class Renderer
 				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, texturesDescriptorWrite);
 			}
 
-			cmd.DrawIndexed(info.IndexCount);
+			cmd.DrawIndexed(mesh.IndexCount);
 		}
 
 		cmd.EndRenderPass();
 	}
 
 	// if throws ErrorOutOfDateKhr or SuboptimalKhr it needs swapchain recreation (see https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation)
-	public virtual void DrawFrame(Matrix4x4 projection, Matrix4x4 view, IEnumerable<IRenderable> objects, RenderTextureInfo? texture = null)
+	public virtual void DrawFrame(Matrix4x4 projection, Matrix4x4 view, IEnumerable<SceneObject> objects, RenderTexture? texture = null)
 	{
 		if (objects == null)
 			throw new ArgumentNullException();
@@ -345,7 +406,7 @@ public partial class Renderer
 
 		cmd.Reset(default);
 		cmd.Begin(beginInfo);
-		if (texture is RenderTextureInfo rt)
+		if (texture is RenderTexture rt)
 		{
 			StartRenderPass(rt.RenderPass, rt.Framebuffer, rt.Extent, cameraPosition, objects);
 			TransitionImageLayout(rt.Image, ImageLayout.PresentSrc, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);

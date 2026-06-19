@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Reflection;
 
 using Vulkan;
 using Renderer.Physics;
@@ -8,7 +10,7 @@ using Renderer.UI;
 
 namespace Renderer;
 
-public class SceneObject : IDisposable, IRenderable
+public class SceneObject : IDisposable
 {
 	public readonly Scene Scene;
 	private List<Component> components = new();
@@ -18,23 +20,6 @@ public class SceneObject : IDisposable, IRenderable
 
 	public Transform Transform => TryGetComponent<Transform>(out Transform transform) ? transform : throw new InvalidOperationException("Object does not have a Transform component.");
 	public bool IsRenderable => IsEnabled && HasComponents<Transform, MeshFilter, MeshRenderer>();
-
-	Matrix4x4 IRenderable.Model => this.Transform;
-	IReadOnlyDictionary<string, object> IRenderable.Uniforms => TryGetComponent<MeshRenderer>(out MeshRenderer mr) ? mr.Material.Uniforms : throw new InvalidOperationException("Object does not have a MeshRenderer component.");
-	uint IRenderable.Id => (this is UIObject x) ? x.Id : 0;
-	Info IInfoProvider.Info => GenerateRenderInfo();
-	RenderInfo IInfoProvider<RenderInfo>.Info => GenerateRenderInfo();
-
-	private RenderInfo GenerateRenderInfo()
-	{
-		if (!IsRenderable)
-			throw new InvalidOperationException("Cannot get RenderInfo for non-renderable object.");
-
-		var mesh = GetComponent<MeshFilter>().Mesh;
-		var material = GetComponent<MeshRenderer>().Material;
-
-		return new RenderInfo(mesh.VertexBuffer, mesh.VertexCount, mesh.VertexType, mesh.IndexBuffer, mesh.IndexCount, mesh.IndexType, material.Shaders);
-	}
 
 	public Action OnAwake;
 	public Action OnStart;

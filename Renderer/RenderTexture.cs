@@ -4,54 +4,42 @@ using Vulkan;
 
 namespace Renderer;
 
-public sealed class RenderTexture : IDisposable, IInfoProvider
+public class RenderTexture : Texture, IDisposable
 {
 	public RenderPass RenderPass { get; }
 	public Framebuffer Framebuffer { get; }
-	public Extent2D Extent { get; }
 
-	public Texture Texture { get; }
-	public Texture DepthTexture { get; }
+	private Texture DepthTexture { get; }
 
-	public int Width => (int)this.Extent.Width;
-	public int Height => (int)this.Extent.Height;
-
-	public Image Image => this.Texture.Image;
-	public ImageView ImageView => this.Texture.ImageView;
-	public DeviceMemory? ImageMemory => this.Texture.ImageMemory;
-	public Sampler Sampler => this.Texture.Sampler;
-	public Format ImageFormat => this.Texture.Format;
+	public Format ColorFormat => this.Format;
 	public Format DepthFormat => this.DepthTexture.Format;
 
-	public Info Info => new RenderTextureInfo(this.Extent, this.RenderPass, this.Framebuffer, this.Image, this.ImageView, this.Sampler);
-
-	public void Dispose()
+	public override void Dispose()
 	{
 		RenderPass.Dispose();
 		Framebuffer.Dispose();
-		Texture.Dispose();
 		DepthTexture.Dispose();
+
+		base.Dispose();
 	}
 
 	public RenderTexture(Renderer renderer, int width, int height, Format format) : this(renderer, new((uint)width, (uint)height), format) { }
-	public RenderTexture(Renderer renderer, Extent2D extent, Format format)
-	{
-		this.Extent = extent;
 
+	public RenderTexture(Renderer renderer, Extent2D extent, Format format) : base(renderer, extent, ImageUsage.ColorAttachment | ImageUsage.Sampled | ImageUsage.TransferSrc, ImageAspect.Color, format, ImageType.Generic2D)
+	{
 		var depthFormat = renderer.FindSupportedFormat(
 			[Format.D32SFloat, Format.D32SFloatS8UInt, Format.D24UNormS8UInt],
 			ImageTiling.Optimal,
 			FormatFeatures.DepthStencilAttachment
 		);
 
-		this.Texture = new(renderer, extent, ImageUsage.ColorAttachment | ImageUsage.Sampled | ImageUsage.TransferSrc, ImageAspect.Color, format, ImageType.Generic2D);
 		this.DepthTexture = new(renderer, extent, ImageUsage.DepthStencilAttachment, ImageAspect.Depth, depthFormat, ImageType.Generic2D);
 
 		renderer.TransitionImageLayout(this.Image, ImageLayout.Undefined, ImageLayout.ShaderReadOnlyOptimal);
 
 		var colorAttachment = new AttachmentDescription(
 			flags: default,
-			format: this.ImageFormat,
+			format: this.ColorFormat,
 			samples: SampleCount.Bit1,
 			loadOp: AttachmentLoadOp.Clear,
 			storeOp: AttachmentStoreOp.Store,
@@ -117,7 +105,7 @@ public sealed class RenderTexture : IDisposable, IInfoProvider
 			next: default,
 			flags: default,
 			renderPass: this.RenderPass,
-			attachments: [this.Texture.ImageView, this.DepthTexture.ImageView],
+			attachments: [this.ImageView, this.DepthTexture.ImageView],
 			width: this.Extent.Width,
 			height: this.Extent.Height,
 			layers: 1

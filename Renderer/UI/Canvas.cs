@@ -132,7 +132,7 @@ public class Canvas : SceneObject
 		canvasTexture = new SceneObject(this.Scene,
 			new Transform(),
 			new MeshFilter(new Mesh<CanvasVertex, byte>(this.Scene.Renderer, vertices, indices)),
-			new MeshRenderer(Material.FromShaders(vertex: "Renderer/Shaders/canvas.vert.hlsl", fragment: "Renderer/Shaders/canvas.frag.hlsl"))
+			new MeshRenderer(new Material(ShaderProgram.FromFiles(scene.Renderer, "Renderer/Shaders/canvas.vert.hlsl", "Renderer/Shaders/canvas.frag.hlsl")))
 		)
 		{ Layer = CameraLayer.Main }; // TODO: user can change Layer
 
