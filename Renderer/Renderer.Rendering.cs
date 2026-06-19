@@ -296,7 +296,6 @@ public partial class Renderer
 
 		foreach (var obj in objects)
 		{
-			Matrix4x4 model = obj.Transform;
 			var material = obj.GetComponent<MeshRenderer>().Material;
 			var mesh = obj.GetComponent<MeshFilter>().Mesh;
 
@@ -318,13 +317,8 @@ public partial class Renderer
 			cmd.BindIndexBuffer(mesh.IndexBuffer, mesh.IndexType);
 			cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, globalDescriptorWrite);
 
-			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 0, size: 64, ref Unsafe.As<Matrix4x4, byte>(ref model));
-
-			if (obj is UIObject uiObj)
-			{
-				uint id = uiObj.Id;
-				cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 64, size: 4, ref Unsafe.As<uint, byte>(ref id));
-			}
+			var pushConstants = new PushConstants(obj.Transform, (obj is UIObject uIObject) ? uIObject.Id : 0);
+			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 0, size: (uint)Marshal.SizeOf<PushConstants>(), ref Unsafe.As<PushConstants, byte>(ref pushConstants));
 
 			var uniformsSize = CreateUniformsBuffer(material.Uniforms, out Buffer? uniformsBuffer, out DeviceMemory? uniformsMemory);
 			bool hasUniforms = uniformsSize != 0;
