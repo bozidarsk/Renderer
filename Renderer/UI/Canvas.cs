@@ -63,12 +63,10 @@ public class Canvas : SceneObject
 			far: 1
 		);
 
-		renderCamera.Texture?.Dispose();
-		renderCamera.Texture = new(this.Scene.Renderer, Width, Height, Format.R8G8B8A8SRGB);
+		renderCamera.Texture = new(Width, Height, Format.R8G8B8A8SRGB);
 		renderCamera.Projection = projection;
 
-		maskCamera.Texture?.Dispose();
-		maskCamera.Texture = new(this.Scene.Renderer, Width, Height, Format.R8G8B8A8UInt); // R8G8B8A8UInt
+		maskCamera.Texture = new(Width, Height, Format.R8G8B8A8UInt); // R8G8B8A8UInt
 		maskCamera.Projection = projection;
 
 		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = renderCamera.Texture;
@@ -78,9 +76,11 @@ public class Canvas : SceneObject
 	private uint SampleId((int x, int y) position) => SampleId(position.x, position.y);
 	private uint SampleId(int x, int y)
 	{
+		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(maskCamera.Texture!);
+
 		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
-		this.Scene.Renderer.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, ImageAspect.Color, cmd);
-		cmd.CopyImageToBuffer(maskCamera.Texture!.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
+		this.Scene.Renderer.TransitionImageLayout(textureData.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, ImageAspect.Color, cmd);
+		cmd.CopyImageToBuffer(textureData.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
 				bufferOffset: 0,
 				bufferRowLength: 0,
 				bufferImageHeight: 0,
@@ -94,7 +94,7 @@ public class Canvas : SceneObject
 				imageExtent: new(width: 1, height: 1, depth: 1)
 			)
 		);
-		this.Scene.Renderer.TransitionImageLayout(maskCamera.Texture!.Image, ImageLayout.TransferSrcOptimal, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);
+		this.Scene.Renderer.TransitionImageLayout(textureData.Image, ImageLayout.TransferSrcOptimal, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);
 		this.Scene.Renderer.EndSingleTimeCommand(cmd);
 
 		uint id;
@@ -106,9 +106,7 @@ public class Canvas : SceneObject
 	public override void Dispose()
 	{
 		renderCamera.Dispose();
-		renderCamera.Texture!.Dispose();
 		maskCamera.Dispose();
-		maskCamera.Texture!.Dispose();
 		maskBuffer.Dispose();
 		maskMemory.Dispose();
 		base.Dispose();
@@ -131,8 +129,8 @@ public class Canvas : SceneObject
 
 		canvasTexture = new SceneObject(this.Scene,
 			new Transform(),
-			new MeshFilter(new Mesh<CanvasVertex, byte>(this.Scene.Renderer, vertices, indices)),
-			new MeshRenderer(new Material(ShaderProgram.FromFiles(scene.Renderer, "Renderer/Shaders/canvas.vert.hlsl", "Renderer/Shaders/canvas.frag.hlsl")))
+			new MeshFilter(new Mesh<CanvasVertex, byte>(vertices, indices)),
+			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/canvas.vert.hlsl", "Renderer/Shaders/canvas.frag.hlsl")))
 		)
 		{ Layer = CameraLayer.Main }; // TODO: user can change Layer
 

@@ -10,7 +10,7 @@ namespace Renderer;
 
 public class Scene : IDisposable
 {
-	public readonly Renderer Renderer;
+	internal readonly Renderer Renderer;
 	public readonly GLFW.Window Window;
 
 	private readonly List<SceneObject> objects = new();

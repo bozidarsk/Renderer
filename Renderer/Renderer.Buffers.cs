@@ -10,7 +10,7 @@ using Buffer = Vulkan.Buffer;
 
 namespace Renderer;
 
-public partial class Renderer
+internal partial class Renderer
 {
 	public void CreateBuffer(DeviceSize size, BufferUsage usage, out Buffer buffer)
 	{
@@ -53,7 +53,7 @@ public partial class Renderer
 			EndSingleTimeCommand(cmd);
 	}
 
-	public void CopyBufferToImage(Buffer buffer, Image image, int width, int height, ImageAspect aspect = ImageAspect.Color, CommandBuffer? cmd = null)
+	public void CopyBufferToImage(Buffer buffer, Image image, int width, int height, ImageAspect aspect, CommandBuffer? cmd = null)
 	{
 		bool createCmd = cmd == null;
 
@@ -80,7 +80,7 @@ public partial class Renderer
 			EndSingleTimeCommand(cmd);
 	}
 
-	public void CopyImageToBuffer(Image image, Buffer buffer, int width, int height, ImageAspect aspect = ImageAspect.Color, CommandBuffer? cmd = null)
+	public void CopyImageToBuffer(Image image, Buffer buffer, int width, int height, ImageAspect aspect, CommandBuffer? cmd = null)
 	{
 		bool createCmd = cmd == null;
 
@@ -179,37 +179,42 @@ public partial class Renderer
 		return size;
 	}
 
-	public unsafe void CreateTexture(ref byte data, int width, int height, ImageType type, Format format, out Image image, out ImageView imageView, out DeviceMemory memory, out Sampler sampler)
-	{
-		DeviceSize stride = format switch
-		{
-			Format.R8G8B8A8UNorm => 4,
-			Format.B8G8R8A8UNorm => 4,
-			_ => throw new InvalidOperationException($"Failed to map texture format '{format}' to its stride.")
-		};
+	// public unsafe void CreateTexture(ref byte data, int width, int height, ImageType type, Format format, ImageAspect aspect, out Image image, out ImageView imageView, out DeviceMemory memory, out Sampler sampler)
+	// {
+	// 	DeviceSize stride = format switch
+	// 	{
+	// 		Format.R8G8B8A8UNorm => 4,
+	// 		Format.B8G8R8A8UNorm => 4,
+	// 		Format.R8G8B8A8SRGB => 4,
+	// 		Format.R8G8B8A8UInt => 4,
+	// 		Format.D32SFloat => 4,
+	// 		Format.D32SFloatS8UInt => 8,
+	// 		Format.D24UNormS8UInt => 4,
+	// 		_ => throw new InvalidOperationException($"Failed to map texture format '{format}' to its stride.")
+	// 	};
 
-		DeviceSize size = (ulong)width * (ulong)height * stride;
+	// 	DeviceSize size = (ulong)width * (ulong)height * stride;
 
-		CreateBuffer(size, BufferUsage.TransferSrc, out Buffer staggingBuffer);
-		CreateBufferMemory(staggingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory staggingMemory);
+	// 	CreateBuffer(size, BufferUsage.TransferSrc, out Buffer staggingBuffer);
+	// 	CreateBufferMemory(staggingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory staggingMemory);
 
-		nint staggingLocation = staggingMemory.Map(size: size, offset: default, flags: default);
-		Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)staggingLocation), ref data, checked((uint)size));
+	// 	nint staggingLocation = staggingMemory.Map(size: size, offset: default, flags: default);
+	// 	Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)staggingLocation), ref data, checked((uint)size));
 
-		CreateImage(width, height, type, ImageUsage.TransferDst | ImageUsage.Sampled, format, out image);
-		CreateImageMemory(image, out memory);
+	// 	CreateImage(width, height, type, ImageUsage.TransferDst | ImageUsage.Sampled, format, out image);
+	// 	CreateImageMemory(image, out memory);
 
-		TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal);
-		CopyBufferToImage(staggingBuffer, image, width, height);
-		TransitionImageLayout(image, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal);
+	// 	TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, aspect);
+	// 	CopyBufferToImage(staggingBuffer, image, width, height);
+	// 	TransitionImageLayout(image, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal, aspect);
 
-		CreateImageView(image, format, ImageAspect.Color, out imageView);
-		CreateSampler(out sampler);
+	// 	CreateImageView(image, format, aspect, out imageView);
+	// 	CreateSampler(out sampler);
 
-		staggingMemory.Unmap();
-		staggingBuffer.Dispose();
-		staggingMemory.Dispose();
-	}
+	// 	staggingMemory.Unmap();
+	// 	staggingBuffer.Dispose();
+	// 	staggingMemory.Dispose();
+	// }
 
 	public void CreateImage(int width, int height, ImageType type, ImageUsage usage, Format format, out Image image)
 	{
@@ -303,7 +308,7 @@ public partial class Renderer
 		Access destinationAccess,
 		PipelineStage destinationStage,
 
-		ImageAspect aspect = ImageAspect.Color,
+		ImageAspect aspect,
 		CommandBuffer? cmd = null
 	)
 	{
@@ -343,7 +348,7 @@ public partial class Renderer
 			EndSingleTimeCommand(cmd);
 	}
 
-	public void TransitionImageLayout(Image image, ImageLayout from, ImageLayout to, ImageAspect aspect = ImageAspect.Color, CommandBuffer? cmd = null)
+	public void TransitionImageLayout(Image image, ImageLayout from, ImageLayout to, ImageAspect aspect, CommandBuffer? cmd = null)
 	{
 		Access sourceAccess, destinationAccess;
 		PipelineStage sourceStage, destinationStage;

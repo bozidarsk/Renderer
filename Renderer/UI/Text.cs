@@ -37,10 +37,8 @@ public sealed class Text : SceneObject
 			if (value == null)
 				throw new ArgumentNullException();
 
-			TextMesh mesh = this.Font.CreateMesh(this.Scene.Renderer, value);
-			outerFilter.Mesh.Dispose();
+			TextMesh mesh = this.Font.CreateMesh(value);
 			outerFilter.Mesh = mesh.Outer;
-			innerFilter.Mesh.Dispose();
 			innerFilter.Mesh = mesh.Inner;
 		}
 	}
@@ -57,17 +55,17 @@ public sealed class Text : SceneObject
 
 		outer = new UIObject(canvas,
 			thisTransform,
-			new MeshFilter(new Mesh(this.Scene.Renderer)),
-			new MeshRenderer(new Material(ShaderProgram.FromFiles(canvas.Scene.Renderer, "Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter.frag.hlsl")))
+			new MeshFilter(new Mesh()),
+			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter.frag.hlsl")))
 		)
-		{ MaskMaterial = new Material(ShaderProgram.FromFiles(canvas.Scene.Renderer, "Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter-mask.frag.hlsl")) };
+		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter-mask.frag.hlsl")) };
 
 		inner = new UIObject(canvas,
 			thisTransform,
-			new MeshFilter(new Mesh(this.Scene.Renderer)),
-			new MeshRenderer(new Material(ShaderProgram.FromFiles(canvas.Scene.Renderer, "Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner.frag.hlsl")))
+			new MeshFilter(new Mesh()),
+			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner.frag.hlsl")))
 		)
-		{ MaskMaterial = new Material(ShaderProgram.FromFiles(canvas.Scene.Renderer, "Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner-mask.frag.hlsl")) };
+		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner-mask.frag.hlsl")) };
 
 		outerFilter = outer.GetComponent<MeshFilter>();
 		innerFilter = inner.GetComponent<MeshFilter>();

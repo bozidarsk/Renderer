@@ -8,30 +8,15 @@ using Vulkan;
 
 namespace Renderer;
 
-// TODO: make a MeshInfo (like TextureInfo, RenderTextureInfo, ...)
-// TODO: generic type constraints (dont check at runtime), also avoid boxing T[] to Array
-
-public class Mesh : IDisposable
+public class Mesh
 {
-	internal readonly Vulkan.Buffer VertexBuffer;
-	internal readonly DeviceMemory VertexBufferMemory;
-	internal readonly Type VertexType;
-	internal readonly Array VertexData;
-	internal int VertexCount => this.VertexData.Length;
+	public Type VertexType { get; }
+	public Array Vertices { get; }
+	public int VertexCount => this.Vertices.Length;
 
-	internal readonly Vulkan.Buffer IndexBuffer;
-	internal readonly DeviceMemory IndexBufferMemory;
-	internal readonly IndexType IndexType;
-	internal readonly Array IndexData;
-	internal int IndexCount => this.IndexData.Length;
-
-	public void Dispose()
-	{
-		VertexBuffer.Dispose();
-		VertexBufferMemory.Dispose();
-		IndexBuffer.Dispose();
-		IndexBufferMemory.Dispose();
-	}
+	public IndexType IndexType { get; }
+	public Array Indices { get; }
+	public int IndexCount => this.Indices.Length;
 
 #pragma warning disable CS8618
 	private Mesh(Type vertexType, Type? indexType)
@@ -56,11 +41,11 @@ public class Mesh : IDisposable
 		}
 	}
 
-	public Mesh(Renderer renderer) : this(renderer, typeof(DefaultVertex), typeof(byte), new DefaultVertex[] { default }, new byte[] { 0, 0, 0 }) { }
+	public Mesh() : this(typeof(DefaultVertex), typeof(byte), new DefaultVertex[] { default }, new byte[] { 0, 0, 0 }) { }
 
-	protected Mesh(Renderer renderer, Type vertexType, Type? indexType, Array vertexData, Array indexData) : this(vertexType, indexType)
+	protected Mesh(Type vertexType, Type? indexType, Array vertexData, Array indexData) : this(vertexType, indexType)
 	{
-		if (renderer == null || vertexData == null || indexData == null)
+		if (vertexData == null || indexData == null)
 			throw new ArgumentNullException();
 
 		if (vertexData.Length == 0)
@@ -94,8 +79,8 @@ public class Mesh : IDisposable
 			};
 		}
 
-		this.VertexData = Array.CreateInstance(this.VertexType, vertexData.Length);
-		Array.Copy(vertexData, this.VertexData, vertexData.Length);
+		this.Vertices = Array.CreateInstance(this.VertexType, vertexData.Length);
+		Array.Copy(vertexData, this.Vertices, vertexData.Length);
 
 		indexDataType = this.IndexType switch
 		{
@@ -104,9 +89,9 @@ public class Mesh : IDisposable
 			IndexType.UInt32 => typeof(uint),
 			_ => throw new InvalidOperationException("IndexType must be UInt8, UInt16 or UInt32.")
 		};
-		this.IndexData = Array.CreateInstance(indexDataType, indexData.Length);
+		this.Indices = Array.CreateInstance(indexDataType, indexData.Length);
 		for (int i = 0; i < indexData.Length; i++)
-			this.IndexData.SetValue(Convert.ChangeType(this.IndexType switch
+			this.Indices.SetValue(Convert.ChangeType(this.IndexType switch
 			{
 				IndexType.UInt8 => Convert.ToByte(indexData.GetValue(i), null),
 				IndexType.UInt16 => Convert.ToUInt16(indexData.GetValue(i), null),
@@ -117,14 +102,11 @@ public class Mesh : IDisposable
 				),
 				i
 			);
-
-		renderer.CreateVertexBuffer(this.VertexData, out this.VertexBuffer, out this.VertexBufferMemory);
-		renderer.CreateIndexBuffer(this.IndexData, out this.IndexBuffer, out this.IndexBufferMemory);
 	}
 
-	protected Mesh(Renderer renderer, Type vertexType, Type? indexType, string filename) : this(vertexType, indexType)
+	protected Mesh(Type vertexType, Type? indexType, string filename) : this(vertexType, indexType)
 	{
-		if (renderer == null || filename == null)
+		if (filename == null)
 			throw new ArgumentNullException();
 
 		if (!File.Exists(filename))
@@ -137,7 +119,7 @@ public class Mesh : IDisposable
 			case ".obj":
 				var obj = OBJ.FromFile(filename);
 
-				this.VertexData = Array.CreateInstance(this.VertexType, obj.Vertices.Count);
+				this.Vertices = Array.CreateInstance(this.VertexType, obj.Vertices.Count);
 
 				if (indexType == null)
 				{
@@ -149,18 +131,18 @@ public class Mesh : IDisposable
 					};
 				}
 
-				for (int i = 0; i < this.VertexData.Length; i++)
+				for (int i = 0; i < this.Vertices.Length; i++)
 				{
-					var v = this.VertexData.GetValue(i);
+					var v = this.Vertices.GetValue(i);
 
 					((IVertex)v!).Position = (obj.Vertices.Count != 0) ? obj.Vertices[i] : default;
 					((IVertex)v!).UV = (obj.Textures.Count != 0) ? obj.Textures[i] : default;
 					((IVertex)v!).Normal = (obj.Normals.Count != 0) ? obj.Normals[i] : default;
 
-					this.VertexData.SetValue(v, i);
+					this.Vertices.SetValue(v, i);
 				}
 
-				this.IndexData = this.IndexType switch
+				this.Indices = this.IndexType switch
 				{
 					IndexType.UInt8 => obj.Indices.Select(x => checked((byte)x)).ToArray(),
 					IndexType.UInt16 => obj.Indices.Select(x => checked((ushort)x)).ToArray(),
@@ -171,20 +153,17 @@ public class Mesh : IDisposable
 			default:
 				throw new InvalidOperationException($"Failed to parse mesh of type '{extension}'.");
 		}
-
-		renderer.CreateVertexBuffer(this.VertexData, out this.VertexBuffer, out this.VertexBufferMemory);
-		renderer.CreateIndexBuffer(this.IndexData, out this.IndexBuffer, out this.IndexBufferMemory);
 	}
 }
 
-public sealed class Mesh<TVertex> : Mesh
+public class Mesh<TVertex> : Mesh
 {
-	public Mesh(Renderer renderer, string filename) : base(renderer, typeof(TVertex), null, filename) { }
-	public Mesh(Renderer renderer, Array vertexData, Array indexData) : base(renderer, typeof(TVertex), null, vertexData, indexData) { }
+	public Mesh(string filename) : base(typeof(TVertex), null, filename) { }
+	public Mesh(Array vertexData, Array indexData) : base(typeof(TVertex), null, vertexData, indexData) { }
 }
 
-public sealed class Mesh<TVertex, TIndex> : Mesh
+public class Mesh<TVertex, TIndex> : Mesh
 {
-	public Mesh(Renderer renderer, string filename) : base(renderer, typeof(TVertex), typeof(TIndex), filename) { }
-	public Mesh(Renderer renderer, Array vertexData, Array indexData) : base(renderer, typeof(TVertex), typeof(TIndex), vertexData, indexData) { }
+	public Mesh(string filename) : base(typeof(TVertex), typeof(TIndex), filename) { }
+	public Mesh(Array vertexData, Array indexData) : base(typeof(TVertex), typeof(TIndex), vertexData, indexData) { }
 }

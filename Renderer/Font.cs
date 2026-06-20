@@ -46,7 +46,7 @@ public sealed class Font
 	#endif
 	];
 
-	internal TextMesh CreateMesh(Renderer renderer, string text)
+	internal TextMesh CreateMesh(string text)
 	{
 		if (text == null)
 			throw new ArgumentNullException();
@@ -61,10 +61,10 @@ public sealed class Font
 		for (int i = 0; i < indices.Length; i++)
 			indices[i] = map[(uint)unicode[i * 2] | (uint)((uint)unicode[i * 2 + 1] << 8)];
 
-		return CreateMesh(renderer, indices);
+		return CreateMesh(indices);
 	}
 
-	private TextMesh CreateMesh(Renderer renderer, Span<int> glyphIndices)
+	private TextMesh CreateMesh(Span<int> glyphIndices)
 	{
 		var outerVertices = new List<OuterTextVertex>();
 		var innerVertices = new List<InnerTextVertex>();
@@ -95,8 +95,8 @@ public sealed class Font
 		}
 
 		return new(
-			new Mesh<OuterTextVertex>(renderer, outerVertices.ToArray(), outerIndices.ToArray()),
-			new Mesh<InnerTextVertex>(renderer, innerVertices.ToArray(), innerIndices.ToArray())
+			new Mesh<OuterTextVertex>(outerVertices.ToArray(), outerIndices.ToArray()),
+			new Mesh<InnerTextVertex>(innerVertices.ToArray(), innerIndices.ToArray())
 		);
 	}
 

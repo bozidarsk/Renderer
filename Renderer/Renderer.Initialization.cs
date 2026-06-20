@@ -10,7 +10,7 @@ using Buffer = Vulkan.Buffer;
 
 namespace Renderer;
 
-public partial class Renderer : IDisposable
+internal partial class Renderer : IDisposable
 {
 	protected readonly GLFW.Window window;
 	protected readonly AllocationCallbacks? allocator;
@@ -51,6 +51,8 @@ public partial class Renderer : IDisposable
 	public Instance Instance => instance ?? throw new NullReferenceException("Instance has not been initialized.");
 	public PhysicalDevice PhysicalDevice => physicalDevice ?? throw new NullReferenceException("PhysicalDevice has not been initialized.");
 	public Device Device => device ?? throw new NullReferenceException("Device has not been initialized.");
+
+	public AssetManager AssetManager { get; }
 
 	public static uint MakeVersion(int major, int minor, int patch) => ((((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
 	public static uint MakeApiVersion(int variant, int major, int minor, int patch) => ((((uint)variant) << 29) | (((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
@@ -407,7 +409,7 @@ public partial class Renderer : IDisposable
 			arrayLayers: 1,
 			samples: SampleCount.Bit1,
 			tiling: ImageTiling.Optimal,
-			usage: ImageUsage.DepthStencilAttachment,
+			usage: ImageUsage.DepthStencilAttachment | ImageUsage.Sampled,
 			sharingMode: SharingMode.Exclusive,
 			queueFamilyIndices: null,
 			initialLayout: ImageLayout.Undefined
@@ -639,6 +641,8 @@ public partial class Renderer : IDisposable
 
 	public void Dispose()
 	{
+		AssetManager.Dispose();
+
 		depthImageView.Dispose();
 		depthImage.Dispose();
 		depthImageMemory.Dispose();
@@ -687,12 +691,6 @@ public partial class Renderer : IDisposable
 		foreach (var x in descriptorSetLayouts)
 			x.Dispose();
 
-		foreach ((var shader, var module, var stage) in compiledShaders)
-		{
-			stage.Dispose();
-			module.Dispose();
-		}
-
 		device.Dispose();
 		debugUtilsMessenger.Dispose();
 		instance.Dispose();
@@ -709,6 +707,8 @@ public partial class Renderer : IDisposable
 			DebugUtilsMessageReceived?.Invoke(this, new(severity, type, data.Message, data.MessageIdName, data.MessageIdNumber, data.QueueLabels, data.CommandBufferLabels, data.Objects, userData));
 			return false;
 		};
+
+		this.AssetManager = new(this);
 	}
 #pragma warning restore
 }

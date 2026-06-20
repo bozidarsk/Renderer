@@ -14,60 +14,10 @@ using Renderer.UI;
 
 namespace Renderer;
 
-public partial class Renderer
+internal partial class Renderer
 {
-	private readonly Compiler shaderCompiler = new();
-	private readonly List<(Shader Shader, ShaderModule Module, PipelineShaderStageCreateInfo Stage)> compiledShaders = new();
 	private readonly Dictionary<Type, (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes)> vertexInputDescriptions = new();
 	private readonly Dictionary<(RenderPass, ShaderProgram), Pipeline> graphicsPipelines = new();
-
-	public ShaderProgram CreateShaderProgram(string[] filenames)
-	{
-		if (filenames == null)
-			throw new ArgumentNullException();
-
-		var shaders = new Shader[filenames.Length];
-		var modules = new ShaderModule[filenames.Length];
-		var stages = new PipelineShaderStageCreateInfo[filenames.Length];
-
-		for (int i = 0; i < filenames.Length; i++)
-		{
-			string filename = Path.GetFullPath(filenames[i]);
-
-			var query = compiledShaders.Where(x => x.Shader.File == filename);
-			Shader shader;
-
-			if (!query.Any())
-			{
-				shader = shaderCompiler.Compile(filename);
-
-				using ShaderModuleCreateInfo shaderModuleCreateInfo = new(
-					next: default,
-					flags: default,
-					code: shader.Code
-				);
-
-				var module = shaderModuleCreateInfo.CreateShaderModule(device, allocator);
-				var stage = new PipelineShaderStageCreateInfo(
-					next: default,
-					flags: default,
-					stage: shader.Stage,
-					module: module,
-					name: shader.EntryPoint,
-					specializationInfo: null
-				);
-
-				compiledShaders.Add((shader, module, stage));
-				(shaders[i], modules[i], stages[i]) = (shader, module, stage);
-			}
-			else
-			{
-				(shaders[i], modules[i], stages[i]) = query.First();
-			}
-		}
-
-		return new(shaders, modules, stages);
-	}
 
 	public (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes) CreateVertexInputDescriptions(Type vertexType)
 	{
@@ -229,10 +179,12 @@ public partial class Renderer
 			]
 		);
 
+		var shaderProgramData = AssetManager.GetShaderProgramData(shaderProgram);
+
 		using var graphicsPipelineCreateInfo = new GraphicsPipelineCreateInfo(
 			next: default,
 			flags: default,
-			stages: shaderProgram.Stages,
+			stages: shaderProgramData.Stages,
 			vertexInputState: default,
 			inputAssemblyState: inputAssembly,
 			tessellationState: null,
@@ -298,6 +250,7 @@ public partial class Renderer
 		{
 			var material = obj.GetComponent<MeshRenderer>().Material;
 			var mesh = obj.GetComponent<MeshFilter>().Mesh;
+			var meshData = AssetManager.GetMeshData(mesh);
 
 			if (!graphicsPipelines.TryGetValue((renderPass, material.ShaderProgram), out var graphicsPipeline))
 			{
@@ -313,8 +266,8 @@ public partial class Renderer
 
 			cmd.BindPipeline(graphicsPipeline, PipelineBindPoint.Graphics);
 			cmd.SetVertexInput(vertexInputDescription.Bindings, vertexInputDescription.Attributes);
-			cmd.BindVertexBuffers(mesh.VertexBuffer);
-			cmd.BindIndexBuffer(mesh.IndexBuffer, mesh.IndexType);
+			cmd.BindVertexBuffers(meshData.VertexBuffer);
+			cmd.BindIndexBuffer(meshData.IndexBuffer, mesh.IndexType);
 			cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, globalDescriptorWrite);
 
 			var pushConstants = new PushConstants(obj.Transform, (obj is UIObject uIObject) ? uIObject.Id : 0);
@@ -345,6 +298,7 @@ public partial class Renderer
 			var textures = material.Uniforms
 				.Select(x => x.Value)
 				.OfType<Texture>()
+				.Select(x => AssetManager.GetTextureData(x))
 				.Select(x => new DescriptorImageInfo(sampler: x.Sampler, imageView: x.ImageView, imageLayout: ImageLayout.ShaderReadOnlyOptimal))
 				.ToArray()
 			;
@@ -397,10 +351,12 @@ public partial class Renderer
 
 		cmd.Reset(default);
 		cmd.Begin(beginInfo);
-		if (texture is RenderTexture rt)
+		if (texture is RenderTexture renderTexture)
 		{
-			StartRenderPass(rt.RenderPass, rt.Framebuffer, rt.Extent, objects);
-			TransitionImageLayout(rt.Image, ImageLayout.PresentSrc, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);
+			var renderTextureData = AssetManager.GetRenderTextureData(renderTexture);
+			var colorTextureData = AssetManager.GetTextureData(renderTextureData.ColorTexture);
+			StartRenderPass(renderTextureData.RenderPass, renderTextureData.Framebuffer, renderTextureData.Extent, objects);
+			TransitionImageLayout(colorTextureData.Image, ImageLayout.PresentSrc, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);
 		}
 		else StartRenderPass(renderPass, framebuffers[imageIndex], extent, objects);
 		cmd.End();
