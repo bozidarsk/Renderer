@@ -6,7 +6,7 @@ public class Transform : Component
 {
 	private Matrix4x4 matrix;
 
-	public Transform Inverse => new(matrix.Inverse);
+	public Transform Inversed => new(matrix.Inversed);
 
 	public void Translate(Vector3 v) => matrix *= Matrix4x4.Translate(v);
 	public void Scale(Vector3 v) => matrix *= Matrix4x4.Scale(v);

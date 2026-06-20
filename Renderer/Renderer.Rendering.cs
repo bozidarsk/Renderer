@@ -337,7 +337,7 @@ internal partial class Renderer
 		while (toBeDisposed[currentFrame].Count > 0)
 			toBeDisposed[currentFrame].Dequeue().Dispose();
 
-		Marshal.StructureToPtr(new GlobalUniforms(view.Inverse, projection, view.t.xyz), globalUniformsLocations[currentFrame], false);
+		Marshal.StructureToPtr(new GlobalUniforms(view.Inversed, projection, view.t), globalUniformsLocations[currentFrame], false);
 
 		uint imageIndex = (texture == null) ? swapchain.GetNextImage(imageAvailableSemaphore[currentFrame]) : ~0u;
 

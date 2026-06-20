@@ -51,23 +51,23 @@ public sealed class SphereCollider : Collider
 {
 	public Vector3 Center
 	{
-		set => (transform.tx, transform.ty, transform.tz) = (value.x, value.y, value.z);
-		get => transform.t.xyz;
+		set => transform.t = value;
+		get => transform.t;
 	}
 
 	public float Radius
 	{
 		set
 		{
-			var x = transform.x.xyz.Normalized * value;
-			var y = transform.y.xyz.Normalized * value;
-			var z = transform.z.xyz.Normalized * value;
+			var x = transform.x.Normalized * value;
+			var y = transform.y.Normalized * value;
+			var z = transform.z.Normalized * value;
 
-			(transform.xx, transform.xy, transform.xz) = (x.x, x.y, x.z);
-			(transform.yx, transform.yy, transform.yz) = (y.x, y.y, y.z);
-			(transform.zx, transform.zy, transform.zz) = (z.x, z.y, z.z);
+			transform.x = x;
+			transform.y = y;
+			transform.z = z;
 		}
-		get => transform.x.xyz.Length;
+		get => transform.x.Length;
 	}
 
 	public SphereCollider() : base()
@@ -81,23 +81,23 @@ public sealed class BoxCollider : Collider
 {
 	public Vector3 Center
 	{
-		set => (transform.tx, transform.ty, transform.tz) = (value.x, value.y, value.z);
-		get => transform.t.xyz;
+		set => transform.t = value;
+		get => transform.t;
 	}
 
 	public Vector3 Size
 	{
 		set
 		{
-			var x = transform.x.xyz.Normalized * value.x;
-			var y = transform.y.xyz.Normalized * value.y;
-			var z = transform.z.xyz.Normalized * value.z;
+			var x = transform.x.Normalized * value.x;
+			var y = transform.y.Normalized * value.y;
+			var z = transform.z.Normalized * value.z;
 
-			(transform.xx, transform.xy, transform.xz) = (x.x, x.y, x.z);
-			(transform.yx, transform.yy, transform.yz) = (y.x, y.y, y.z);
-			(transform.zx, transform.zy, transform.zz) = (z.x, z.y, z.z);
+			transform.x = x;
+			transform.y = y;
+			transform.z = z;
 		}
-		get => new(transform.x.xyz.Length * 2, transform.y.xyz.Length * 2, transform.z.xyz.Length * 2);
+		get => new(transform.x.Length * 2, transform.y.Length * 2, transform.z.Length * 2);
 	}
 
 	public Quaternion Rotation
