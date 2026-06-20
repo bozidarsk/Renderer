@@ -44,7 +44,7 @@ internal record TextureData(Image Image, ImageView ImageView, DeviceMemory Image
 	}
 }
 
-internal record RenderTextureData(RenderPass RenderPass, Framebuffer Framebuffer, Extent2D Extent, Texture ColorTexture, Texture DepthTexture) : IDisposable
+internal record RenderTextureData(RenderPass RenderPass, Framebuffer Framebuffer, Texture ColorTexture, Texture DepthTexture) : IDisposable
 {
 	public void Dispose()
 	{
@@ -275,7 +275,7 @@ internal class AssetManager : IDisposable
 
 		Framebuffer framebuffer = framebufferCreateInfo.CreateFramebuffer(renderer.Device, renderer.Allocator);
 
-		renderTextureData = new(renderPass, framebuffer, new((uint)renderTexture.Width, (uint)renderTexture.Height), colorTexture, depthTexture);
+		renderTextureData = new(renderPass, framebuffer, colorTexture, depthTexture);
 
 		renderTextures[renderTexture] = renderTextureData;
 		return renderTextureData;

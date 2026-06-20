@@ -355,7 +355,7 @@ internal partial class Renderer
 		{
 			var renderTextureData = AssetManager.GetRenderTextureData(renderTexture);
 			var colorTextureData = AssetManager.GetTextureData(renderTextureData.ColorTexture);
-			StartRenderPass(renderTextureData.RenderPass, renderTextureData.Framebuffer, renderTextureData.Extent, objects);
+			StartRenderPass(renderTextureData.RenderPass, renderTextureData.Framebuffer, new Extent2D((uint)renderTextureData.ColorTexture.Width, (uint)renderTextureData.ColorTexture.Height), objects);
 			TransitionImageLayout(colorTextureData.Image, ImageLayout.PresentSrc, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);
 		}
 		else StartRenderPass(renderPass, framebuffers[imageIndex], extent, objects);
