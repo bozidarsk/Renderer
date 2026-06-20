@@ -44,13 +44,13 @@ internal partial class Renderer
 					{
 						Type t when t == typeof(float) => Format.R32SFloat,
 						Type t when t == typeof(double) => Format.R64SFloat,
-						Type t when t == typeof(Vulkan.Color) => Format.R32G32B32A32SFloat,
-						Type t when t == typeof(Vulkan.Vector2) => Format.R32G32SFloat,
-						Type t when t == typeof(Vulkan.Vector3) => Format.R32G32B32SFloat,
-						Type t when t == typeof(Vulkan.Vector4) => Format.R32G32B32A32SFloat,
-						Type t when t == typeof(Vulkan.Vector2Int) => Format.R32G32SInt,
-						Type t when t == typeof(Vulkan.Vector3Int) => Format.R32G32B32SInt,
-						Type t when t == typeof(Vulkan.Vector4Int) => Format.R32G32B32A32SInt,
+						Type t when t == typeof(Color) => Format.R32G32B32A32SFloat,
+						Type t when t == typeof(Vector2) => Format.R32G32SFloat,
+						Type t when t == typeof(Vector3) => Format.R32G32B32SFloat,
+						Type t when t == typeof(Vector4) => Format.R32G32B32A32SFloat,
+						Type t when t == typeof(Vector2Int) => Format.R32G32SInt,
+						Type t when t == typeof(Vector3Int) => Format.R32G32B32SInt,
+						Type t when t == typeof(Vector4Int) => Format.R32G32B32A32SInt,
 						_ => throw new ArgumentOutOfRangeException(nameof(Type), $"Cannot map field type '{x.Item.FieldType.FullName!}' to a format.")
 					},
 					offset: (uint)Marshal.OffsetOf(x.Item.DeclaringType!, x.Item.Name)
