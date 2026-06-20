@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-using Vulkan;
-
 namespace Renderer;
 
 public sealed class Material

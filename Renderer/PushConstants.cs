@@ -1,5 +1,3 @@
-using Vulkan;
-
 namespace Renderer;
 
 public record struct PushConstants(

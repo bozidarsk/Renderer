@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
 
-using Vulkan;
 using Renderer.Physics;
 using Renderer.UI;
 

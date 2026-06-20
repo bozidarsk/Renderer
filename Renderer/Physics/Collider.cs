@@ -2,7 +2,6 @@
 
 using System;
 
-using Vulkan;
 using Renderer;
 
 namespace Renderer.Physics;

@@ -1,5 +1,3 @@
-using Vulkan;
-
 namespace Renderer;
 
 public class Transform : Component

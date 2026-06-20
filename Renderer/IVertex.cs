@@ -2,8 +2,6 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-using Vulkan;
-
 namespace Renderer;
 
 public interface IVertex

@@ -4,7 +4,6 @@ using System.IO;
 using System.Text;
 using System.Linq;
 
-using Vulkan;
 using Clipper2Lib;
 
 namespace Renderer;

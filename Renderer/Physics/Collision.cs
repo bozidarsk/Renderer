@@ -1,5 +1,3 @@
-using Vulkan;
-
 namespace Renderer.Physics;
 
 public struct Collision

@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-using Vulkan;
 using Renderer;
 
 namespace Renderer.Physics;

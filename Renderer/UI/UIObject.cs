@@ -1,4 +1,3 @@
-using Vulkan;
 using Renderer;
 using GLFW;
 

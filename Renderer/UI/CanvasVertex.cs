@@ -1,7 +1,5 @@
 using System.Runtime.InteropServices;
 
-using Vulkan;
-
 namespace Renderer.UI;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
