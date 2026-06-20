@@ -251,13 +251,13 @@ internal partial class Renderer
 		memory.Bind(image);
 	}
 
-	public void CreateImageView(Image image, Format format, ImageAspect aspect, out ImageView imageView)
+	public void CreateImageView(Image image, Format format, ImageAspect aspect, ImageViewType type, out ImageView imageView)
 	{
 		var createInfo = new ImageViewCreateInfo(
 			next: default,
 			flags: default,
 			image: image,
-			viewType: ImageViewType.Generic2D,
+			viewType: type,
 			format: format,
 			components: new(r: ComponentSwizzle.Identity, g: ComponentSwizzle.Identity, b: ComponentSwizzle.Identity, a: ComponentSwizzle.Identity),
 			subresourceRange: new(

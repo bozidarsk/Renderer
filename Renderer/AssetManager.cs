@@ -159,7 +159,7 @@ internal class AssetManager : IDisposable
 			renderer.CopyBufferToImage(staggingBuffer, image, texture.Width, texture.Height, texture.Aspect);
 			renderer.TransitionImageLayout(image, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal, texture.Aspect);
 
-			renderer.CreateImageView(image, texture.Format, texture.Aspect, out imageView);
+			renderer.CreateImageView(image, texture.Format, texture.Aspect, ImageViewType.Generic2D, out imageView);
 			renderer.CreateSampler(out sampler);
 
 			staggingMemory.Unmap();
@@ -170,7 +170,7 @@ internal class AssetManager : IDisposable
 		{
 			renderer.CreateImage(texture.Width, texture.Height, texture.Type, texture.Usage, texture.Format, out image);
 			renderer.CreateImageMemory(image, out imageMemory);
-			renderer.CreateImageView(image, texture.Format, texture.Aspect, out imageView);
+			renderer.CreateImageView(image, texture.Format, texture.Aspect, ImageViewType.Generic2D, out imageView);
 			renderer.CreateSampler(out sampler);
 
 			renderer.TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.ShaderReadOnlyOptimal, texture.Aspect);

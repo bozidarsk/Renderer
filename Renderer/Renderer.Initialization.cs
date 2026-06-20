@@ -296,7 +296,7 @@ internal partial class Renderer : IDisposable
 		imageViews = new ImageView[swapchainImages.Length];
 
 		for (int i = 0; i < imageViews.Length; i++)
-			CreateImageView(swapchainImages[i], swapchainImageFormat, ImageAspect.Color, out imageViews[i]);
+			CreateImageView(swapchainImages[i], swapchainImageFormat, ImageAspect.Color, ImageViewType.Generic2D, out imageViews[i]);
 	}
 
 	protected virtual void InitializeDescriptorSetLayout()
