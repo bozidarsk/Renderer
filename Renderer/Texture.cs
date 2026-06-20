@@ -20,26 +20,6 @@ public class Texture
 	private const ImageUsage DEFAULT_USAGE = ImageUsage.TransferDst | ImageUsage.Sampled;
 	private const ImageAspect DEFAULT_ASPECT = ImageAspect.Color;
 
-	public Texture(string filename) : this(1, 1, format: Format.B8G8R8A8UNorm, type: ImageType.Generic2D)
-	{
-		if (filename == null)
-			throw new ArgumentNullException();
-
-		var extension = Path.GetExtension(filename).ToLower();
-		switch (extension)
-		{
-			case ".png":
-				var png = PNG.FromFile(filename);
-				this.Width = png.Width;
-				this.Height = png.Height;
-				this.Data = png.Colors;
-				// TODO: set format according to color data
-				break;
-			default:
-				throw new InvalidOperationException($"Failed to parse texture of type '{extension}'.");
-		}
-	}
-
 	public Texture(int width, int height, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT)
 	{
 		if (width <= 0 || height <= 0)
@@ -53,21 +33,41 @@ public class Texture
 		this.Aspect = aspect;
 	}
 
-	public Texture(int width, int height, Color[] data, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT)
+	public Texture(int width, int height, uint[] data, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT) :
+		this(width, height, type: type, usage: usage, aspect: aspect)
 	{
-		if (width <= 0 || height <= 0)
-			throw new ArgumentOutOfRangeException();
+		this.Format = Format.B8G8R8A8UNorm;
+		this.Data = data;
+	}
 
-		if (width * height != data.Length)
-			throw new ArgumentException();
-
-		this.Width = width;
-		this.Height = height;
+	public Texture(int width, int height, Color[] data, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT) :
+		this(width, height, type: type, usage: usage, aspect: aspect)
+	{
 		this.Format = Format.R32G32B32A32SFloat;
+		this.Data = data;
+	}
+
+	public Texture(string filename, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT)
+	{
+		if (filename == null)
+			throw new ArgumentNullException();
+
 		this.Type = type;
 		this.Usage = usage;
 		this.Aspect = aspect;
 
-		this.Data = data;
+		var extension = Path.GetExtension(filename).ToLower();
+		switch (extension)
+		{
+			case ".png":
+				var png = PNG.FromFile(filename);
+				this.Width = png.Width;
+				this.Height = png.Height;
+				this.Format = Format.B8G8R8A8UNorm;
+				this.Data = png.Colors;
+				break;
+			default:
+				throw new InvalidOperationException($"Failed to parse texture of type '{extension}'.");
+		}
 	}
 }
