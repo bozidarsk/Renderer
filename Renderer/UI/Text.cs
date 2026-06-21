@@ -13,33 +13,41 @@ public sealed class Text : SceneObject
 	{
 		set
 		{
+			field = value;
+
 			outer.Layer = value;
 			inner.Layer = value;
 			base.Layer = value;
 		}
-		get => base.Layer;
+		get;
 	}
 
 	public required Color Color
 	{
 		set
 		{
+			field = value;
+
 			outerRenderer.Material["COLOR"] = value;
 			innerRenderer.Material["COLOR"] = value;
 		}
+		get;
 	}
 
-	public string Value
+	public required string Value
 	{
 		set
 		{
 			if (value == null)
 				throw new ArgumentNullException();
 
+			field = value;
+
 			TextMesh mesh = this.Font.CreateMesh(value);
 			outerFilter.Mesh = mesh.Outer;
 			innerFilter.Mesh = mesh.Inner;
 		}
+		get;
 	}
 
 	private UIObject outer, inner;
@@ -54,14 +62,14 @@ public sealed class Text : SceneObject
 
 		outer = new UIObject(canvas,
 			thisTransform,
-			new MeshFilter(new Mesh()),
+			new MeshFilter(null!),
 			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter.frag.hlsl")))
 		)
 		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter-mask.frag.hlsl")) };
 
 		inner = new UIObject(canvas,
 			thisTransform,
-			new MeshFilter(new Mesh()),
+			new MeshFilter(null!),
 			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner.frag.hlsl")))
 		)
 		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner-mask.frag.hlsl")) };
