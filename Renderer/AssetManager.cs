@@ -22,7 +22,7 @@ internal record ShaderProgramData(ShaderModule[] Modules, PipelineShaderStageCre
 	}
 }
 
-internal record MeshData(Buffer VertexBuffer, DeviceMemory VertexBufferMemory, Buffer IndexBuffer, DeviceMemory IndexBufferMemory) : IDisposable
+internal record MeshData(Buffer VertexBuffer, DeviceMemory VertexBufferMemory, Buffer IndexBuffer, DeviceMemory IndexBufferMemory, IndexType IndexType) : IDisposable
 {
 	public void Dispose()
 	{
@@ -110,7 +110,19 @@ internal class AssetManager : IDisposable
 		renderer.CreateVertexBuffer(mesh.Vertices, out Buffer vertexBuffer, out DeviceMemory vertexBufferMemory);
 		renderer.CreateIndexBuffer(mesh.Indices, out Buffer indexBuffer, out DeviceMemory indexBufferMemory);
 
-		meshData = new(vertexBuffer, vertexBufferMemory, indexBuffer, indexBufferMemory);
+		meshData = new(
+			vertexBuffer,
+			vertexBufferMemory,
+			indexBuffer,
+			indexBufferMemory,
+			mesh.IndexType switch
+			{
+				Type t when t == typeof(byte) => IndexType.UInt8,
+				Type t when t == typeof(ushort) => IndexType.UInt16,
+				Type t when t == typeof(uint) => IndexType.UInt32,
+				_ => throw new ArgumentOutOfRangeException(nameof(IndexType), $"Cannot map mesh index type '{mesh.IndexType.FullName}' to a vulkan index type.")
+			}
+		);
 
 		meshes[mesh] = meshData;
 		return meshData;

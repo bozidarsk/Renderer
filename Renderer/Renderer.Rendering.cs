@@ -267,7 +267,7 @@ internal partial class Renderer
 			cmd.BindPipeline(graphicsPipeline, PipelineBindPoint.Graphics);
 			cmd.SetVertexInput(vertexInputDescription.Bindings, vertexInputDescription.Attributes);
 			cmd.BindVertexBuffers(meshData.VertexBuffer);
-			cmd.BindIndexBuffer(meshData.IndexBuffer, mesh.IndexType);
+			cmd.BindIndexBuffer(meshData.IndexBuffer, meshData.IndexType);
 			cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, globalDescriptorWrite);
 
 			var pushConstants = new PushConstants(obj.Transform, (obj is UIObject uIObject) ? uIObject.Id : 0);
