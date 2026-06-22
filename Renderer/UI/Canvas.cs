@@ -11,18 +11,22 @@ public class Canvas : SceneObject
 {
 	public int Width { private set; get; }
 	public int Height { private set; get; }
-	public float Scale { set; get; } = 0.01f;
+	public float Scale { private set; get; } = 0.01f;
+
+	public UIObject? Root { get; } = null;
 
 	new public CameraLayer Layer
 	{
 		set
 		{
+			field = value;
+
 			renderCamera.Layer = value;
 			maskCamera.Layer = value;
 			base.Layer = value;
 		}
-		get => base.Layer;
-	}
+		get;
+	} = CameraLayer.UI;
 
 	private Camera renderCamera, maskCamera;
 	private SceneObject canvasTexture;
@@ -31,25 +35,11 @@ public class Canvas : SceneObject
 	private Vulkan.DeviceMemory maskMemory;
 	private nint maskLocation;
 
-	private uint nextId = 0;
-	internal uint NextId
+	public void Resize(int width, int height, float scale)
 	{
-		get
-		{
-			if (nextId == uint.MaxValue)
-				throw new InvalidOperationException("Canvas ran out of ui element ids.");
-
-			return ++nextId;
-		}
-	}
-
-	private List<UIObject> objects = new();
-	internal void RegisterObject(UIObject x) => objects.Add(x);
-	internal void UnregisterObject(UIObject x) => objects.Remove(x);
-
-	private void Resize()
-	{
-		(this.Width, this.Height) = this.Scene.Window.Size;
+		this.Width = width;
+		this.Height = height;
+		this.Scale = scale;
 
 		float w = Scale * (Width / 2f);
 		float h = Scale * (Height / 2f);
@@ -105,6 +95,7 @@ public class Canvas : SceneObject
 
 	public override void Dispose()
 	{
+		canvasTexture.Dispose();
 		renderCamera.Dispose();
 		maskCamera.Dispose();
 		maskBuffer.Dispose();
@@ -134,7 +125,8 @@ public class Canvas : SceneObject
 		)
 		{ Layer = CameraLayer.Main }; // TODO: user can change Layer
 
-		Resize();
+		(int width, int height) = this.Scene.Window.Size;
+		Resize(width, height, this.Scale);
 
 		DeviceSize size = sizeof(uint);
 		this.Scene.Renderer.CreateBuffer(size, BufferUsage.TransferDst, out maskBuffer);
