@@ -49,7 +49,6 @@ public class Mesh
 					Type t when t == typeof(uint) => obj.Indices.Select(x => checked((uint)x)).ToArray(),
 					_ => throw new UnreachableException()
 				};
-				Console.WriteLine($"{indexType} {this.IndexType}");
 				break;
 			default:
 				throw new InvalidOperationException($"Failed to parse mesh of type '{extension}'.");
