@@ -148,8 +148,7 @@ public class Canvas : SceneObject
 			if (id == 0)
 				return;
 
-			var element = objects.Single(x => x.Id == id);
-			element.RaiseMouseButtonEvent(this, e);
+			this.Root?.RaiseEvent(new(EventType.MouseButton, EventPropagationType.Direct, s, e, id));
 		};
 	}
 }
