@@ -8,38 +8,10 @@ using Renderer;
 
 namespace Renderer.UI;
 
-public class UIObject : SceneObject, IEnumerable<UIObject>
+public class UIObject : SceneObject
 {
-	public UIObject? Parent { private set; get; } = null;
-
 	private static uint nextId = 0;
 	internal uint Id { get; } = checked(++nextId);
-
-	private readonly List<UIObject> children = new();
-	public IReadOnlyList<UIObject> Children => children;
-
-	public IEnumerator<UIObject> GetEnumerator() => children.GetEnumerator();
-	IEnumerator IEnumerable.GetEnumerator() => children.GetEnumerator();
-
-	public void Add(UIObject child)
-	{
-		if (child == null)
-			throw new ArgumentNullException();
-
-		child.Layer |= this.Layer;
-		child.Parent = this;
-		children.Add(child);
-	}
-
-	public void Remove(UIObject child)
-	{
-		if (child == null)
-			throw new ArgumentNullException();
-
-		child.Layer &= ~CameraLayer.None;
-		child.Parent = null;
-		children.Remove(child);
-	}
 
 	public Material? MaskMaterial { init; get; } = null;
 	private Material? normalMaterial;
@@ -70,22 +42,12 @@ public class UIObject : SceneObject, IEnumerable<UIObject>
 		mr.Material = normalMaterial;
 	}
 
-	private UIObject FindRoot()
-	{
-		var root = this;
-
-		while (root.Parent != null)
-			root = root.Parent;
-
-		return root;
-	}
-
 	private UIObject? FindTarget(uint id)
 	{
 		if (this.Id == id)
 			return this;
 
-		foreach (var child in children)
+		foreach (var child in this.Children.OfType<UIObject>())
 		{
 			var target = child.FindTarget(id);
 
@@ -98,12 +60,14 @@ public class UIObject : SceneObject, IEnumerable<UIObject>
 
 	private IEnumerable<UIObject> GetAncestors()
 	{
-		var root = this;
+		SceneObject root = this;
 
-		while (root.Parent != null)
+		while (root.Parent != null && !(root.Parent is Canvas))
 		{
 			root = root.Parent;
-			yield return root;
+
+			if (root is UIObject obj)
+				yield return obj;
 		}
 	}
 

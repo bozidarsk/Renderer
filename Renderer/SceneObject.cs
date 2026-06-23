@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -9,7 +10,7 @@ using Renderer.UI;
 
 namespace Renderer;
 
-public class SceneObject : IDisposable
+public class SceneObject : IDisposable, IEnumerable<SceneObject>
 {
 	public readonly Scene Scene;
 	private List<Component> components = new();
@@ -17,8 +18,51 @@ public class SceneObject : IDisposable
 	public CameraLayer Layer { set; get; } = CameraLayer.Main;
 	public bool IsEnabled { set; get; } = true;
 
+	public SceneObject? Parent { private set; get; } = null;
+
+	private readonly List<SceneObject> children = [];
+	public IReadOnlyList<SceneObject> Children => children;
+
+	public IEnumerator<SceneObject> GetEnumerator() => children.GetEnumerator();
+	IEnumerator IEnumerable.GetEnumerator() => children.GetEnumerator();
+
+	public void Add(SceneObject child)
+	{
+		if (child == null)
+			throw new ArgumentNullException();
+
+		if (children.Contains(child))
+			return;
+
+		child.Parent = this;
+		children.Add(child);
+	}
+
+	public void Remove(SceneObject child)
+	{
+		if (child == null)
+			throw new ArgumentNullException();
+
+		if (children.Remove(child))
+			child.Parent = null;
+	}
+
 	public Transform Transform => TryGetComponent<Transform>(out Transform transform) ? transform : throw new InvalidOperationException("Object does not have a Transform component.");
 	public bool IsRenderable => IsEnabled && HasComponents<Transform, MeshFilter, MeshRenderer>();
+
+	internal Matrix4x4 Model
+	{
+		get
+		{
+			var model = Matrix4x4.Identity;
+
+			for (var obj = this; obj != null; obj = obj.Parent)
+				if (obj.TryGetComponent<Transform>(out Transform transform))
+					model *= transform;
+
+			return model;
+		}
+	}
 
 	public Action OnAwake;
 	public Action OnStart;
@@ -90,7 +134,10 @@ public class SceneObject : IDisposable
 
 	public virtual void Dispose()
 	{
-		this.Scene.UnregisterObject(this);
+		Parent?.Remove(this);
+
+		while (children.Count > 0)
+			children[0].Dispose();
 
 		foreach (var x in components.OfType<IDisposable>())
 			x.Dispose();
@@ -103,7 +150,6 @@ public class SceneObject : IDisposable
 		this.OnUpdate ??= () => this.Update();
 		this.OnCollision ??= (other, collision) => this.Collision(other, collision);
 		this.Scene = scene;
-		this.Scene.RegisterObject(this);
 	}
 
 	public SceneObject(Scene scene, params Component[] components) : this(scene) => this.components.AddRange(components);

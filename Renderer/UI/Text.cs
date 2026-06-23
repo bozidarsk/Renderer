@@ -58,17 +58,15 @@ public sealed class Text : UIObject
 	public Text(Scene scene) : this(scene, []) { }
 	public Text(Scene scene, params Component[] components) : base(scene, components)
 	{
-		var thisTransform = this.Transform;
-
 		outer = new UIObject(scene,
-			thisTransform,
+			new Transform(),
 			new MeshFilter(null!),
 			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter.frag.hlsl")))
 		)
 		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter-mask.frag.hlsl")) };
 
 		inner = new UIObject(scene,
-			thisTransform,
+			new Transform(),
 			new MeshFilter(null!),
 			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner.frag.hlsl")))
 		)

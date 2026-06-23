@@ -13,12 +13,14 @@ public class Scene : IDisposable
 	internal readonly Renderer Renderer;
 	public readonly GLFW.Window Window;
 
-	private readonly List<SceneObject> objects = new();
+	public SceneObject? Root { set; get; } = null;
 
 	public event EventHandler<DebugUtilsMessengerEventArgs>? DebugUtilsMessageReceived;
 
 	public void Run()
 	{
+		var objects = GetAllObjects(Root).ToArray();
+
 		foreach (var x in objects)
 			x.OnStart();
 
@@ -41,22 +43,25 @@ public class Scene : IDisposable
 		this.Renderer.DeviceWaitIdle();
 	}
 
-	internal void RegisterObject(SceneObject x)
-	{
-		x.OnAwake();
-		objects.Add(x);
-	}
-
-	internal void UnregisterObject(SceneObject x) => objects.Remove(x);
-
 	public void Dispose()
 	{
-		while (objects.Count > 0)
-			objects[0].Dispose();
+		this.Root?.Dispose();
 
 		this.Renderer.Dispose();
 		this.Window.Dispose();
 		GLFW.Program.Terminate();
+	}
+
+	private IEnumerable<SceneObject> GetAllObjects(SceneObject? root = null)
+	{
+		if (root == null)
+			yield break;
+
+		yield return root;
+
+		foreach (var child in root.Children)
+			foreach (var nestedObject in GetAllObjects(child))
+				yield return nestedObject;
 	}
 
 	public Scene() : this(1280, 720) { }

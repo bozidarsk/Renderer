@@ -270,7 +270,7 @@ internal partial class Renderer
 			cmd.BindIndexBuffer(meshData.IndexBuffer, meshData.IndexType);
 			cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, globalDescriptorWrite);
 
-			var pushConstants = new PushConstants(obj.Transform, (obj is UIObject uIObject) ? uIObject.Id : 0);
+			var pushConstants = new PushConstants(obj.Model, (obj is UIObject uIObject) ? uIObject.Id : 0);
 			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 0, size: (uint)Marshal.SizeOf<PushConstants>(), ref Unsafe.As<PushConstants, byte>(ref pushConstants));
 
 			var uniformsSize = CreateUniformsBuffer(material.Uniforms, out Buffer? uniformsBuffer, out DeviceMemory? uniformsMemory);
