@@ -64,14 +64,49 @@ public class SceneObject : IDisposable, IEnumerable<SceneObject>
 		}
 	}
 
-	public Action OnAwake;
-	public Action OnStart;
-	public Action OnUpdate;
-	public Action<SceneObject, Collision> OnCollision;
-	protected virtual void Awake() { }
-	protected virtual void Start() { }
-	protected virtual void Update() { }
-	protected virtual void Collision(SceneObject other, Collision collision) { }
+	public Action? Awake;
+	protected virtual void OnAwake() { }
+	internal void RaiseAwake()
+	{
+		if (!IsEnabled)
+			return;
+
+		Awake?.Invoke();
+		OnAwake();
+	}
+
+	public Action? Start;
+	protected virtual void OnStart() { }
+	internal void RaiseStart()
+	{
+		if (!IsEnabled)
+			return;
+
+		Start?.Invoke();
+		OnStart();
+	}
+
+	public Action? Update;
+	protected virtual void OnUpdate() { }
+	internal void RaiseUpdate()
+	{
+		if (!IsEnabled)
+			return;
+
+		Update?.Invoke();
+		OnUpdate();
+	}
+
+	public EventHandler<CollisionEventArgs>? Collision;
+	protected virtual void OnCollision(object? sender, CollisionEventArgs args) { }
+	internal void RaiseCollision(object? sender, CollisionEventArgs args)
+	{
+		if (!IsEnabled)
+			return;
+
+		Collision?.Invoke(sender, args);
+		OnCollision(sender, args);
+	}
 
 	public void AddComponent<T>(T component) where T : Component => components.Add(component);
 	public void AddComponents<T>(IEnumerable<T> components) where T : Component => this.components.AddRange(components);
@@ -143,14 +178,6 @@ public class SceneObject : IDisposable, IEnumerable<SceneObject>
 			x.Dispose();
 	}
 
-	public SceneObject(Scene scene)
-	{
-		this.OnAwake ??= () => this.Awake();
-		this.OnStart ??= () => this.Start();
-		this.OnUpdate ??= () => this.Update();
-		this.OnCollision ??= (other, collision) => this.Collision(other, collision);
-		this.Scene = scene;
-	}
-
+	public SceneObject(Scene scene) => this.Scene = scene;
 	public SceneObject(Scene scene, params Component[] components) : this(scene) => this.components.AddRange(components);
 }

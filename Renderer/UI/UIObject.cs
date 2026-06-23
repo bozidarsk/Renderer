@@ -16,7 +16,7 @@ public class UIObject : SceneObject
 	public Material? MaskMaterial { init; get; } = null;
 	private Material? normalMaterial;
 
-	public event MouseButtonEventHandler? MouseButton;
+	public EventHandler<MouseButtonEventArgs>? MouseButton;
 	protected virtual void OnMouseButton(object? sender, MouseButtonEventArgs args) { }
 
 	internal void SwitchToMaskMaterial()
@@ -71,12 +71,12 @@ public class UIObject : SceneObject
 		}
 	}
 
-	private void Dispatch(UIEvent uiEvent)
+	private void Dispatch(EventType type, object? sender, EventArgs args)
 	{
-		switch (uiEvent.Type)
+		switch (type)
 		{
 			case EventType.MouseButton:
-				MouseButton?.Invoke(uiEvent.Sender, (MouseButtonEventArgs)uiEvent.Args);
+				MouseButton?.Invoke(sender, (MouseButtonEventArgs)args);
 				break;
 		}
 	}
@@ -97,7 +97,7 @@ public class UIObject : SceneObject
 		};
 
 		foreach (var x in chain)
-			x.Dispatch(uiEvent);
+			x.Dispatch(uiEvent.Type, uiEvent.Sender, uiEvent.Args);
 	}
 
 	public static bool operator ==(UIObject? a, UIObject? b) => a?.Id == b?.Id;

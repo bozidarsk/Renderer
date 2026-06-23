@@ -22,14 +22,14 @@ public class Scene : IDisposable
 		var objects = GetAllObjects(Root).ToArray();
 
 		foreach (var x in objects)
-			x.OnStart();
+			x.RaiseStart();
 
 		while (!this.Window.ShouldClose)
 		{
 			Input.PollEvents();
 
 			foreach (var x in objects)
-				x.OnUpdate();
+				x.RaiseUpdate();
 
 			PhysicsEngine.ResolveDynamics(objects.Where(x => x.IsEnabled && x.HasComponents<Transform, RigidBody>()));
 			PhysicsEngine.ResolveCollisions(objects.Where(x => x.IsEnabled && x.HasComponent<Collider>()));

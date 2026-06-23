@@ -21,6 +21,6 @@ internal sealed class TriggerSolver : CollisionSolver
 	public override void Solve(SceneObject source, SceneObject target, Collision collision, float dt)
 	{
 		if (collision.IsSourceTrigger)
-			source.OnCollision(target, collision);
+			source.RaiseCollision(this, new(target, collision.Normal, collision.IsSourceTrigger, collision.IsTargetTrigger));
 	}
 }
