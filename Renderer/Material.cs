@@ -17,7 +17,6 @@ public sealed class Material
 			if (name == null || value == null)
 				throw new ArgumentNullException();
 
-			Console.WriteLine(value.GetType());
 			uniforms[name] = value;
 		}
 	}
