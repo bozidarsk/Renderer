@@ -6,7 +6,7 @@ using Renderer.UI;
 
 namespace Renderer;
 
-public class Camera : SceneObject, IDisposable
+public class Camera : SceneObject
 {
 	public Matrix4x4 Projection { set; get; } = Matrix4x4.Perspective(fov: 60, ratio: 16f / 9f, near: 0.1f, far: 10);
 	public RenderTexture? Texture { set; get; } = null;
