@@ -307,9 +307,19 @@ public sealed class PNG
 		return pixels;
 	}
 
-	public PNG(int width, int height, bool isTransparent, params uint[] colors) =>
-		(this.Width, this.Height, this.IsTransparent, this.Colors) = (width, height, isTransparent, colors ?? throw new ArgumentNullException())
-	;
+	public PNG(int width, int height, bool isTransparent, params uint[] colors)
+	{
+		if (colors == null)
+			throw new ArgumentNullException();
+
+		if (width <= 0 || height <= 0 || colors.Length != width * height)
+			throw new ArgumentOutOfRangeException();
+
+		this.Width = width;
+		this.Height = height;
+		this.IsTransparent = isTransparent;
+		this.Colors = colors;
+	}
 
 	public PNG(string filename)
 	{
