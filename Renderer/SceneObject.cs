@@ -64,48 +64,48 @@ public class SceneObject : IDisposable, IEnumerable<SceneObject>
 		}
 	}
 
-	public Action? Awake;
+	public Action<SceneObject>? Awake;
 	protected virtual void OnAwake() { }
 	internal void RaiseAwake()
 	{
 		if (!IsEnabled)
 			return;
 
-		Awake?.Invoke();
+		Awake?.Invoke(this);
 		OnAwake();
 	}
 
-	public Action? Start;
+	public Action<SceneObject>? Start;
 	protected virtual void OnStart() { }
 	internal void RaiseStart()
 	{
 		if (!IsEnabled)
 			return;
 
-		Start?.Invoke();
+		Start?.Invoke(this);
 		OnStart();
 	}
 
-	public Action? Update;
+	public Action<SceneObject>? Update;
 	protected virtual void OnUpdate() { }
 	internal void RaiseUpdate()
 	{
 		if (!IsEnabled)
 			return;
 
-		Update?.Invoke();
+		Update?.Invoke(this);
 		OnUpdate();
 	}
 
-	public EventHandler<CollisionEventArgs>? Collision;
-	protected virtual void OnCollision(object? sender, CollisionEventArgs args) { }
-	internal void RaiseCollision(object? sender, CollisionEventArgs args)
+	public Action<SceneObject, SceneObject, Collision>? Collision;
+	protected virtual void OnCollision(SceneObject other, Collision collision) { }
+	internal void RaiseCollision(SceneObject other, Collision collision)
 	{
 		if (!IsEnabled)
 			return;
 
-		Collision?.Invoke(sender, args);
-		OnCollision(sender, args);
+		Collision?.Invoke(this, other, collision);
+		OnCollision(other, collision);
 	}
 
 	public void AddComponent<T>(T component) where T : Component => components.Add(component);

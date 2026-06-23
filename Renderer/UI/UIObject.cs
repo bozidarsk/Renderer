@@ -16,7 +16,7 @@ public class UIObject : SceneObject
 	public Material? MaskMaterial { init; get; } = null;
 	private Material? normalMaterial;
 
-	public EventHandler<MouseButtonEventArgs>? MouseButton;
+	public Action<UIObject, object?, MouseButtonEventArgs>? MouseButton;
 	protected virtual void OnMouseButton(object? sender, MouseButtonEventArgs args) { }
 
 	internal void SwitchToMaskMaterial()
@@ -76,7 +76,8 @@ public class UIObject : SceneObject
 		switch (type)
 		{
 			case EventType.MouseButton:
-				MouseButton?.Invoke(sender, (MouseButtonEventArgs)args);
+				MouseButton?.Invoke(this, sender, (MouseButtonEventArgs)args);
+				OnMouseButton(sender, (MouseButtonEventArgs)args);
 				break;
 		}
 	}
@@ -110,7 +111,5 @@ public class UIObject : SceneObject
 	public UIObject(Scene scene, params Component[] components) : base(scene, components)
 	{
 		this.Layer = CameraLayer.UI;
-
-		this.MouseButton += OnMouseButton;
 	}
 }
