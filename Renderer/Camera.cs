@@ -12,14 +12,11 @@ public class Camera : SceneObject, IDisposable
 	public RenderTexture? Texture { set; get; } = null;
 	public bool MaskUIObjects { set; get; } = false;
 
-	internal void Render(params SceneObject[] objects) => Render((objects is IEnumerable<SceneObject> x) ? x : throw new ArgumentException());
+	internal void Render(params SceneObject[] objects) => Render(objects ?? throw new ArgumentNullException());
 	internal void Render(IEnumerable<SceneObject> objects)
 	{
 		if (objects == null)
 			throw new ArgumentNullException();
-
-		if (this.Texture == null && base.Layer != CameraLayer.MainCamera)
-			return;
 
 		var uiObjects = MaskUIObjects ? objects.OfType<UIObject>().ToArray() : null;
 

@@ -13,7 +13,7 @@ public class Canvas : SceneObject
 	public int Height { private set; get; }
 	public float Scale { private set; get; } = 0.01f;
 
-	public UIObject? Root { get; } = null;
+	public UIObject? Root { set; get; } = null;
 
 	public CameraLayer CameraLayer
 	{
@@ -151,7 +151,7 @@ public class Canvas : SceneObject
 			if (id == 0)
 				return;
 
-			this.Root?.RaiseEvent(new(EventType.MouseButton, EventPropagationType.Direct, s, e, id));
+			this.Root?.RaiseEvent(new(EventType.MouseButton, EventPropagationType.Tunnel, s, e, id));
 		};
 	}
 }

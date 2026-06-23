@@ -5,7 +5,7 @@ using Renderer;
 
 namespace Renderer.UI;
 
-public sealed class Text : SceneObject
+public sealed class Text : UIObject
 {
 	public required Font Font { set; get; }
 
@@ -50,29 +50,32 @@ public sealed class Text : SceneObject
 		get;
 	}
 
-	private UIObject outer, inner;
+	private readonly UIObject outer, inner;
 
-	private MeshFilter outerFilter, innerFilter;
-	private MeshRenderer outerRenderer, innerRenderer;
+	private readonly MeshFilter outerFilter, innerFilter;
+	private readonly MeshRenderer outerRenderer, innerRenderer;
 
-	public Text(Canvas canvas) : this(canvas, []) { }
-	public Text(Canvas canvas, params Component[] components) : base(canvas.Scene, components)
+	public Text(Scene scene) : this(scene, []) { }
+	public Text(Scene scene, params Component[] components) : base(scene, components)
 	{
 		var thisTransform = this.Transform;
 
-		outer = new UIObject(canvas,
+		outer = new UIObject(scene,
 			thisTransform,
 			new MeshFilter(null!),
 			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter.frag.hlsl")))
 		)
 		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter-mask.frag.hlsl")) };
 
-		inner = new UIObject(canvas,
+		inner = new UIObject(scene,
 			thisTransform,
 			new MeshFilter(null!),
 			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner.frag.hlsl")))
 		)
 		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner-mask.frag.hlsl")) };
+
+		Add(inner);
+		Add(outer);
 
 		outerFilter = outer.GetComponent<MeshFilter>();
 		innerFilter = inner.GetComponent<MeshFilter>();

@@ -10,7 +10,7 @@ namespace Renderer.UI;
 
 public class UIObject : SceneObject, IEnumerable<UIObject>
 {
-	public UIObject? Parent { get; }
+	public UIObject? Parent { private set; get; } = null;
 
 	private static uint nextId = 0;
 	internal uint Id { get; } = checked(++nextId);
@@ -21,10 +21,27 @@ public class UIObject : SceneObject, IEnumerable<UIObject>
 	public IEnumerator<UIObject> GetEnumerator() => children.GetEnumerator();
 	IEnumerator IEnumerable.GetEnumerator() => children.GetEnumerator();
 
-	public void Add(UIObject child) => children.Add(child ?? throw new ArgumentNullException());
-	public void Remove(UIObject child) => children.Remove(child ?? throw new ArgumentNullException());
+	public void Add(UIObject child)
+	{
+		if (child == null)
+			throw new ArgumentNullException();
 
-	public required Material MaskMaterial { init; get; }
+		child.Layer |= this.Layer;
+		child.Parent = this;
+		children.Add(child);
+	}
+
+	public void Remove(UIObject child)
+	{
+		if (child == null)
+			throw new ArgumentNullException();
+
+		child.Layer &= ~CameraLayer.None;
+		child.Parent = null;
+		children.Remove(child);
+	}
+
+	public Material? MaskMaterial { init; get; } = null;
 	private Material? normalMaterial;
 
 	public event MouseButtonEventHandler? MouseButton;
@@ -32,9 +49,12 @@ public class UIObject : SceneObject, IEnumerable<UIObject>
 
 	internal void SwitchToMaskMaterial()
 	{
-		var mr = GetComponent<MeshRenderer>();
-		normalMaterial = mr.Material;
-		mr.Material = MaskMaterial;
+		if (MaskMaterial != null)
+		{
+			var mr = GetComponent<MeshRenderer>();
+			normalMaterial = mr.Material;
+			mr.Material = MaskMaterial;
+		}
 	}
 
 	internal void SwitchToNormalMaterial()
@@ -122,20 +142,10 @@ public class UIObject : SceneObject, IEnumerable<UIObject>
 	public override bool Equals(object? other) => (other is UIObject obj) ? obj == this : false;
 	public override int GetHashCode() => Id.GetHashCode();
 
-	public UIObject(Canvas canvas) : this(canvas, []) { }
-	public UIObject(Canvas canvas, params Component[] components) : base(canvas.Scene, components)
+	public UIObject(Scene scene) : this(scene, []) { }
+	public UIObject(Scene scene, params Component[] components) : base(scene, components)
 	{
 		this.Layer = CameraLayer.UI;
-		this.Parent = null;
-
-		this.MouseButton += OnMouseButton;
-	}
-
-	public UIObject(UIObject parent) : this(parent, []) { }
-	public UIObject(UIObject parent, params Component[] components) : base(parent.Scene, components)
-	{
-		this.Layer = CameraLayer.UI;
-		this.Parent = parent;
 
 		this.MouseButton += OnMouseButton;
 	}

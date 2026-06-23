@@ -4,14 +4,9 @@ namespace Renderer;
 public enum CameraLayer
 {
 	Main = Camera0,
-	MainCamera = Main,
-
 	UI = Camera1,
-	UICamera = UI,
 
-	UISample = Camera2,
-	UISampleCamera = UISample,
-
+	None = 0,
 	Camera0 = 1 << 0,
 	Camera1 = 1 << 1,
 	Camera2 = 1 << 2,
