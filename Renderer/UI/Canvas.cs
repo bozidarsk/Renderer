@@ -15,7 +15,7 @@ public class Canvas : SceneObject
 
 	public UIObject? Root { get; } = null;
 
-	new public CameraLayer Layer
+	public CameraLayer CameraLayer
 	{
 		set
 		{
@@ -27,6 +27,17 @@ public class Canvas : SceneObject
 		}
 		get;
 	} = CameraLayer.UI;
+
+	public CameraLayer TextureLayer
+	{
+		set
+		{
+			field = value;
+
+			canvasTexture.Layer = value;
+		}
+		get;
+	} = CameraLayer.Main;
 
 	private Camera renderCamera, maskCamera;
 	private SceneObject canvasTexture;
@@ -106,8 +117,8 @@ public class Canvas : SceneObject
 	public Canvas(Scene scene) : this(scene, []) { }
 	public Canvas(Scene scene, params Component[] components) : base(scene, components)
 	{
-		renderCamera = new Camera(base.Scene) { Layer = this.Layer };
-		maskCamera = new Camera(base.Scene) { Layer = this.Layer, MaskUIObjects = true };
+		renderCamera = new Camera(base.Scene) { Layer = this.CameraLayer };
+		maskCamera = new Camera(base.Scene) { Layer = this.CameraLayer, MaskUIObjects = true };
 
 		CanvasVertex[] vertices = [
 			new() { Position = new(-1, 1, 0), UV = new(0, 0) },
@@ -123,7 +134,7 @@ public class Canvas : SceneObject
 			new MeshFilter(new Mesh<CanvasVertex, byte>(vertices, indices)),
 			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/canvas.vert.hlsl", "Renderer/Shaders/canvas.frag.hlsl")))
 		)
-		{ Layer = CameraLayer.Main }; // TODO: user can change Layer
+		{ Layer = this.TextureLayer };
 
 		(int width, int height) = this.Scene.Window.Size;
 		Resize(width, height, this.Scale);
