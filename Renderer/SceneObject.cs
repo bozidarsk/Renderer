@@ -165,6 +165,9 @@ public class SceneObject : IDisposable, IEnumerable<SceneObject>
 
 		foreach (var x in components.OfType<IDisposable>())
 			x.Dispose();
+
+		IsEnabled = false;
+		components.Clear();
 	}
 
 	public SceneObject(Scene scene) => this.Scene = scene;
