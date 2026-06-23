@@ -150,7 +150,8 @@ public class Canvas : SceneObject
 			if (id == 0)
 				return;
 
-			(this.Children.FirstOrDefault(x => x is UIObject) as UIObject)?.RaiseEvent(new(EventType.MouseButton, EventPropagationType.Tunnel, s, e, id));
+			foreach (var x in this.Children.OfType<UIObject>())
+				x.RaiseEvent(new(EventType.MouseButton, EventPropagationType.Tunnel, s, e, id));
 		};
 
 		Add(canvasTexture);
