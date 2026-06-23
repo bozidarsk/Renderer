@@ -23,7 +23,6 @@ public class Canvas : SceneObject
 
 			renderCamera.Layer = value;
 			maskCamera.Layer = value;
-			base.Layer = value;
 		}
 		get;
 	} = CameraLayer.UI;
@@ -117,6 +116,8 @@ public class Canvas : SceneObject
 	public Canvas(Scene scene) : this(scene, []) { }
 	public Canvas(Scene scene, params Component[] components) : base(scene, components)
 	{
+		base.Layer = CameraLayer.None;
+
 		renderCamera = new Camera(base.Scene) { Layer = this.CameraLayer };
 		maskCamera = new Camera(base.Scene) { Layer = this.CameraLayer, MaskUIObjects = true };
 
