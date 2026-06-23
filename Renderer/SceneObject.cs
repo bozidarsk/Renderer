@@ -64,17 +64,6 @@ public class SceneObject : IDisposable, IEnumerable<SceneObject>
 		}
 	}
 
-	public Action<SceneObject>? Awake;
-	protected virtual void OnAwake() { }
-	internal void RaiseAwake()
-	{
-		if (!IsEnabled)
-			return;
-
-		Awake?.Invoke(this);
-		OnAwake();
-	}
-
 	public Action<SceneObject>? Start;
 	protected virtual void OnStart() { }
 	internal void RaiseStart()
