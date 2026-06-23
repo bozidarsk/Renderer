@@ -67,7 +67,7 @@ public class Canvas : SceneObject
 		renderCamera.Texture = new(Width, Height, Format.R8G8B8A8SRGB);
 		renderCamera.Projection = projection;
 
-		maskCamera.Texture = new(Width, Height, Format.R8G8B8A8UInt); // R8G8B8A8UInt
+		maskCamera.Texture = new(Width, Height, Format.R8G8B8A8UInt);
 		maskCamera.Projection = projection;
 
 		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = renderCamera.Texture;
