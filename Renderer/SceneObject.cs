@@ -175,6 +175,6 @@ public class SceneObject : IDisposable
 		components.Clear();
 	}
 
-	public SceneObject(Scene scene) => this.Scene = scene;
-	public SceneObject(Scene scene, params Component[] components) : this(scene) => this.components.AddRange(components);
+	public SceneObject(Scene scene) => this.Scene = scene ?? throw new ArgumentNullException();
+	public SceneObject(Scene scene, params Component[] components) : this(scene) => this.components.AddRange(components ?? throw new ArgumentNullException());
 }
