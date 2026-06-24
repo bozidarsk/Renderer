@@ -72,8 +72,8 @@ public sealed class Text : UIObject
 		)
 		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner-mask.frag.hlsl")) };
 
-		Add(inner);
-		Add(outer);
+		AddChild(inner);
+		AddChild(outer);
 
 		outerFilter = outer.GetComponent<MeshFilter>();
 		innerFilter = inner.GetComponent<MeshFilter>();

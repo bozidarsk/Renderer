@@ -154,8 +154,8 @@ public class Canvas : SceneObject
 				x.RaiseEvent(new(EventType.MouseButton, EventPropagationType.Tunnel, s, e, id));
 		};
 
-		Add(canvasTexture);
-		Add(renderCamera);
-		Add(maskCamera);
+		AddChild(canvasTexture);
+		AddChild(renderCamera);
+		AddChild(maskCamera);
 	}
 }

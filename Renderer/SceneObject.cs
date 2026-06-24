@@ -10,7 +10,7 @@ using Renderer.UI;
 
 namespace Renderer;
 
-public class SceneObject : IDisposable, IEnumerable<SceneObject>
+public class SceneObject : IDisposable
 {
 	public readonly Scene Scene;
 	private List<Component> components = new();
@@ -21,12 +21,17 @@ public class SceneObject : IDisposable, IEnumerable<SceneObject>
 	public SceneObject? Parent { private set; get; } = null;
 
 	private readonly List<SceneObject> children = [];
-	public IReadOnlyList<SceneObject> Children => children;
+	public IReadOnlyList<SceneObject> Children
+	{
+		init
+		{
+			foreach (var x in value)
+				AddChild(x);
+		}
+		get => children;
+	}
 
-	public IEnumerator<SceneObject> GetEnumerator() => children.GetEnumerator();
-	IEnumerator IEnumerable.GetEnumerator() => children.GetEnumerator();
-
-	public void Add(SceneObject child)
+	public void AddChild(SceneObject child)
 	{
 		if (child == null)
 			throw new ArgumentNullException();
@@ -38,7 +43,7 @@ public class SceneObject : IDisposable, IEnumerable<SceneObject>
 		children.Add(child);
 	}
 
-	public void Remove(SceneObject child)
+	public void RemoveChild(SceneObject child)
 	{
 		if (child == null)
 			throw new ArgumentNullException();
@@ -158,7 +163,7 @@ public class SceneObject : IDisposable, IEnumerable<SceneObject>
 
 	public virtual void Dispose()
 	{
-		Parent?.Remove(this);
+		Parent?.RemoveChild(this);
 
 		while (children.Count > 0)
 			children[0].Dispose();
