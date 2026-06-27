@@ -1,0 +1,59 @@
+{
+	"attachments": [
+		{
+			"format": "R8G8B8A8SRGB",
+			"samples": 1,
+			"loadOp": "Clear",
+			"storeOp": "Store",
+			"stencilLoadOp": "DontCare",
+			"stencilStoreOp": "DontCare",
+			"initialLayout": "Undefined",
+			"finalLayout": "ShaderReadOnlyOptimal"
+		},
+		{
+			"format": "D32SFloat",
+			"samples": 1,
+			"loadOp": "Clear",
+			"storeOp": "DontCare",
+			"stencilLoadOp": "DontCare",
+			"stencilStoreOp": "DontCare",
+			"initialLayout": "Undefined",
+			"finalLayout": "DepthStencilAttachmentOptimal"
+		}
+	],
+	"subpasses": [
+		{
+			"pipelineBindPoint": "Graphics",
+			"inputAttachments": [],
+			"colorAttachments": [
+				{
+					"index": 0,
+					"layout": "ColorAttachmentOptimal"
+				}
+			],
+			"resolveAttachments": [],
+			"depthStencilAttachment": {
+				"index": 1,
+				"layout": "DepthStencilAttachmentOptimal"
+			},
+			"preserveAttachments": []
+		}
+	],
+	"dependencies": [
+		{
+			"sourceSubpass": -1,
+			"destinationSubpass": 0,
+			"sourceStages": ["ColorAttachmentOutput", "EarlyFragmentTests"],
+			"destinationStages": [
+				"ColorAttachmentOutput",
+				"EarlyFragmentTests"
+			],
+			"sourceAccess": [],
+			"destinationAccess": [
+				"ColorAttachmentWrite",
+				"DepthStencilAttachmentWrite"
+			],
+			"dependencyFlags": []
+		}
+	]
+}

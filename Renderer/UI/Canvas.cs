@@ -61,20 +61,36 @@ public class Canvas : SceneObject
 			far: 1
 		);
 
-		renderCamera.Texture = new(Width, Height, Format.R8G8B8A8SRGB);
 		renderCamera.Projection = projection;
+		renderCamera.Texture = new(
+			Width,
+			Height,
+			new("Renderer/RenderPasses/default.json"),
+			[
+				new(Width, Height, format: Format.R8G8B8A8SRGB, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
+				new(Width, Height, format: Format.D32SFloat, usage: ImageUsage.DepthStencilAttachment | ImageUsage.Sampled, aspect: ImageAspect.Depth, type: ImageType.Generic2D)
+			]
+		);
 
-		maskCamera.Texture = new(Width, Height, Format.R8G8B8A8UInt);
 		maskCamera.Projection = projection;
+		maskCamera.Texture = new(
+			Width,
+			Height,
+			new("Renderer/RenderPasses/default-mask.json"),
+			[
+				new(Width, Height, format: Format.R8G8B8A8UInt, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
+				new(Width, Height, format: Format.D32SFloat, usage: ImageUsage.DepthStencilAttachment | ImageUsage.Sampled, aspect: ImageAspect.Depth, type: ImageType.Generic2D)
+			]
+		);
 
-		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = renderCamera.Texture;
+		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = renderCamera.Texture.Images[0];
 	}
 
 	private uint SampleId((double x, double y) position) => SampleId((int)position.x, (int)position.y);
 	private uint SampleId((int x, int y) position) => SampleId(position.x, position.y);
 	private uint SampleId(int x, int y)
 	{
-		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(maskCamera.Texture!);
+		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(maskCamera.Texture!.Images[0]);
 
 		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
 		this.Scene.Renderer.TransitionImageLayout(textureData.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, ImageAspect.Color, cmd);

@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Linq;
+using System.IO;
 
 using Vulkan;
 
@@ -44,7 +46,7 @@ internal record TextureData(Image Image, ImageView ImageView, DeviceMemory Image
 	}
 }
 
-internal record RenderTextureData(RenderPass RenderPass, Framebuffer Framebuffer, Texture ColorTexture, Texture DepthTexture) : IDisposable
+internal record RenderTextureData(RenderPass RenderPass, Framebuffer Framebuffer) : IDisposable
 {
 	public void Dispose()
 	{
@@ -199,87 +201,79 @@ internal class AssetManager : IDisposable
 		if (renderTextures.TryGetValue(renderTexture, out RenderTextureData? renderTextureData))
 			return renderTextureData!;
 
-		var depthFormat = renderer.FindSupportedFormat(
-			[Format.D32SFloat, Format.D32SFloatS8UInt, Format.D24UNormS8UInt],
-			ImageTiling.Optimal,
-			FormatFeatures.DepthStencilAttachment
-		);
+		var json = (JsonElement)JsonSerializer.Deserialize<dynamic>(File.ReadAllText(renderTexture.RenderPass.File))!;
 
-		var colorTexture = (Texture)renderTexture;
-		var depthTexture = new Texture(renderTexture.Width, renderTexture.Height, usage: ImageUsage.DepthStencilAttachment | ImageUsage.Sampled, aspect: ImageAspect.Depth, format: depthFormat, type: ImageType.Generic2D);
+		var attachments = json.EnumerateObject().First(p => p.Name == "attachments").Value.EnumerateArray().Select(x => new AttachmentDescription(
+				flags: default,
+				format: Enum.Parse<Format>(x.EnumerateObject().First(p => p.Name == "format").Value.GetString()!),
+				samples: (SampleCount)x.EnumerateObject().First(p => p.Name == "samples").Value.GetInt32(),
+				loadOp: Enum.Parse<AttachmentLoadOp>(x.EnumerateObject().First(p => p.Name == "loadOp").Value.GetString()!),
+				storeOp: Enum.Parse<AttachmentStoreOp>(x.EnumerateObject().First(p => p.Name == "storeOp").Value.GetString()!),
+				stencilLoadOp: Enum.Parse<AttachmentLoadOp>(x.EnumerateObject().First(p => p.Name == "stencilLoadOp").Value.GetString()!),
+				stencilStoreOp: Enum.Parse<AttachmentStoreOp>(x.EnumerateObject().First(p => p.Name == "stencilStoreOp").Value.GetString()!),
+				initialLayout: Enum.Parse<ImageLayout>(x.EnumerateObject().First(p => p.Name == "initialLayout").Value.GetString()!),
+				finalLayout: Enum.Parse<ImageLayout>(x.EnumerateObject().First(p => p.Name == "finalLayout").Value.GetString()!)
+			)
+		).ToArray();
 
-		var colorTextureData = GetTextureData(colorTexture);
-		var depthTextureData = GetTextureData(depthTexture);
+		var subpasses = json.EnumerateObject().First(p => p.Name == "subpasses").Value.EnumerateArray().Select(x => new SubpassDescription(
+				flags: default,
+				pipelineBindPoint: Enum.Parse<PipelineBindPoint>(x.EnumerateObject().First(p => p.Name == "pipelineBindPoint").Value.GetString()!),
+				inputAttachments: x.EnumerateObject().First(p => p.Name == "inputAttachments").Value.EnumerateArray().Select(y => new AttachmentReference(
+						attachment: (uint)y.EnumerateObject().First(p => p.Name == "index").Value.GetInt32(),
+						layout: Enum.Parse<ImageLayout>(y.EnumerateObject().First(p => p.Name == "layout").Value.GetString()!)
+					)
+				).ToArray(),
+				colorAttachments: x.EnumerateObject().First(p => p.Name == "colorAttachments").Value.EnumerateArray().Select(y => new AttachmentReference(
+						attachment: (uint)y.EnumerateObject().First(p => p.Name == "index").Value.GetInt32(),
+						layout: Enum.Parse<ImageLayout>(y.EnumerateObject().First(p => p.Name == "layout").Value.GetString()!)
+					)
+				).ToArray(),
+				resolveAttachments: x.EnumerateObject().First(p => p.Name == "resolveAttachments").Value.EnumerateArray().Select(y => new AttachmentReference(
+						attachment: (uint)y.EnumerateObject().First(p => p.Name == "index").Value.GetInt32(),
+						layout: Enum.Parse<ImageLayout>(y.EnumerateObject().First(p => p.Name == "layout").Value.GetString()!)
+					)
+				).ToArray(),
+				depthStencilAttachment: (x.EnumerateObject().First(p => p.Name == "depthStencilAttachment").Value.ValueKind != JsonValueKind.Null)
+					? new AttachmentReference(
+						attachment: (uint)x.EnumerateObject().First(p => p.Name == "depthStencilAttachment").Value.EnumerateObject().First(p => p.Name == "index").Value.GetInt32(),
+						layout: Enum.Parse<ImageLayout>(x.EnumerateObject().First(p => p.Name == "depthStencilAttachment").Value.EnumerateObject().First(p => p.Name == "layout").Value.GetString()!)
+					)
+					: null
+				,
+				preserveAttachments: x.EnumerateObject().First(p => p.Name == "preserveAttachments").Value.EnumerateArray().Select(x => (uint)x.GetInt32()).ToArray()
+			)
+		).ToArray();
 
-		var colorAttachment = new AttachmentDescription(
-			flags: default,
-			format: renderTexture.Format,
-			samples: SampleCount.Bit1,
-			loadOp: AttachmentLoadOp.Clear,
-			storeOp: AttachmentStoreOp.Store,
-			stencilLoadOp: AttachmentLoadOp.DontCare,
-			stencilStoreOp: AttachmentStoreOp.DontCare,
-			initialLayout: ImageLayout.Undefined,
-			finalLayout: ImageLayout.PresentSrc
-		);
-
-		var colorAttachmentRef = new AttachmentReference(
-			attachment: 0,
-			layout: ImageLayout.ColorAttachmentOptimal
-		);
-
-		var depthAttachment = new AttachmentDescription(
-			flags: default,
-			format: depthFormat,
-			samples: SampleCount.Bit1,
-			loadOp: AttachmentLoadOp.Clear,
-			storeOp: AttachmentStoreOp.DontCare,
-			stencilLoadOp: AttachmentLoadOp.DontCare,
-			stencilStoreOp: AttachmentStoreOp.DontCare,
-			initialLayout: ImageLayout.Undefined,
-			finalLayout: ImageLayout.DepthStencilAttachmentOptimal
-		);
-
-		var depthAttachmentRef = new AttachmentReference(
-			attachment: 1,
-			layout: ImageLayout.DepthStencilAttachmentOptimal
-		);
-
-		using var subpass = new SubpassDescription(
-			flags: default,
-			pipelineBindPoint: PipelineBindPoint.Graphics,
-			inputAttachments: null,
-			colorAttachments: [colorAttachmentRef],
-			resolveAttachments: null,
-			depthStencilAttachment: depthAttachmentRef,
-			preserveAttachments: null
-		);
-
-		var dependency = new SubpassDependency(
-			srcSubpass: ~0u,
-			dstSubpass: 0,
-			srcStageMask: PipelineStage.ColorAttachmentOutput | PipelineStage.EarlyFragmentTests,
-			dstStageMask: PipelineStage.ColorAttachmentOutput | PipelineStage.EarlyFragmentTests,
-			srcAccessMask: 0,
-			dstAccessMask: Access.ColorAttachmentWrite | Access.DepthStencilAttachmentWrite,
-			dependencyFlags: default
-		);
+		var dependencies = json.EnumerateObject().First(p => p.Name == "dependencies").Value.EnumerateArray().Select(x => new SubpassDependency(
+				srcSubpass: (uint)x.EnumerateObject().First(p => p.Name == "sourceSubpass").Value.GetInt32(),
+				dstSubpass: (uint)x.EnumerateObject().First(p => p.Name == "destinationSubpass").Value.GetInt32(),
+				srcStageMask: x.EnumerateObject().First(p => p.Name == "sourceStages").Value.EnumerateArray().Select(x => Enum.Parse<PipelineStage>(x.GetString()!)).Prepend(default).Aggregate((total, next) => total | next),
+				dstStageMask: x.EnumerateObject().First(p => p.Name == "destinationStages").Value.EnumerateArray().Select(x => Enum.Parse<PipelineStage>(x.GetString()!)).Prepend(default).Aggregate((total, next) => total | next),
+				srcAccessMask: x.EnumerateObject().First(p => p.Name == "sourceAccess").Value.EnumerateArray().Select(x => Enum.Parse<Access>(x.GetString()!)).Prepend(default).Aggregate((total, next) => total | next),
+				dstAccessMask: x.EnumerateObject().First(p => p.Name == "destinationAccess").Value.EnumerateArray().Select(x => Enum.Parse<Access>(x.GetString()!)).Prepend(default).Aggregate((total, next) => total | next),
+				dependencyFlags: x.EnumerateObject().First(p => p.Name == "dependencyFlags").Value.EnumerateArray().Select(x => Enum.Parse<DependencyFlags>(x.GetString()!)).Prepend(default).Aggregate((total, next) => total | next)
+			)
+		).ToArray();
 
 		using var renderPassCreateInfo = new RenderPassCreateInfo(
 			next: default,
 			flags: default,
-			attachments: [colorAttachment, depthAttachment],
-			subpasses: [subpass],
-			dependencies: [dependency]
+			attachments: attachments,
+			subpasses: subpasses,
+			dependencies: dependencies
 		);
 
 		RenderPass renderPass = renderPassCreateInfo.CreateRenderPass(renderer.Device, renderer.Allocator);
+
+		foreach (var x in subpasses)
+			x.Dispose();
 
 		using var framebufferCreateInfo = new FramebufferCreateInfo(
 			next: default,
 			flags: default,
 			renderPass: renderPass,
-			attachments: [colorTextureData.ImageView, depthTextureData.ImageView],
+			attachments: renderTexture.Images.Select(x => GetTextureData(x).ImageView).ToArray(),
 			width: (uint)renderTexture.Width,
 			height: (uint)renderTexture.Height,
 			layers: 1
@@ -287,7 +281,7 @@ internal class AssetManager : IDisposable
 
 		Framebuffer framebuffer = framebufferCreateInfo.CreateFramebuffer(renderer.Device, renderer.Allocator);
 
-		renderTextureData = new(renderPass, framebuffer, colorTexture, depthTexture);
+		renderTextureData = new(renderPass, framebuffer);
 
 		renderTextures[renderTexture] = renderTextureData;
 		return renderTextureData;

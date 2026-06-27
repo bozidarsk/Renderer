@@ -15,12 +15,11 @@ public class Texture
 	public ImageUsage Usage { get; }
 	public ImageAspect Aspect { get; }
 
-	private const Format DEFAULT_FORMAT = Format.B8G8R8A8UNorm;
 	private const ImageType DEFAULT_TYPE = ImageType.Generic2D;
 	private const ImageUsage DEFAULT_USAGE = ImageUsage.TransferDst | ImageUsage.Sampled;
 	private const ImageAspect DEFAULT_ASPECT = ImageAspect.Color;
 
-	public Texture(int width, int height, Format format = DEFAULT_FORMAT, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT)
+	public Texture(int width, int height, Format format, ImageType type, ImageUsage usage, ImageAspect aspect)
 	{
 		if (width <= 0 || height <= 0)
 			throw new ArgumentOutOfRangeException();
@@ -34,16 +33,14 @@ public class Texture
 	}
 
 	public Texture(int width, int height, uint[] data, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT) :
-		this(width, height, type: type, usage: usage, aspect: aspect)
+		this(width, height, format: Format.B8G8R8A8UNorm, type: type, usage: usage, aspect: aspect)
 	{
-		this.Format = Format.B8G8R8A8UNorm;
 		this.Data = data;
 	}
 
 	public Texture(int width, int height, Color[] data, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT) :
-		this(width, height, type: type, usage: usage, aspect: aspect)
+		this(width, height, format: Format.R32G32B32A32SFloat, type: type, usage: usage, aspect: aspect)
 	{
-		this.Format = Format.R32G32B32A32SFloat;
 		this.Data = data;
 	}
 
