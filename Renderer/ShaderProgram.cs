@@ -31,6 +31,9 @@ public class ShaderProgram
 
 		for (int i = 0; i < filenames.Length; i++)
 		{
+			if (!File.Exists(filenames[i]))
+				throw new FileNotFoundException($"Shader file '{filenames[i]}' does not exist.");
+
 			string filename = Path.GetFullPath(filenames[i]);
 
 			var query = compiledShaders.Where(x => x.File == filename);
