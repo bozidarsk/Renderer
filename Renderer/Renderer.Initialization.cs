@@ -21,14 +21,15 @@ internal partial class Renderer : IDisposable
 	protected Extent2D extent;
 
 	protected uint currentFrame = 0;
-	protected uint maxFrames => (uint)imageViews.Length;
+	protected uint maxFrames => (uint)swapchainImageViews.Length;
 
 	protected Instance instance;
 	protected DebugUtilsMessenger debugUtilsMessenger;
 	protected PhysicalDevice physicalDevice;
 	protected Device device;
 	protected Swapchain swapchain;
-	protected ImageView[] imageViews;
+	protected Image[] swapchainImages;
+	protected ImageView[] swapchainImageViews;
 	protected PipelineLayout pipelineLayout;
 	protected RenderPass renderPass;
 	protected Framebuffer[] framebuffers;
@@ -181,6 +182,7 @@ internal partial class Renderer : IDisposable
 		);
 
 		var extendedDynamicState3Features = new PhysicalDeviceExtendedDynamicState3Features(
+
 			next: (nint)(&vertexInputDynamicStateFeatures),
 			tessellationDomainOrigin: false,
 			depthClampEnable: false,
@@ -215,8 +217,18 @@ internal partial class Renderer : IDisposable
 			shadingRateImageEnable: false
 		);
 
-		using var deviceCreateInfo = new DeviceCreateInfo(
+		var dynamicRenderingFeatures = new PhysicalDeviceDynamicRenderingFeatures(
 			next: (nint)(&extendedDynamicState3Features),
+			dynamicRendering: true
+		);
+
+		var synchronization2Features = new PhysicalDeviceSynchronization2Features(
+			next: (nint)(&dynamicRenderingFeatures),
+			synchronization2: true
+		);
+
+		using var deviceCreateInfo = new DeviceCreateInfo(
+			next: (nint)(&synchronization2Features),
 			flags: default,
 			queueCreateInfos: (graphicsQueueFamilyIndex != presentationQueueFamilyIndex) ? [graphicsDeviceQueueCreateInfo, presentationDeviceQueueCreateInfo] : [graphicsDeviceQueueCreateInfo],
 			enabledLayerNames: null,
@@ -228,6 +240,8 @@ internal partial class Renderer : IDisposable
 				"VK_EXT_extended_dynamic_state",
 				"VK_EXT_extended_dynamic_state3",
 				"VK_KHR_push_descriptor",
+				"VK_KHR_dynamic_rendering",
+				"VK_KHR_synchronization2",
 			],
 			enabledFeatures: physicalDevice.Features
 		);
@@ -291,12 +305,11 @@ internal partial class Renderer : IDisposable
 
 	protected virtual void InitializeImageViews()
 	{
-		Image[] swapchainImages = swapchain.GetImages();
+		swapchainImages = swapchain.GetImages();
+		swapchainImageViews = new ImageView[swapchainImages.Length];
 
-		imageViews = new ImageView[swapchainImages.Length];
-
-		for (int i = 0; i < imageViews.Length; i++)
-			CreateImageView(swapchainImages[i], swapchainImageFormat, ImageAspect.Color, ImageViewType.Generic2D, out imageViews[i]);
+		for (int i = 0; i < swapchainImageViews.Length; i++)
+			CreateImageView(swapchainImages[i], swapchainImageFormat, ImageAspect.Color, ImageViewType.Generic2D, out swapchainImageViews[i]);
 	}
 
 	protected virtual void InitializeDescriptorSetLayout()
@@ -412,7 +425,7 @@ internal partial class Renderer : IDisposable
 			usage: ImageUsage.DepthStencilAttachment | ImageUsage.Sampled,
 			sharingMode: SharingMode.Exclusive,
 			queueFamilyIndices: null,
-			initialLayout: ImageLayout.Undefined
+			initialLayout: ImageLayout.DepthAttachmentOptimal
 		);
 
 		depthImage = imageCreateInfo.CreateImage(device, allocator);
@@ -515,7 +528,7 @@ internal partial class Renderer : IDisposable
 
 	protected virtual void InitializeFramebuffers()
 	{
-		framebuffers = new Framebuffer[imageViews.Length];
+		framebuffers = new Framebuffer[swapchainImageViews.Length];
 
 		for (int i = 0; i < framebuffers.Length; i++)
 		{
@@ -523,7 +536,7 @@ internal partial class Renderer : IDisposable
 				next: default,
 				flags: default,
 				renderPass: renderPass,
-				attachments: [imageViews[i], depthImageView],
+				attachments: [swapchainImageViews[i], depthImageView],
 				width: extent.Width,
 				height: extent.Height,
 				layers: 1
@@ -596,7 +609,7 @@ internal partial class Renderer : IDisposable
 		foreach (var x in framebuffers)
 			x.Dispose();
 
-		foreach (var x in imageViews)
+		foreach (var x in swapchainImageViews)
 			x.Dispose();
 
 		swapchain.Dispose();
@@ -673,7 +686,7 @@ internal partial class Renderer : IDisposable
 		foreach (var x in framebuffers)
 			x.Dispose();
 
-		foreach (var x in imageViews)
+		foreach (var x in swapchainImageViews)
 			x.Dispose();
 
 		swapchain.Dispose();

@@ -65,10 +65,39 @@ public class Canvas : SceneObject
 		renderCamera.Texture = new(
 			Width,
 			Height,
-			new("Renderer/RenderPasses/default.json"),
+			colorAttachments:
 			[
-				new(Width, Height, format: Format.R8G8B8A8SRGB, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
-				new(Width, Height, format: Format.D32SFloat, usage: ImageUsage.DepthStencilAttachment | ImageUsage.Sampled, aspect: ImageAspect.Depth, type: ImageType.Generic2D)
+				new(
+					new Texture(Width, Height, format: Format.R8G8B8A8SRGB, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
+					ImageLayout.ColorAttachmentOptimal,
+					AttachmentLoadOp.Clear,
+					AttachmentStoreOp.Store,
+					new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f))
+				)
+			],
+			depthAttachment: null,
+			stencilAttachment: null,
+			beginDependencies: [
+				new(
+					0,
+					PipelineStage2.None,
+					Access2.None,
+					PipelineStage2.ColorAttachmentOutput,
+					Access2.ColorAttachmentWrite,
+					ImageLayout.Undefined,
+					ImageLayout.ColorAttachmentOptimal
+				)
+			],
+			endDependencies: [
+				new(
+					0,
+					PipelineStage2.ColorAttachmentOutput,
+					Access2.ColorAttachmentWrite,
+					PipelineStage2.BottomOfPipe,
+					Access2.None,
+					ImageLayout.ColorAttachmentOptimal,
+					ImageLayout.ShaderReadOnlyOptimal
+				)
 			]
 		);
 
@@ -76,21 +105,50 @@ public class Canvas : SceneObject
 		maskCamera.Texture = new(
 			Width,
 			Height,
-			new("Renderer/RenderPasses/default-mask.json"),
+			colorAttachments:
 			[
-				new(Width, Height, format: Format.R8G8B8A8UInt, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
-				new(Width, Height, format: Format.D32SFloat, usage: ImageUsage.DepthStencilAttachment | ImageUsage.Sampled, aspect: ImageAspect.Depth, type: ImageType.Generic2D)
+				new(
+					new Texture(Width, Height, format: Format.R8G8B8A8UInt, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
+					ImageLayout.ColorAttachmentOptimal,
+					AttachmentLoadOp.Clear,
+					AttachmentStoreOp.Store,
+					new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f))
+				)
+			],
+			depthAttachment: null,
+			stencilAttachment: null,
+			beginDependencies: [
+				new(
+					0,
+					PipelineStage2.None,
+					Access2.None,
+					PipelineStage2.ColorAttachmentOutput,
+					Access2.ColorAttachmentWrite,
+					ImageLayout.Undefined,
+					ImageLayout.ColorAttachmentOptimal
+				)
+			],
+			endDependencies: [
+				new(
+					0,
+					PipelineStage2.ColorAttachmentOutput,
+					Access2.ColorAttachmentWrite,
+					PipelineStage2.BottomOfPipe,
+					Access2.None,
+					ImageLayout.ColorAttachmentOptimal,
+					ImageLayout.ShaderReadOnlyOptimal
+				)
 			]
 		);
 
-		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = renderCamera.Texture.Images[0];
+		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = renderCamera.Texture.ColorAttachments[0].Texture;
 	}
 
 	private uint SampleId((double x, double y) position) => SampleId((int)position.x, (int)position.y);
 	private uint SampleId((int x, int y) position) => SampleId(position.x, position.y);
 	private uint SampleId(int x, int y)
 	{
-		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(maskCamera.Texture!.Images[0]);
+		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(maskCamera.Texture!.ColorAttachments[0].Texture);
 
 		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
 		this.Scene.Renderer.TransitionImageLayout(textureData.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, ImageAspect.Color, cmd);

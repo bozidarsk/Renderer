@@ -17,7 +17,7 @@ namespace Renderer;
 internal partial class Renderer
 {
 	private readonly Dictionary<Type, (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes)> vertexInputDescriptions = new();
-	private readonly Dictionary<(RenderPass, ShaderProgram), Pipeline> graphicsPipelines = new();
+	private readonly Dictionary<(ShaderProgram, RenderTexture?), Pipeline> graphicsPipelines = new();
 
 	public (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes) CreateVertexInputDescriptions(Type vertexType)
 	{
@@ -77,8 +77,10 @@ internal partial class Renderer
 		return (bindingDescriptions2, attributeDescriptions2);
 	}
 
-	public Pipeline CreateGraphicsPipeline(RenderPass renderPass, ShaderProgram shaderProgram)
+	public unsafe Pipeline CreateGraphicsPipeline(ShaderProgram shaderProgram, RenderTexture? texture = null)
 	{
+		var extent = (texture != null) ? new Extent2D((uint)texture.Width, (uint)texture.Height) : this.extent;
+
 		var inputAssembly = new PipelineInputAssemblyStateCreateInfo(
 			next: default,
 			flags: default,
@@ -154,9 +156,7 @@ internal partial class Renderer
 			flags: default,
 			logicOpEnable: false,
 			logicOp: LogicOp.Copy,
-			attachments:
-			[
-				new(
+			attachments: Enumerable.Repeat(new PipelineColorBlendAttachmentState(
 					blendEnable: !(shaderProgram.DisableBlending ?? false),
 					srcColorBlendFactor: shaderProgram.SourceBlendFactor ?? BlendFactor.One,
 					dstColorBlendFactor: shaderProgram.DestinationBlendFactor ?? BlendFactor.Zero,
@@ -165,8 +165,9 @@ internal partial class Renderer
 					dstAlphaBlendFactor: shaderProgram.DestinationBlendFactor ?? BlendFactor.Zero,
 					alphaBlendOp: shaderProgram.BlendOp ?? BlendOp.Add,
 					colorWriteMask: ColorComponent.R | ColorComponent.G | ColorComponent.B | ColorComponent.A
-				)
-			],
+				),
+				texture?.ColorAttachments.Length ?? 1
+			).ToArray(),
 			blendConstants: default
 		);
 
@@ -181,8 +182,16 @@ internal partial class Renderer
 
 		var shaderProgramData = AssetManager.GetShaderProgramData(shaderProgram);
 
-		using var graphicsPipelineCreateInfo = new GraphicsPipelineCreateInfo(
+		using var renderingInfo = new PipelineRenderingCreateInfo(
 			next: default,
+			viewMask: 0,
+			colorAttachmentFormats: (texture != null) ? texture.ColorAttachments.Select(x => x.Texture.Format).ToArray() : [this.swapchainImageFormat],
+			depthAttachmentFormat: (texture != null) ? texture.DepthAttachment?.Texture.Format ?? Format.Undefined : this.depthFormat,
+			stencilAttachmentFormat: (texture != null) ? texture.StencilAttachment?.Texture.Format ?? Format.Undefined : Format.Undefined
+		);
+
+		using var graphicsPipelineCreateInfo = new GraphicsPipelineCreateInfo(
+			next: (nint)(&renderingInfo),
 			flags: default,
 			stages: shaderProgramData.Stages,
 			vertexInputState: default,
@@ -195,7 +204,7 @@ internal partial class Renderer
 			colorBlendState: colorBlend,
 			dynamicState: dynamicState,
 			layout: pipelineLayout,
-			renderPass: renderPass,
+			renderPass: null,
 			subpass: 0,
 			basePipeline: null,
 			basePipelineIndex: -1
@@ -206,29 +215,64 @@ internal partial class Renderer
 		return pipeline;
 	}
 
-	protected virtual void StartRenderPass(
-		RenderPass renderPass,
-		Framebuffer framebuffer,
-		Extent2D extent,
-		IEnumerable<SceneObject> objects
-	)
+	protected virtual void StartRenderPass(IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTexture? texture = null)
 	{
-		using var renderPassInfo = new RenderPassBeginInfo(
+		var renderTextureData = (texture != null) ? AssetManager.GetRenderTextureData(texture) : null;
+
+		using var dependencyInfoBegin = new DependencyInfo(
 			next: default,
-			renderPass: renderPass,
-			framebuffer: framebuffer,
-			renderArea: new(offset: new(0, 0), extent: extent),
-			clearValues:
+			dependencyFlags: default,
+			memoryBarriers: null,
+			bufferMemoryBarriers: null,
+			imageMemoryBarriers: (renderTextureData != null) ? renderTextureData.BeginDependencies :
 			[
-				new(
-					color: new(float32: new(0, 0, 0, 0), int32: default, uint32: default),
-					depthStencil: default
-				),
-				new(
-					color: default,
-					depthStencil: new(depth: 1f, stencil: 0)
+				new ImageMemoryBarrier2(
+					next: default,
+					srcStage: PipelineStage2.None,
+					srcAccess: Access2.None,
+					dstStage: PipelineStage2.ColorAttachmentOutput,
+					dstAccess: Access2.ColorAttachmentWrite,
+					oldLayout: ImageLayout.Undefined,
+					newLayout: ImageLayout.ColorAttachmentOptimal,
+					srcQueueFamilyIndex: ~0u,
+					dstQueueFamilyIndex: ~0u,
+					image: swapchainImages[swapchainImageIndex],
+					subresourceRange: new ImageSubresourceRange(ImageAspect.Color, 0, 1, 0, 1)
 				)
 			]
+		);
+
+		var renderingInfo = (renderTextureData != null) ? renderTextureData.RenderingInfo : new RenderingInfo(
+			next: default,
+			flags: default,
+			renderArea: new(offset: new(0, 0), extent: this.extent),
+			layerCount: 1,
+			viewMask: 0,
+			colorAttachments: [
+				new RenderingAttachmentInfo(
+					next: default,
+					imageView: swapchainImageViews[swapchainImageIndex],
+					imageLayout: ImageLayout.ColorAttachmentOptimal,
+					resolveMode: ResolveMode.None,
+					resolveImageView: null,
+					resolveImageLayout: ImageLayout.Undefined,
+					loadOp: AttachmentLoadOp.Clear,
+					storeOp: AttachmentStoreOp.Store,
+					clearValue: new(new ClearColorValue(0f, 0f, 0f, 0f))
+				)
+			],
+			depthAttachment: new RenderingAttachmentInfo(
+				next: default,
+				imageView: depthImageView,
+				imageLayout: ImageLayout.DepthAttachmentOptimal,
+				resolveMode: ResolveMode.None,
+				resolveImageView: null,
+				resolveImageLayout: ImageLayout.Undefined,
+				loadOp: AttachmentLoadOp.Clear,
+				storeOp: AttachmentStoreOp.DontCare,
+				clearValue: new(new ClearDepthStencilValue(depth: 0, stencil: 0))
+			),
+			stencilAttachment: null
 		);
 
 		using var globalDescriptorWrite = new WriteDescriptorSet(
@@ -244,7 +288,8 @@ internal partial class Renderer
 
 		var cmd = commandBuffers[currentFrame];
 
-		cmd.BeginRenderPass(renderPassInfo, SubpassContents.Inline);
+		cmd.PipelineBarrier2(dependencyInfoBegin);
+		cmd.BeginRendering(renderingInfo);
 
 		foreach (var obj in objects)
 		{
@@ -252,10 +297,10 @@ internal partial class Renderer
 			var mesh = obj.GetComponent<MeshFilter>().Mesh;
 			var meshData = AssetManager.GetMeshData(mesh);
 
-			if (!graphicsPipelines.TryGetValue((renderPass, material.ShaderProgram), out var graphicsPipeline))
+			if (!graphicsPipelines.TryGetValue((material.ShaderProgram, texture), out var graphicsPipeline))
 			{
-				graphicsPipeline = CreateGraphicsPipeline(renderPass, material.ShaderProgram);
-				graphicsPipelines[(renderPass, material.ShaderProgram)] = graphicsPipeline;
+				graphicsPipeline = CreateGraphicsPipeline(material.ShaderProgram, texture);
+				graphicsPipelines[(material.ShaderProgram, texture)] = graphicsPipeline;
 			}
 
 			if (!vertexInputDescriptions.TryGetValue(mesh.VertexType, out var vertexInputDescription))
@@ -322,7 +367,34 @@ internal partial class Renderer
 			cmd.DrawIndexed(mesh.IndexCount);
 		}
 
-		cmd.EndRenderPass();
+		using var dependencyInfoEnd = new DependencyInfo(
+			next: default,
+			dependencyFlags: default,
+			memoryBarriers: null,
+			bufferMemoryBarriers: null,
+			imageMemoryBarriers: (renderTextureData != null) ? renderTextureData.EndDependencies :
+			[
+				new ImageMemoryBarrier2(
+					next: default,
+					srcStage: PipelineStage2.ColorAttachmentOutput,
+					srcAccess: Access2.ColorAttachmentWrite,
+					dstStage: PipelineStage2.BottomOfPipe,
+					dstAccess: Access2.None,
+					oldLayout: ImageLayout.ColorAttachmentOptimal,
+					newLayout: ImageLayout.PresentSrc,
+					srcQueueFamilyIndex: ~0u,
+					dstQueueFamilyIndex: ~0u,
+					image: swapchainImages[swapchainImageIndex],
+					subresourceRange: new ImageSubresourceRange(ImageAspect.Color, 0, 1, 0, 1)
+				)
+			]
+		);
+
+		cmd.EndRendering();
+		cmd.PipelineBarrier2(dependencyInfoEnd);
+
+		if (renderTextureData == null)
+			renderingInfo.Dispose();
 	}
 
 	// if throws ErrorOutOfDateKhr or SuboptimalKhr it needs swapchain recreation (see https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation)
@@ -351,12 +423,7 @@ internal partial class Renderer
 
 		cmd.Reset(default);
 		cmd.Begin(beginInfo);
-		if (texture is RenderTexture renderTexture)
-		{
-			var renderTextureData = AssetManager.GetRenderTextureData(renderTexture);
-			StartRenderPass(renderTextureData.RenderPass, renderTextureData.Framebuffer, new Extent2D((uint)renderTexture.Width, (uint)renderTexture.Height), objects);
-		}
-		else StartRenderPass(renderPass, framebuffers[imageIndex], extent, objects);
+		StartRenderPass(objects, imageIndex, texture);
 		cmd.End();
 
 		using var submitInfo = new SubmitInfo(

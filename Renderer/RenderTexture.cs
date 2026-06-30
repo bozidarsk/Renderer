@@ -1,22 +1,50 @@
 using System;
 
+using Vulkan;
+
 namespace Renderer;
 
 public class RenderTexture
 {
 	public int Width { get; }
 	public int Height { get; }
-	public RenderPassDefinition RenderPass { get; }
-	public Texture[] Images { get; }
 
-	public RenderTexture(int width, int height, RenderPassDefinition renderPass, Texture[] images)
+	public Attachment[] ColorAttachments { get; }
+	public Attachment? DepthAttachment { get; }
+	public Attachment? StencilAttachment { get; }
+	public Dependency[] BeginDependencies { get; }
+	public Dependency[] EndDependencies { get; }
+
+	public RenderTexture(int width, int height, Attachment[] colorAttachments, Attachment? depthAttachment, Attachment? stencilAttachment, Dependency[] beginDependencies, Dependency[] endDependencies)
 	{
 		if (width <= 0 || height <= 0)
 			throw new ArgumentOutOfRangeException();
 
 		this.Width = width;
 		this.Height = height;
-		this.RenderPass = renderPass ?? throw new ArgumentNullException();
-		this.Images = images ?? throw new ArgumentNullException();
+
+		this.ColorAttachments = colorAttachments ?? throw new ArgumentNullException();
+		this.DepthAttachment = depthAttachment;
+		this.StencilAttachment = stencilAttachment;
+		this.BeginDependencies = beginDependencies ?? throw new ArgumentNullException();
+		this.EndDependencies = endDependencies ?? throw new ArgumentNullException();
 	}
+
+	public record Attachment(
+		Texture Texture,
+		ImageLayout Layout,
+		AttachmentLoadOp LoadOp,
+		AttachmentStoreOp StoreOp,
+		ClearValue ClearValue
+	);
+
+	public record Dependency(
+		uint Attachment,
+		PipelineStage2 SrcStage,
+		Access2 SrcAccess,
+		PipelineStage2 DstStage,
+		Access2 DstAccess,
+		ImageLayout OldLayout,
+		ImageLayout NewLayout
+	);
 }
