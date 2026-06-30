@@ -156,28 +156,28 @@ internal class AssetManager : IDisposable
 
 			DeviceSize size = (ulong)texture.Width * (ulong)texture.Height * stride;
 
-			renderer.CreateBuffer(size, BufferUsage.TransferSrc, out Buffer staggingBuffer);
-			renderer.CreateBufferMemory(staggingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory staggingMemory);
+			renderer.CreateBuffer(size, BufferUsage.TransferSrc, out Buffer stagingBuffer);
+			renderer.CreateBufferMemory(stagingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory stagingMemory);
 
 			unsafe
 			{
-				nint staggingLocation = staggingMemory.Map(size: size, offset: default, flags: default);
-				Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)staggingLocation), ref MemoryMarshal.GetArrayDataReference(texture.Data), checked((uint)size));
+				nint stagingLocation = stagingMemory.Map(size: size, offset: default, flags: default);
+				Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)stagingLocation), ref MemoryMarshal.GetArrayDataReference(texture.Data), checked((uint)size));
 			}
 
 			renderer.CreateImage(texture.Width, texture.Height, texture.Type, texture.Usage, texture.Format, out image);
 			renderer.CreateImageMemory(image, out imageMemory);
 
 			renderer.TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, texture.Aspect);
-			renderer.CopyBufferToImage(staggingBuffer, image, texture.Width, texture.Height, texture.Aspect);
+			renderer.CopyBufferToImage(stagingBuffer, image, texture.Width, texture.Height, texture.Aspect);
 			renderer.TransitionImageLayout(image, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal, texture.Aspect);
 
 			renderer.CreateImageView(image, texture.Format, texture.Aspect, ImageViewType.Generic2D, out imageView);
 			renderer.CreateSampler(out sampler);
 
-			staggingMemory.Unmap();
-			staggingBuffer.Dispose();
-			staggingMemory.Dispose();
+			stagingMemory.Unmap();
+			stagingBuffer.Dispose();
+			stagingMemory.Dispose();
 		}
 		else
 		{

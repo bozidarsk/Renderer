@@ -111,40 +111,40 @@ internal partial class Renderer
 	{
 		DeviceSize size = (ulong)Marshal.SizeOf(data.GetValue(0)!.GetType()) * (ulong)data.LongLength;
 
-		CreateBuffer(size, BufferUsage.TransferSrc, out Buffer staggingBuffer);
-		CreateBufferMemory(staggingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory staggingMemory);
+		CreateBuffer(size, BufferUsage.TransferSrc, out Buffer stagingBuffer);
+		CreateBufferMemory(stagingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory stagingMemory);
 
-		nint staggingLocation = staggingMemory.Map(size: size, offset: default, flags: default);
-		Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)staggingLocation), ref MemoryMarshal.GetArrayDataReference(data), checked((uint)size));
+		nint stagingLocation = stagingMemory.Map(size: size, offset: default, flags: default);
+		Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)stagingLocation), ref MemoryMarshal.GetArrayDataReference(data), checked((uint)size));
 
 		CreateBuffer(size, BufferUsage.TransferDst | BufferUsage.VertexBuffer, out buffer);
 		CreateBufferMemory(buffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out memory);
 
-		CopyBuffer(staggingBuffer, buffer, size);
+		CopyBuffer(stagingBuffer, buffer, size);
 
-		staggingMemory.Unmap();
-		staggingBuffer.Dispose();
-		staggingMemory.Dispose();
+		stagingMemory.Unmap();
+		stagingBuffer.Dispose();
+		stagingMemory.Dispose();
 	}
 
 	public unsafe void CreateIndexBuffer(Array data, out Buffer buffer, out DeviceMemory memory)
 	{
 		DeviceSize size = (ulong)Marshal.SizeOf(data.GetValue(0)!.GetType()) * (ulong)data.LongLength;
 
-		CreateBuffer(size, BufferUsage.TransferSrc, out Buffer staggingBuffer);
-		CreateBufferMemory(staggingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory staggingMemory);
+		CreateBuffer(size, BufferUsage.TransferSrc, out Buffer stagingBuffer);
+		CreateBufferMemory(stagingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory stagingMemory);
 
-		nint staggingLocation = staggingMemory.Map(size: size, offset: default, flags: default);
-		Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)staggingLocation), ref MemoryMarshal.GetArrayDataReference(data), checked((uint)size));
+		nint stagingLocation = stagingMemory.Map(size: size, offset: default, flags: default);
+		Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)stagingLocation), ref MemoryMarshal.GetArrayDataReference(data), checked((uint)size));
 
 		CreateBuffer(size, BufferUsage.TransferDst | BufferUsage.IndexBuffer, out buffer);
 		CreateBufferMemory(buffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out memory);
 
-		CopyBuffer(staggingBuffer, buffer, size);
+		CopyBuffer(stagingBuffer, buffer, size);
 
-		staggingMemory.Unmap();
-		staggingBuffer.Dispose();
-		staggingMemory.Dispose();
+		stagingMemory.Unmap();
+		stagingBuffer.Dispose();
+		stagingMemory.Dispose();
 	}
 
 	public DeviceSize CreateUniformsBuffer(IReadOnlyDictionary<string, object> data, out Buffer? buffer, out DeviceMemory? memory)
