@@ -376,6 +376,14 @@ internal partial class Renderer
 			sourceStage = PipelineStage.FragmentShader;
 			destinationStage = PipelineStage.Transfer;
 		}
+		else if (from == ImageLayout.ColorAttachmentOptimal && to == ImageLayout.TransferSrcOptimal)
+		{
+			sourceAccess = Access.ColorAttachmentWrite;
+			destinationAccess = Access.TransferRead;
+
+			sourceStage = PipelineStage.ColorAttachmentOutput;
+			destinationStage = PipelineStage.Transfer;
+		}
 		else
 			throw new InvalidOperationException($"Unsupported layer transition from '{from}' to '{to}'.");
 
