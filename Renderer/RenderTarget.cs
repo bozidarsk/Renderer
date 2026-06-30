@@ -4,7 +4,7 @@ using Vulkan;
 
 namespace Renderer;
 
-public class RenderTexture
+public class RenderTarget
 {
 	public int Width { get; }
 	public int Height { get; }
@@ -15,7 +15,7 @@ public class RenderTexture
 	public Dependency[] BeginDependencies { get; }
 	public Dependency[] EndDependencies { get; }
 
-	public RenderTexture(int width, int height, Attachment[] colorAttachments, Attachment? depthAttachment, Attachment? stencilAttachment, Dependency[] beginDependencies, Dependency[] endDependencies)
+	public RenderTarget(int width, int height, Attachment[] colorAttachments, Attachment? depthAttachment, Attachment? stencilAttachment, Dependency[] beginDependencies, Dependency[] endDependencies)
 	{
 		if (width <= 0 || height <= 0)
 			throw new ArgumentOutOfRangeException();

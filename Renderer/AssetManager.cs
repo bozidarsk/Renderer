@@ -46,7 +46,7 @@ internal record TextureData(Image Image, ImageView ImageView, DeviceMemory Image
 	}
 }
 
-internal record RenderTextureData(RenderingInfo RenderingInfo, ImageMemoryBarrier2[] BeginDependencies, ImageMemoryBarrier2[] EndDependencies) : IDisposable
+internal record RenderTargetData(RenderingInfo RenderingInfo, ImageMemoryBarrier2[] BeginDependencies, ImageMemoryBarrier2[] EndDependencies) : IDisposable
 {
 	public void Dispose()
 	{
@@ -61,7 +61,7 @@ internal class AssetManager : IDisposable
 	private readonly Dictionary<ShaderProgram, ShaderProgramData> shaderPrograms = new();
 	private readonly Dictionary<Mesh, MeshData> meshes = new();
 	private readonly Dictionary<Texture, TextureData> textures = new();
-	private readonly Dictionary<RenderTexture, RenderTextureData> renderTextures = new();
+	private readonly Dictionary<RenderTarget, RenderTargetData> renderTargets = new();
 
 	public ShaderProgramData GetShaderProgramData(ShaderProgram shaderProgram)
 	{
@@ -195,18 +195,18 @@ internal class AssetManager : IDisposable
 		return textureData;
 	}
 
-	public RenderTextureData GetRenderTextureData(RenderTexture renderTexture)
+	public RenderTargetData GetRenderTargetData(RenderTarget renderTarget)
 	{
-		if (renderTextures.TryGetValue(renderTexture, out RenderTextureData? renderTextureData))
-			return renderTextureData!;
+		if (renderTargets.TryGetValue(renderTarget, out RenderTargetData? renderTargetData))
+			return renderTargetData!;
 
 		var renderingInfo = new RenderingInfo(
 			next: default,
 			flags: default,
-			renderArea: new(offset: new(0, 0), extent: new((uint)renderTexture.Width, (uint)renderTexture.Height)),
+			renderArea: new(offset: new(0, 0), extent: new((uint)renderTarget.Width, (uint)renderTarget.Height)),
 			layerCount: 1,
 			viewMask: 0,
-			colorAttachments: renderTexture.ColorAttachments.Select(x => new RenderingAttachmentInfo(
+			colorAttachments: renderTarget.ColorAttachments.Select(x => new RenderingAttachmentInfo(
 					next: default,
 					imageView: renderer.AssetManager.GetTextureData(x.Texture).ImageView,
 					imageLayout: x.Layout,
@@ -218,35 +218,35 @@ internal class AssetManager : IDisposable
 					clearValue: x.ClearValue
 				)
 			).ToArray(),
-			depthAttachment: (renderTexture.DepthAttachment != null)
+			depthAttachment: (renderTarget.DepthAttachment != null)
 				? new RenderingAttachmentInfo(
 						next: default,
-						imageView: renderer.AssetManager.GetTextureData(renderTexture.DepthAttachment.Texture).ImageView,
-						imageLayout: renderTexture.DepthAttachment.Layout,
+						imageView: renderer.AssetManager.GetTextureData(renderTarget.DepthAttachment.Texture).ImageView,
+						imageLayout: renderTarget.DepthAttachment.Layout,
 						resolveMode: ResolveMode.None,
 						resolveImageView: null,
 						resolveImageLayout: ImageLayout.Undefined,
-						loadOp: renderTexture.DepthAttachment.LoadOp,
-						storeOp: renderTexture.DepthAttachment.StoreOp,
-						clearValue: renderTexture.DepthAttachment.ClearValue
+						loadOp: renderTarget.DepthAttachment.LoadOp,
+						storeOp: renderTarget.DepthAttachment.StoreOp,
+						clearValue: renderTarget.DepthAttachment.ClearValue
 					)
 				: null,
-			stencilAttachment: (renderTexture.StencilAttachment != null)
+			stencilAttachment: (renderTarget.StencilAttachment != null)
 				? new RenderingAttachmentInfo(
 						next: default,
-						imageView: renderer.AssetManager.GetTextureData(renderTexture.StencilAttachment.Texture).ImageView,
-						imageLayout: renderTexture.StencilAttachment.Layout,
+						imageView: renderer.AssetManager.GetTextureData(renderTarget.StencilAttachment.Texture).ImageView,
+						imageLayout: renderTarget.StencilAttachment.Layout,
 						resolveMode: ResolveMode.None,
 						resolveImageView: null,
 						resolveImageLayout: ImageLayout.Undefined,
-						loadOp: renderTexture.StencilAttachment.LoadOp,
-						storeOp: renderTexture.StencilAttachment.StoreOp,
-						clearValue: renderTexture.StencilAttachment.ClearValue
+						loadOp: renderTarget.StencilAttachment.LoadOp,
+						storeOp: renderTarget.StencilAttachment.StoreOp,
+						clearValue: renderTarget.StencilAttachment.ClearValue
 					)
 				: null
 		);
 
-		var beginDependencies = renderTexture.BeginDependencies.Select(x => new ImageMemoryBarrier2(
+		var beginDependencies = renderTarget.BeginDependencies.Select(x => new ImageMemoryBarrier2(
 				next: default,
 				srcStage: x.SrcStage,
 				srcAccess: x.SrcAccess,
@@ -256,12 +256,12 @@ internal class AssetManager : IDisposable
 				newLayout: x.NewLayout,
 				srcQueueFamilyIndex: ~0u,
 				dstQueueFamilyIndex: ~0u,
-				image: renderer.AssetManager.GetTextureData(renderTexture.ColorAttachments[x.Attachment].Texture).Image,
-				subresourceRange: new ImageSubresourceRange(renderTexture.ColorAttachments[x.Attachment].Texture.Aspect, 0, 1, 0, 1)
+				image: renderer.AssetManager.GetTextureData(renderTarget.ColorAttachments[x.Attachment].Texture).Image,
+				subresourceRange: new ImageSubresourceRange(renderTarget.ColorAttachments[x.Attachment].Texture.Aspect, 0, 1, 0, 1)
 			)
 		).ToArray();
 
-		var endDependencies = renderTexture.EndDependencies.Select(x => new ImageMemoryBarrier2(
+		var endDependencies = renderTarget.EndDependencies.Select(x => new ImageMemoryBarrier2(
 				next: default,
 				srcStage: x.SrcStage,
 				srcAccess: x.SrcAccess,
@@ -271,15 +271,15 @@ internal class AssetManager : IDisposable
 				newLayout: x.NewLayout,
 				srcQueueFamilyIndex: ~0u,
 				dstQueueFamilyIndex: ~0u,
-				image: renderer.AssetManager.GetTextureData(renderTexture.ColorAttachments[x.Attachment].Texture).Image,
-				subresourceRange: new ImageSubresourceRange(renderTexture.ColorAttachments[x.Attachment].Texture.Aspect, 0, 1, 0, 1)
+				image: renderer.AssetManager.GetTextureData(renderTarget.ColorAttachments[x.Attachment].Texture).Image,
+				subresourceRange: new ImageSubresourceRange(renderTarget.ColorAttachments[x.Attachment].Texture.Aspect, 0, 1, 0, 1)
 			)
 		).ToArray();
 
-		renderTextureData = new(renderingInfo, beginDependencies, endDependencies);
+		renderTargetData = new(renderingInfo, beginDependencies, endDependencies);
 
-		renderTextures[renderTexture] = renderTextureData;
-		return renderTextureData;
+		renderTargets[renderTarget] = renderTargetData;
+		return renderTargetData;
 	}
 
 	public void Dispose()
@@ -293,7 +293,7 @@ internal class AssetManager : IDisposable
 		foreach (var x in textures.Values)
 			x.Dispose();
 
-		foreach (var x in renderTextures.Values)
+		foreach (var x in renderTargets.Values)
 			x.Dispose();
 	}
 

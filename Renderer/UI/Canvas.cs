@@ -59,7 +59,7 @@ public class Canvas : SceneObject
 		);
 
 		camera.Projection = projection;
-		camera.Texture = new(
+		camera.Target = new(
 			Width,
 			Height,
 			colorAttachments:
@@ -134,14 +134,14 @@ public class Canvas : SceneObject
 			]
 		);
 
-		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = camera.Texture.ColorAttachments[0].Texture;
+		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = camera.Target.ColorAttachments[0].Texture;
 	}
 
 	private uint SampleId((double x, double y) position) => SampleId((int)position.x, (int)position.y);
 	private uint SampleId((int x, int y) position) => SampleId(position.x, position.y);
 	private uint SampleId(int x, int y)
 	{
-		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(camera.Texture!.ColorAttachments[1].Texture);
+		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(camera.Target!.ColorAttachments[1].Texture);
 
 		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
 		this.Scene.Renderer.TransitionImageLayout(textureData.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, ImageAspect.Color, cmd);

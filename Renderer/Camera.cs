@@ -6,7 +6,7 @@ namespace Renderer;
 public class Camera : SceneObject
 {
 	public Matrix4x4 Projection { set; get; } = Matrix4x4.Perspective(fov: 60, ratio: 16f / 9f, near: 0.1f, far: 10);
-	public RenderTexture? Texture { set; get; } = null;
+	public RenderTarget? Target { set; get; } = null;
 
 	internal void Render(params SceneObject[] objects) => Render(objects ?? throw new ArgumentNullException());
 	internal void Render(IEnumerable<SceneObject> objects)
@@ -18,7 +18,7 @@ public class Camera : SceneObject
 			projection: this.Projection,
 			view: TryGetComponent<Transform>(out Transform transform) ? transform : Matrix4x4.Identity,
 			objects: objects,
-			texture: this.Texture
+			target: this.Target
 		);
 	}
 
