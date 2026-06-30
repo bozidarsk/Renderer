@@ -107,38 +107,18 @@ internal partial class Renderer
 			EndSingleTimeCommand(cmd);
 	}
 
-	public unsafe void CreateVertexBuffer(Array data, out Buffer buffer, out DeviceMemory memory)
+	public unsafe void CreateStagingBuffer(Array data, BufferUsage usage, out Buffer buffer, out DeviceMemory memory)
 	{
 		DeviceSize size = (ulong)Marshal.SizeOf(data.GetValue(0)!.GetType()) * (ulong)data.LongLength;
 
 		CreateBuffer(size, BufferUsage.TransferSrc, out Buffer stagingBuffer);
-		CreateBufferMemory(stagingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory stagingMemory);
+		CreateBufferMemory(stagingBuffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out DeviceMemory stagingMemory);
 
 		nint stagingLocation = stagingMemory.Map(size: size, offset: default, flags: default);
 		Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)stagingLocation), ref MemoryMarshal.GetArrayDataReference(data), checked((uint)size));
 
-		CreateBuffer(size, BufferUsage.TransferDst | BufferUsage.VertexBuffer, out buffer);
-		CreateBufferMemory(buffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out memory);
-
-		CopyBuffer(stagingBuffer, buffer, size);
-
-		stagingMemory.Unmap();
-		stagingBuffer.Dispose();
-		stagingMemory.Dispose();
-	}
-
-	public unsafe void CreateIndexBuffer(Array data, out Buffer buffer, out DeviceMemory memory)
-	{
-		DeviceSize size = (ulong)Marshal.SizeOf(data.GetValue(0)!.GetType()) * (ulong)data.LongLength;
-
-		CreateBuffer(size, BufferUsage.TransferSrc, out Buffer stagingBuffer);
-		CreateBufferMemory(stagingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory stagingMemory);
-
-		nint stagingLocation = stagingMemory.Map(size: size, offset: default, flags: default);
-		Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)stagingLocation), ref MemoryMarshal.GetArrayDataReference(data), checked((uint)size));
-
-		CreateBuffer(size, BufferUsage.TransferDst | BufferUsage.IndexBuffer, out buffer);
-		CreateBufferMemory(buffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out memory);
+		CreateBuffer(size, BufferUsage.TransferDst | usage, out buffer);
+		CreateBufferMemory(buffer, MemoryProperty.DeviceLocal, out memory);
 
 		CopyBuffer(stagingBuffer, buffer, size);
 

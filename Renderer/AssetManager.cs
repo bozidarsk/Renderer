@@ -108,8 +108,8 @@ internal class AssetManager : IDisposable
 		if (meshes.TryGetValue(mesh, out MeshData? meshData))
 			return meshData!;
 
-		renderer.CreateVertexBuffer(mesh.Vertices, out Buffer vertexBuffer, out DeviceMemory vertexBufferMemory);
-		renderer.CreateIndexBuffer(mesh.Indices, out Buffer indexBuffer, out DeviceMemory indexBufferMemory);
+		renderer.CreateStagingBuffer(mesh.Vertices, BufferUsage.VertexBuffer, out Buffer vertexBuffer, out DeviceMemory vertexBufferMemory);
+		renderer.CreateStagingBuffer(mesh.Indices, BufferUsage.IndexBuffer, out Buffer indexBuffer, out DeviceMemory indexBufferMemory);
 
 		meshData = new(
 			vertexBuffer,
