@@ -18,9 +18,7 @@ public class Canvas : SceneObject
 		set
 		{
 			field = value;
-
-			renderCamera.Layer = value;
-			maskCamera.Layer = value;
+			camera.Layer = value;
 		}
 		get;
 	} = CameraLayer.UI;
@@ -30,13 +28,12 @@ public class Canvas : SceneObject
 		set
 		{
 			field = value;
-
 			canvasTexture.Layer = value;
 		}
 		get;
 	} = CameraLayer.Main;
 
-	private Camera renderCamera, maskCamera;
+	private Camera camera;
 	private SceneObject canvasTexture;
 
 	private Vulkan.Buffer maskBuffer;
@@ -61,8 +58,8 @@ public class Canvas : SceneObject
 			far: 1
 		);
 
-		renderCamera.Projection = projection;
-		renderCamera.Texture = new(
+		camera.Projection = projection;
+		camera.Texture = new(
 			Width,
 			Height,
 			colorAttachments:
@@ -72,47 +69,25 @@ public class Canvas : SceneObject
 					ImageLayout.ColorAttachmentOptimal,
 					AttachmentLoadOp.Clear,
 					AttachmentStoreOp.Store,
-					new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f))
-				)
-			],
-			depthAttachment: null,
-			stencilAttachment: null,
-			beginDependencies: [
-				new(
-					0,
-					PipelineStage2.None,
-					Access2.None,
-					PipelineStage2.ColorAttachmentOutput,
-					Access2.ColorAttachmentWrite,
-					ImageLayout.Undefined,
-					ImageLayout.ColorAttachmentOptimal
-				)
-			],
-			endDependencies: [
-				new(
-					0,
-					PipelineStage2.ColorAttachmentOutput,
-					Access2.ColorAttachmentWrite,
-					PipelineStage2.BottomOfPipe,
-					Access2.None,
-					ImageLayout.ColorAttachmentOptimal,
-					ImageLayout.ShaderReadOnlyOptimal
-				)
-			]
-		);
-
-		maskCamera.Projection = projection;
-		maskCamera.Texture = new(
-			Width,
-			Height,
-			colorAttachments:
-			[
+					new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f)),
+					null
+				),
 				new(
 					new Texture(Width, Height, format: Format.R8G8B8A8UInt, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
 					ImageLayout.ColorAttachmentOptimal,
 					AttachmentLoadOp.Clear,
 					AttachmentStoreOp.Store,
-					new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f))
+					new ClearValue(new ClearColorValue(0u, 0u, 0u, 0u)),
+					new(
+						blendEnable: false,
+						srcColorBlendFactor: default,
+						dstColorBlendFactor: default,
+						colorBlendOp: default,
+						srcAlphaBlendFactor: default,
+						dstAlphaBlendFactor: default,
+						alphaBlendOp: default,
+						colorWriteMask: ColorComponent.R | ColorComponent.G | ColorComponent.B | ColorComponent.A
+					)
 				)
 			],
 			depthAttachment: null,
@@ -120,6 +95,15 @@ public class Canvas : SceneObject
 			beginDependencies: [
 				new(
 					0,
+					PipelineStage2.None,
+					Access2.None,
+					PipelineStage2.ColorAttachmentOutput,
+					Access2.ColorAttachmentWrite,
+					ImageLayout.Undefined,
+					ImageLayout.ColorAttachmentOptimal
+				),
+				new(
+					1,
 					PipelineStage2.None,
 					Access2.None,
 					PipelineStage2.ColorAttachmentOutput,
@@ -137,18 +121,27 @@ public class Canvas : SceneObject
 					Access2.None,
 					ImageLayout.ColorAttachmentOptimal,
 					ImageLayout.ShaderReadOnlyOptimal
+				),
+				new(
+					1,
+					PipelineStage2.ColorAttachmentOutput,
+					Access2.ColorAttachmentWrite,
+					PipelineStage2.BottomOfPipe,
+					Access2.None,
+					ImageLayout.ColorAttachmentOptimal,
+					ImageLayout.ShaderReadOnlyOptimal
 				)
 			]
 		);
 
-		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = renderCamera.Texture.ColorAttachments[0].Texture;
+		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = camera.Texture.ColorAttachments[0].Texture;
 	}
 
 	private uint SampleId((double x, double y) position) => SampleId((int)position.x, (int)position.y);
 	private uint SampleId((int x, int y) position) => SampleId(position.x, position.y);
 	private uint SampleId(int x, int y)
 	{
-		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(maskCamera.Texture!.ColorAttachments[0].Texture);
+		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(camera.Texture!.ColorAttachments[1].Texture);
 
 		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
 		this.Scene.Renderer.TransitionImageLayout(textureData.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, ImageAspect.Color, cmd);
@@ -178,8 +171,7 @@ public class Canvas : SceneObject
 	public override void Dispose()
 	{
 		canvasTexture.Dispose();
-		renderCamera.Dispose();
-		maskCamera.Dispose();
+		camera.Dispose();
 		maskBuffer.Dispose();
 		maskMemory.Dispose();
 		base.Dispose();
@@ -190,8 +182,7 @@ public class Canvas : SceneObject
 	{
 		base.Layer = CameraLayer.None;
 
-		renderCamera = new Camera(base.Scene) { Layer = this.CameraLayer };
-		maskCamera = new Camera(base.Scene) { Layer = this.CameraLayer, MaskUIObjects = true };
+		camera = new Camera(base.Scene) { Layer = this.CameraLayer };
 
 		CanvasVertex[] vertices = [
 			new() { Position = new(-1, 1, 0), UV = new(0, 0) },
@@ -220,6 +211,7 @@ public class Canvas : SceneObject
 		this.Scene.Window.OnMouseButton += (s, e) =>
 		{
 			uint id = SampleId(this.Scene.Window.CursorPosition);
+			Console.WriteLine($"id: {id}");
 
 			if (id == 0)
 				return;
@@ -229,7 +221,6 @@ public class Canvas : SceneObject
 		};
 
 		AddChild(canvasTexture);
-		AddChild(renderCamera);
-		AddChild(maskCamera);
+		AddChild(camera);
 	}
 }

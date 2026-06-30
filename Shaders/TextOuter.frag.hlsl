@@ -16,8 +16,18 @@ struct OuterFragment
 	float3 worldPosition;
 };
 
-float4 main(OuterFragment input, bool frontFace : SV_IsFrontFace)
+struct PSOutput
 {
+	float4 color : SV_Target0;
+	uint id : SV_Target1;
+};
+
+PSOutput main(OuterFragment input, bool frontFace : SV_IsFrontFace)
+{
+	PSOutput output;
+	output.color = COLOR;
+	output.id = ID;
+
 	float3 viewDirection = normalize(CAMERA_POSITION - input.worldPosition);
 
 	if (dot(input.normal, viewDirection) < 0)
@@ -26,12 +36,12 @@ float4 main(OuterFragment input, bool frontFace : SV_IsFrontFace)
 	if (!frontFace)
 	{
 		if (input.uv.x * input.uv.x < input.uv.y)
-			return COLOR;
+			return output;
 	}
 	else
 	{
 		if (input.uv.x * input.uv.x > input.uv.y)
-			return COLOR;
+			return output;
 	}
 
 	discard;

@@ -62,15 +62,13 @@ public sealed class Text : UIObject
 			new Transform(),
 			new MeshFilter(null!),
 			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter.frag.hlsl")))
-		)
-		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter-mask.frag.hlsl")) };
+		);
 
 		inner = new UIObject(scene,
 			new Transform(),
 			new MeshFilter(null!),
 			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner.frag.hlsl")))
-		)
-		{ MaskMaterial = new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner-mask.frag.hlsl")) };
+		);
 
 		AddChild(inner);
 		AddChild(outer);

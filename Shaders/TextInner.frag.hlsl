@@ -13,7 +13,17 @@ struct InnerFragment
 	float4 position : SV_POSITION;
 };
 
-float4 main(InnerFragment input)
+struct PSOutput
 {
-	return COLOR;
+	float4 color : SV_Target0;
+	uint id : SV_Target1;
+};
+
+PSOutput main(InnerFragment input)
+{
+	PSOutput output;
+	output.color = COLOR;
+	output.id = ID;
+
+	return output;
 }

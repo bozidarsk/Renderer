@@ -138,6 +138,7 @@ internal partial class Renderer
 		);
 
 		var depthStencil = new PipelineDepthStencilStateCreateInfo(
+
 			next: default,
 			flags: default,
 			depthTestEnable: true,
@@ -151,23 +152,23 @@ internal partial class Renderer
 			maxDepthBounds: 1f
 		);
 
+		var defaultBlending = new PipelineColorBlendAttachmentState(
+			blendEnable: !(shaderProgram.DisableBlending ?? false),
+			srcColorBlendFactor: shaderProgram.SourceBlendFactor ?? BlendFactor.One,
+			dstColorBlendFactor: shaderProgram.DestinationBlendFactor ?? BlendFactor.Zero,
+			colorBlendOp: shaderProgram.BlendOp ?? BlendOp.Add,
+			srcAlphaBlendFactor: shaderProgram.SourceBlendFactor ?? BlendFactor.One,
+			dstAlphaBlendFactor: shaderProgram.DestinationBlendFactor ?? BlendFactor.Zero,
+			alphaBlendOp: shaderProgram.BlendOp ?? BlendOp.Add,
+			colorWriteMask: ColorComponent.R | ColorComponent.G | ColorComponent.B | ColorComponent.A
+		);
+
 		using var colorBlend = new PipelineColorBlendStateCreateInfo(
 			next: default,
 			flags: default,
 			logicOpEnable: false,
 			logicOp: LogicOp.Copy,
-			attachments: Enumerable.Repeat(new PipelineColorBlendAttachmentState(
-					blendEnable: !(shaderProgram.DisableBlending ?? false),
-					srcColorBlendFactor: shaderProgram.SourceBlendFactor ?? BlendFactor.One,
-					dstColorBlendFactor: shaderProgram.DestinationBlendFactor ?? BlendFactor.Zero,
-					colorBlendOp: shaderProgram.BlendOp ?? BlendOp.Add,
-					srcAlphaBlendFactor: shaderProgram.SourceBlendFactor ?? BlendFactor.One,
-					dstAlphaBlendFactor: shaderProgram.DestinationBlendFactor ?? BlendFactor.Zero,
-					alphaBlendOp: shaderProgram.BlendOp ?? BlendOp.Add,
-					colorWriteMask: ColorComponent.R | ColorComponent.G | ColorComponent.B | ColorComponent.A
-				),
-				texture?.ColorAttachments.Length ?? 1
-			).ToArray(),
+			attachments: (texture != null) ? texture.ColorAttachments.Select(x => x.Blending ?? defaultBlending).ToArray() : [defaultBlending],
 			blendConstants: default
 		);
 
@@ -315,7 +316,7 @@ internal partial class Renderer
 			cmd.BindIndexBuffer(meshData.IndexBuffer, meshData.IndexType);
 			cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, globalDescriptorWrite);
 
-			var pushConstants = new PushConstants(obj.Model, (obj is UIObject uIObject) ? uIObject.Id : 0);
+			var pushConstants = new PushConstants(obj.Model, (obj is UIObject uiObject) ? uiObject.Id : 0);
 			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 0, size: (uint)Marshal.SizeOf<PushConstants>(), ref Unsafe.As<PushConstants, byte>(ref pushConstants));
 
 			var uniformsSize = CreateUniformsBuffer(material.Uniforms, out Buffer? uniformsBuffer, out DeviceMemory? uniformsMemory);

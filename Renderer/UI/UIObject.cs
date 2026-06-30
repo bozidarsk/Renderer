@@ -13,34 +13,8 @@ public class UIObject : SceneObject
 	private static uint nextId = 0;
 	internal uint Id { get; } = checked(++nextId);
 
-	public Material? MaskMaterial { init; get; } = null;
-	private Material? normalMaterial;
-
 	public Action<UIObject, object?, MouseButtonEventArgs>? MouseButton;
 	protected virtual void OnMouseButton(object? sender, MouseButtonEventArgs args) { }
-
-	internal void SwitchToMaskMaterial()
-	{
-		if (MaskMaterial != null)
-		{
-			var mr = GetComponent<MeshRenderer>();
-			normalMaterial = mr.Material;
-			mr.Material = MaskMaterial;
-		}
-	}
-
-	internal void SwitchToNormalMaterial()
-	{
-		var mr = GetComponent<MeshRenderer>();
-
-		if (normalMaterial == null)
-		{
-			normalMaterial = mr.Material;
-			return;
-		}
-
-		mr.Material = normalMaterial;
-	}
 
 	private UIObject? FindTarget(uint id)
 	{

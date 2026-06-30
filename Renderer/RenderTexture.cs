@@ -35,7 +35,8 @@ public class RenderTexture
 		ImageLayout Layout,
 		AttachmentLoadOp LoadOp,
 		AttachmentStoreOp StoreOp,
-		ClearValue ClearValue
+		ClearValue ClearValue,
+		PipelineColorBlendAttachmentState? Blending
 	);
 
 	public record Dependency(
