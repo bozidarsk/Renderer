@@ -235,13 +235,13 @@ internal partial class Renderer
 		imageView = createInfo.CreateImageView(device, allocator);
 	}
 
-	public void CreateSampler(out Sampler sampler)
+	public void CreateSampler(out Sampler sampler, Filter filter)
 	{
 		var createInfo = new SamplerCreateInfo(
 			next: default,
 			flags: default,
-			magFilter: Filter.Linear,
-			minFilter: Filter.Linear,
+			magFilter: filter,
+			minFilter: filter,
 			mipmapMode: SamplerMipmapMode.Linear,
 			addressModeU: SamplerAddressMode.Repeat,
 			addressModeV: SamplerAddressMode.Repeat,
