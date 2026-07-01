@@ -65,14 +65,14 @@ public class Canvas : SceneObject
 			colorAttachments:
 			[
 				new(
-					new Texture(Width, Height, format: Format.R8G8B8A8SRGB, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
+					new Texture(Width, Height, format: Format.R8G8B8A8SRGB, usage: ImageUsage.ColorAttachment | ImageUsage.Sampled, aspect: ImageAspect.Color, initialLayout: ImageLayout.ShaderReadOnlyOptimal),
 					AttachmentLoadOp.Clear,
 					AttachmentStoreOp.Store,
 					new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f)),
 					null
 				),
 				new(
-					new Texture(Width, Height, format: Format.R8G8B8A8UInt, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
+					new Texture(Width, Height, format: Format.R8G8B8A8UInt, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc, aspect: ImageAspect.Color, initialLayout: ImageLayout.TransferSrcOptimal),
 					AttachmentLoadOp.Clear,
 					AttachmentStoreOp.Store,
 					new ClearValue(new ClearColorValue(0u, 0u, 0u, 0u)),
@@ -97,7 +97,7 @@ public class Canvas : SceneObject
 					Access2.None,
 					PipelineStage2.ColorAttachmentOutput,
 					Access2.ColorAttachmentWrite,
-					ImageLayout.Undefined,
+					ImageLayout.ShaderReadOnlyOptimal,
 					ImageLayout.ColorAttachmentOptimal
 				),
 				new(
@@ -106,7 +106,7 @@ public class Canvas : SceneObject
 					Access2.None,
 					PipelineStage2.ColorAttachmentOutput,
 					Access2.ColorAttachmentWrite,
-					ImageLayout.Undefined,
+					ImageLayout.TransferSrcOptimal,
 					ImageLayout.ColorAttachmentOptimal
 				)
 			],
@@ -127,7 +127,7 @@ public class Canvas : SceneObject
 					PipelineStage2.BottomOfPipe,
 					Access2.None,
 					ImageLayout.ColorAttachmentOptimal,
-					ImageLayout.ShaderReadOnlyOptimal
+					ImageLayout.TransferSrcOptimal
 				)
 			]
 		);
@@ -142,7 +142,6 @@ public class Canvas : SceneObject
 		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(camera.Target!.ColorAttachments[1].Texture);
 
 		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
-		this.Scene.Renderer.TransitionImageLayout(textureData.Image, ImageLayout.ShaderReadOnlyOptimal, ImageLayout.TransferSrcOptimal, ImageAspect.Color, cmd);
 		cmd.CopyImageToBuffer(textureData.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
 				bufferOffset: 0,
 				bufferRowLength: 0,
@@ -157,7 +156,6 @@ public class Canvas : SceneObject
 				imageExtent: new(width: 1, height: 1, depth: 1)
 			)
 		);
-		this.Scene.Renderer.TransitionImageLayout(textureData.Image, ImageLayout.TransferSrcOptimal, ImageLayout.ShaderReadOnlyOptimal, ImageAspect.Color, cmd);
 		this.Scene.Renderer.EndSingleTimeCommand(cmd);
 
 		uint id;

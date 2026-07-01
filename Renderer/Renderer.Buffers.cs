@@ -403,6 +403,22 @@ internal partial class Renderer
 			sourceStage = PipelineStage.ColorAttachmentOutput;
 			destinationStage = PipelineStage.Transfer;
 		}
+		else if (from == ImageLayout.Undefined && to == ImageLayout.DepthAttachmentOptimal)
+		{
+			sourceAccess = 0;
+			destinationAccess = Access.DepthStencilAttachmentRead | Access.DepthStencilAttachmentWrite;
+
+			sourceStage = PipelineStage.TopOfPipe;
+			destinationStage = PipelineStage.EarlyFragmentTests;
+		}
+		else if (from == ImageLayout.Undefined && to == ImageLayout.TransferSrcOptimal)
+		{
+			sourceAccess = 0;
+			destinationAccess = Access.TransferRead;
+
+			sourceStage = PipelineStage.TopOfPipe;
+			destinationStage = PipelineStage.Transfer;
+		}
 		else
 			throw new InvalidOperationException($"Unsupported layer transition from '{from}' to '{to}'.");
 

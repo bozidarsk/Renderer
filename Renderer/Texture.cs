@@ -10,48 +10,115 @@ public class Texture
 	public Array? Data { get; }
 	public int Width { get; }
 	public int Height { get; }
+	public int Depth { get; }
 	public Format Format { get; }
 	public ImageType Type { get; }
 	public ImageUsage Usage { get; }
 	public ImageAspect Aspect { get; }
+	public ImageLayout InitialLayout { get; }
 
-	private const ImageType DEFAULT_TYPE = ImageType.Generic2D;
-	private const ImageUsage DEFAULT_USAGE = ImageUsage.TransferDst | ImageUsage.Sampled;
-	private const ImageAspect DEFAULT_ASPECT = ImageAspect.Color;
-
-	public Texture(int width, int height, Format format, ImageType type, ImageUsage usage, ImageAspect aspect)
+	public Texture(int width, int height, Format format, ImageUsage usage, ImageAspect aspect, ImageLayout initialLayout)
 	{
 		if (width <= 0 || height <= 0)
 			throw new ArgumentOutOfRangeException();
 
 		this.Width = width;
 		this.Height = height;
+		this.Depth = 1;
 		this.Format = format;
-		this.Type = type;
+		this.Type = ImageType.Generic2D;
 		this.Usage = usage;
 		this.Aspect = aspect;
+		this.InitialLayout = initialLayout;
 	}
 
-	public Texture(int width, int height, uint[] data, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT) :
-		this(width, height, format: Format.B8G8R8A8UNorm, type: type, usage: usage, aspect: aspect)
+	public Texture(int width, int height, uint[] data)
 	{
+		if (width <= 0 || height <= 0 || width * height != data.Length)
+			throw new ArgumentOutOfRangeException();
+
 		this.Data = data;
+		this.Width = width;
+		this.Height = height;
+		this.Depth = 1;
+		this.Format = Format.B8G8R8A8UNorm;
+		this.Type = ImageType.Generic2D;
+		this.Usage = ImageUsage.TransferDst | ImageUsage.Sampled;
+		this.Aspect = ImageAspect.Color;
+		this.InitialLayout = ImageLayout.ShaderReadOnlyOptimal;
 	}
 
-	public Texture(int width, int height, Color[] data, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT) :
-		this(width, height, format: Format.R32G32B32A32SFloat, type: type, usage: usage, aspect: aspect)
+	public Texture(int width, int height, Color[] data)
 	{
+		if (width <= 0 || height <= 0 || width * height != data.Length)
+			throw new ArgumentOutOfRangeException();
+
 		this.Data = data;
+		this.Width = width;
+		this.Height = height;
+		this.Depth = 1;
+		this.Format = Format.R32G32B32A32SFloat;
+		this.Type = ImageType.Generic2D;
+		this.Usage = ImageUsage.TransferDst | ImageUsage.Sampled;
+		this.Aspect = ImageAspect.Color;
+		this.InitialLayout = ImageLayout.ShaderReadOnlyOptimal;
 	}
 
-	public Texture(string filename, ImageType type = DEFAULT_TYPE, ImageUsage usage = DEFAULT_USAGE, ImageAspect aspect = DEFAULT_ASPECT)
+	public Texture(int width, int height, int depth, Format format, ImageUsage usage, ImageAspect aspect, ImageLayout initialLayout)
+	{
+		if (width <= 0 || height <= 0 || depth <= 0)
+			throw new ArgumentOutOfRangeException();
+
+		this.Width = width;
+		this.Height = height;
+		this.Depth = depth;
+		this.Format = format;
+		this.Type = ImageType.Generic2D;
+		this.Usage = usage;
+		this.Aspect = aspect;
+		this.InitialLayout = initialLayout;
+	}
+
+	public Texture(int width, int height, int depth, uint[] data)
+	{
+		if (width <= 0 || height <= 0 || depth <= 0 || width * height * depth != data.Length)
+			throw new ArgumentOutOfRangeException();
+
+		this.Data = data;
+		this.Width = width;
+		this.Height = height;
+		this.Depth = depth;
+		this.Format = Format.B8G8R8A8UNorm;
+		this.Type = ImageType.Generic2D;
+		this.Usage = ImageUsage.TransferDst | ImageUsage.Sampled;
+		this.Aspect = ImageAspect.Color;
+		this.InitialLayout = ImageLayout.ShaderReadOnlyOptimal;
+	}
+
+	public Texture(int width, int height, int depth, Color[] data)
+	{
+		if (width <= 0 || height <= 0 || depth <= 0 || width * height * depth != data.Length)
+			throw new ArgumentOutOfRangeException();
+
+		this.Data = data;
+		this.Width = width;
+		this.Height = height;
+		this.Depth = depth;
+		this.Format = Format.R32G32B32A32SFloat;
+		this.Type = ImageType.Generic2D;
+		this.Usage = ImageUsage.TransferDst | ImageUsage.Sampled;
+		this.Aspect = ImageAspect.Color;
+		this.InitialLayout = ImageLayout.ShaderReadOnlyOptimal;
+	}
+
+	public Texture(string filename)
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
 
-		this.Type = type;
-		this.Usage = usage;
-		this.Aspect = aspect;
+		this.Usage = ImageUsage.TransferDst | ImageUsage.Sampled;
+		this.Aspect = ImageAspect.Color;
+		this.InitialLayout = ImageLayout.ShaderReadOnlyOptimal;
 
 		var extension = Path.GetExtension(filename).ToLower();
 		switch (extension)
@@ -60,7 +127,9 @@ public class Texture
 				var png = PNG.FromFile(filename);
 				this.Width = png.Width;
 				this.Height = png.Height;
+				this.Depth = 1;
 				this.Format = Format.B8G8R8A8UNorm;
+				this.Type = ImageType.Generic2D;
 				this.Data = png.Colors;
 				break;
 			default:

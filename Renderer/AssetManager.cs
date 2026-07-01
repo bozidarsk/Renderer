@@ -148,7 +148,7 @@ internal class AssetManager : IDisposable
 
 			renderer.TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, texture.Aspect);
 			renderer.CopyBufferToImage(buffer, image, texture.Width, texture.Height, texture.Aspect);
-			renderer.TransitionImageLayout(image, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal, texture.Aspect);
+			renderer.TransitionImageLayout(image, ImageLayout.TransferDstOptimal, texture.InitialLayout, texture.Aspect);
 
 			renderer.CreateImageView(image, texture.Format, texture.Aspect, ImageViewType.Generic2D, out imageView);
 			renderer.CreateSampler(out sampler, ((renderer.PhysicalDevice.GetFormatProperties(texture.Format).OptimalTilingFeatures & FormatFeatures.SampledImageFilterLinear) != 0) ? Filter.Linear : Filter.Nearest);
@@ -169,7 +169,7 @@ internal class AssetManager : IDisposable
 			}, out imageView);
 			renderer.CreateSampler(out sampler, ((renderer.PhysicalDevice.GetFormatProperties(texture.Format).OptimalTilingFeatures & FormatFeatures.SampledImageFilterLinear) != 0) ? Filter.Linear : Filter.Nearest);
 
-			renderer.TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.ShaderReadOnlyOptimal, texture.Aspect);
+			renderer.TransitionImageLayout(image, ImageLayout.Undefined, texture.InitialLayout, texture.Aspect);
 		}
 
 		textureData = new(image, imageView, imageMemory, sampler);
