@@ -127,36 +127,55 @@ internal partial class Renderer
 		stagingMemory.Dispose();
 	}
 
-	public DeviceSize CreateUniformsBuffer(IReadOnlyDictionary<string, object> data, out Buffer? buffer, out DeviceMemory? memory)
+	public unsafe void CreateUniformsBuffer(IReadOnlyDictionary<string, object> data, out Buffer? buffer, out DeviceMemory? memory, out DeviceSize size)
 	{
-		DeviceSize size = 0;
+		var bytes = new List<byte>();
 
-		foreach ((var key, var value) in data)
-			if (value.GetType().IsValueType && !value.GetType().IsGenericType)
-				size += (ulong)Marshal.SizeOf(value.GetType());
-
-		if (size == 0)
+		foreach (var x in data.Values.Where(x => x.GetType().IsValueType && !x.GetType().IsGenericType))
 		{
-			(buffer, memory) = (null, null);
-			return 0;
-		}
+			(var currentSize, var alignment) = getTypeLayout(x.GetType());
 
-		CreateBuffer(size, BufferUsage.UniformBuffer, out buffer);
-		CreateBufferMemory(buffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out memory);
-
-		nint mapped = memory.Map(size, offset: default, flags: default);
-
-		foreach ((var key, var value) in data)
-		{
-			if (!value.GetType().IsValueType && !value.GetType().IsGenericType)
+			if (currentSize == 0)
 				continue;
 
-			Marshal.StructureToPtr(value, mapped, false);
-			mapped += (nint)Marshal.SizeOf(value.GetType());
+			var padding = (bytes.Count % alignment != 0) ? alignment - (bytes.Count % alignment) : 0;
+
+			bytes.AddRange(Enumerable.Repeat((byte)0, padding + currentSize));
+
+			fixed (byte* pointer = CollectionsMarshal.AsSpan(bytes))
+				Marshal.StructureToPtr(x, (nint)pointer + bytes.Count - padding - currentSize, false);
 		}
 
-		memory.Unmap();
-		return size;
+		if (bytes.Count == 0)
+		{
+			buffer = null;
+			memory = null;
+			size = 0;
+		}
+		else
+		{
+			CreateStagingBuffer(bytes.ToArray(), BufferUsage.UniformBuffer, out buffer, out memory);
+			size = (ulong)bytes.Count;
+		}
+
+		static (int Size, int Alignment) getTypeLayout(Type x) => x switch
+		{
+			Type t when t == typeof(bool) => (4, 4),
+			Type t when t == typeof(int) => (4, 4),
+			Type t when t == typeof(uint) => (4, 4),
+			Type t when t == typeof(float) => (4, 4),
+			Type t when t == typeof(double) => (8, 8),
+			Type t when t == typeof(Vector2) => (8, 8),
+			Type t when t == typeof(Vector2Int) => (8, 8),
+			Type t when t == typeof(Vector3) => (12, 16),
+			Type t when t == typeof(Vector3Int) => (12, 16),
+			Type t when t == typeof(Vector4) => (16, 16),
+			Type t when t == typeof(Vector4Int) => (16, 16),
+			Type t when t == typeof(Matrix4x4) => (64, 16),
+			Type t when t == typeof(Quaternion) => (16, 16),
+			Type t when t == typeof(Color) => (16, 16),
+			_ => (0, 0)
+		};
 	}
 
 	public void CreateImage(int width, int height, ImageType type, ImageUsage usage, Format format, out Image image)

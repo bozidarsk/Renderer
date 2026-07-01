@@ -319,7 +319,7 @@ internal partial class Renderer
 			var pushConstants = new PushConstants(obj.Model, (obj is UIObject uiObject) ? uiObject.Id : 0);
 			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 0, size: (uint)Marshal.SizeOf<PushConstants>(), ref Unsafe.As<PushConstants, byte>(ref pushConstants));
 
-			var uniformsSize = CreateUniformsBuffer(material.Uniforms, out Buffer? uniformsBuffer, out DeviceMemory? uniformsMemory);
+			CreateUniformsBuffer(material.Uniforms, out Buffer? uniformsBuffer, out DeviceMemory? uniformsMemory, out DeviceSize uniformsSize);
 			bool hasUniforms = uniformsSize != 0;
 
 			if (hasUniforms)
