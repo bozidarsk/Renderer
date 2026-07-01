@@ -160,7 +160,13 @@ internal class AssetManager : IDisposable
 		{
 			renderer.CreateImage(texture.Width, texture.Height, texture.Type, texture.Usage, texture.Format, out image);
 			renderer.CreateImageMemory(image, out imageMemory);
-			renderer.CreateImageView(image, texture.Format, texture.Aspect, ImageViewType.Generic2D, out imageView);
+			renderer.CreateImageView(image, texture.Format, texture.Aspect, texture.Type switch
+			{
+				ImageType.Generic1D => ImageViewType.Generic1D,
+				ImageType.Generic2D => ImageViewType.Generic2D,
+				ImageType.Generic3D => ImageViewType.Generic3D,
+				_ => throw new InvalidOperationException($"Cannot map ImageType.{texture.Type} to ImageViewType.")
+			}, out imageView);
 			renderer.CreateSampler(out sampler, ((renderer.PhysicalDevice.GetFormatProperties(texture.Format).OptimalTilingFeatures & FormatFeatures.SampledImageFilterLinear) != 0) ? Filter.Linear : Filter.Nearest);
 
 			renderer.TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.ShaderReadOnlyOptimal, texture.Aspect);
