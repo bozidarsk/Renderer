@@ -141,43 +141,20 @@ internal class AssetManager : IDisposable
 
 		if (texture.Data != null)
 		{
-			DeviceSize stride = texture.Format switch
-			{
-				Format.R8G8B8A8UNorm => 4,
-				Format.B8G8R8A8UNorm => 4,
-				Format.R8G8B8A8SRGB => 4,
-				Format.R8G8B8A8UInt => 4,
-				Format.R32G32B32A32SFloat => 16,
-				Format.D32SFloat => 4,
-				Format.D32SFloatS8UInt => 8,
-				Format.D24UNormS8UInt => 4,
-				_ => throw new InvalidOperationException($"Failed to map texture format '{texture.Format}' to its stride.")
-			};
-
-			DeviceSize size = (ulong)texture.Width * (ulong)texture.Height * stride;
-
-			renderer.CreateBuffer(size, BufferUsage.TransferSrc, out Buffer stagingBuffer);
-			renderer.CreateBufferMemory(stagingBuffer, MemoryProperty.HostVisible | MemoryProperty.DeviceLocal, out DeviceMemory stagingMemory);
-
-			unsafe
-			{
-				nint stagingLocation = stagingMemory.Map(size: size, offset: default, flags: default);
-				Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>((void*)stagingLocation), ref MemoryMarshal.GetArrayDataReference(texture.Data), checked((uint)size));
-			}
+			renderer.CreateStagingBuffer(texture.Data, BufferUsage.TransferSrc, out Buffer buffer, out DeviceMemory memory);
 
 			renderer.CreateImage(texture.Width, texture.Height, texture.Type, texture.Usage, texture.Format, out image);
 			renderer.CreateImageMemory(image, out imageMemory);
 
 			renderer.TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, texture.Aspect);
-			renderer.CopyBufferToImage(stagingBuffer, image, texture.Width, texture.Height, texture.Aspect);
+			renderer.CopyBufferToImage(buffer, image, texture.Width, texture.Height, texture.Aspect);
 			renderer.TransitionImageLayout(image, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal, texture.Aspect);
 
 			renderer.CreateImageView(image, texture.Format, texture.Aspect, ImageViewType.Generic2D, out imageView);
 			renderer.CreateSampler(out sampler, ((renderer.PhysicalDevice.GetFormatProperties(texture.Format).OptimalTilingFeatures & FormatFeatures.SampledImageFilterLinear) != 0) ? Filter.Linear : Filter.Nearest);
 
-			stagingMemory.Unmap();
-			stagingBuffer.Dispose();
-			stagingMemory.Dispose();
+			memory.Dispose();
+			buffer.Dispose();
 		}
 		else
 		{
