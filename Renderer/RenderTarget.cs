@@ -32,7 +32,6 @@ public class RenderTarget
 
 	public record Attachment(
 		Texture Texture,
-		ImageLayout Layout,
 		AttachmentLoadOp LoadOp,
 		AttachmentStoreOp StoreOp,
 		ClearValue ClearValue,

@@ -66,7 +66,6 @@ public class Canvas : SceneObject
 			[
 				new(
 					new Texture(Width, Height, format: Format.R8G8B8A8SRGB, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
-					ImageLayout.ColorAttachmentOptimal,
 					AttachmentLoadOp.Clear,
 					AttachmentStoreOp.Store,
 					new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f)),
@@ -74,7 +73,6 @@ public class Canvas : SceneObject
 				),
 				new(
 					new Texture(Width, Height, format: Format.R8G8B8A8UInt, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color, type: ImageType.Generic2D),
-					ImageLayout.ColorAttachmentOptimal,
 					AttachmentLoadOp.Clear,
 					AttachmentStoreOp.Store,
 					new ClearValue(new ClearColorValue(0u, 0u, 0u, 0u)),

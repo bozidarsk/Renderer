@@ -209,7 +209,7 @@ internal class AssetManager : IDisposable
 			colorAttachments: renderTarget.ColorAttachments.Select(x => new RenderingAttachmentInfo(
 					next: default,
 					imageView: renderer.AssetManager.GetTextureData(x.Texture).ImageView,
-					imageLayout: x.Layout,
+					imageLayout: ImageLayout.ColorAttachmentOptimal,
 					resolveMode: ResolveMode.None,
 					resolveImageView: null,
 					resolveImageLayout: ImageLayout.Undefined,
@@ -222,7 +222,7 @@ internal class AssetManager : IDisposable
 				? new RenderingAttachmentInfo(
 						next: default,
 						imageView: renderer.AssetManager.GetTextureData(renderTarget.DepthAttachment.Texture).ImageView,
-						imageLayout: renderTarget.DepthAttachment.Layout,
+						imageLayout: ImageLayout.DepthAttachmentOptimal,
 						resolveMode: ResolveMode.None,
 						resolveImageView: null,
 						resolveImageLayout: ImageLayout.Undefined,
@@ -235,7 +235,7 @@ internal class AssetManager : IDisposable
 				? new RenderingAttachmentInfo(
 						next: default,
 						imageView: renderer.AssetManager.GetTextureData(renderTarget.StencilAttachment.Texture).ImageView,
-						imageLayout: renderTarget.StencilAttachment.Layout,
+						imageLayout: ImageLayout.StencilAttachmentOptimal,
 						resolveMode: ResolveMode.None,
 						resolveImageView: null,
 						resolveImageLayout: ImageLayout.Undefined,
