@@ -14,7 +14,7 @@ using Renderer.UI;
 
 namespace Renderer;
 
-internal partial class Renderer
+internal sealed partial class Renderer
 {
 	private readonly Dictionary<Type, (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes)> vertexInputDescriptions = new();
 	private readonly Dictionary<(ShaderProgram, RenderTarget?), Pipeline> graphicsPipelines = new();
@@ -216,7 +216,7 @@ internal partial class Renderer
 		return pipeline;
 	}
 
-	protected virtual void StartRenderPass(IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTarget? target = null)
+	private void StartRenderPass(IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTarget? target = null)
 	{
 		var renderTargetData = (target != null) ? AssetManager.GetRenderTargetData(target) : null;
 
@@ -399,7 +399,7 @@ internal partial class Renderer
 	}
 
 	// if throws ErrorOutOfDateKhr or SuboptimalKhr it needs swapchain recreation (see https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation)
-	public virtual void DrawFrame(Matrix4x4 projection, Matrix4x4 view, IEnumerable<SceneObject> objects, RenderTarget? target = null)
+	public void DrawFrame(Matrix4x4 projection, Matrix4x4 view, IEnumerable<SceneObject> objects, RenderTarget? target = null)
 	{
 		if (objects == null)
 			throw new ArgumentNullException();

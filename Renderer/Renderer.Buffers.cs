@@ -10,7 +10,7 @@ using Buffer = Vulkan.Buffer;
 
 namespace Renderer;
 
-internal partial class Renderer
+internal sealed partial class Renderer
 {
 	public void CreateBuffer(DeviceSize size, BufferUsage usage, out Buffer buffer)
 	{

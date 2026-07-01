@@ -10,43 +10,43 @@ using Buffer = Vulkan.Buffer;
 
 namespace Renderer;
 
-internal partial class Renderer : IDisposable
+internal sealed partial class Renderer : IDisposable
 {
-	protected readonly GLFW.Window window;
-	protected readonly AllocationCallbacks? allocator;
+	private readonly GLFW.Window window;
+	private readonly AllocationCallbacks? allocator;
 
-	protected Queue<IDisposable>[] toBeDisposed;
-	protected uint graphicsQueueFamilyIndex, presentationQueueFamilyIndex;
-	protected Format swapchainImageFormat, depthFormat;
-	protected Extent2D extent;
+	private Queue<IDisposable>[] toBeDisposed;
+	private uint graphicsQueueFamilyIndex, presentationQueueFamilyIndex;
+	private Format swapchainImageFormat, depthFormat;
+	private Extent2D extent;
 
-	protected uint currentFrame = 0;
-	protected uint maxFrames => (uint)swapchainImageViews.Length;
+	private uint currentFrame = 0;
+	private uint maxFrames => (uint)swapchainImageViews.Length;
 
-	protected Instance instance;
-	protected DebugUtilsMessenger debugUtilsMessenger;
-	protected PhysicalDevice physicalDevice;
-	protected Device device;
-	protected Swapchain swapchain;
-	protected Image[] swapchainImages;
-	protected ImageView[] swapchainImageViews;
-	protected PipelineLayout pipelineLayout;
-	protected RenderPass renderPass;
-	protected Framebuffer[] framebuffers;
-	protected CommandPool commandPool;
-	protected CommandBuffer[] commandBuffers;
-	protected Semaphore[] imageAvailableSemaphore, renderFinishedSemaphore;
-	protected Fence[] inFlightFence;
-	protected Queue graphicsQueue, presentationQueue;
-	protected DescriptorSetLayout[] descriptorSetLayouts;
-	protected DescriptorPool descriptorPool;
-	protected DescriptorSet[] descriptorSets;
-	protected Buffer[] globalUniformsBuffers;
-	protected DeviceMemory[] globalUniformsMemories;
-	protected nint[] globalUniformsLocations;
-	protected Image depthImage;
-	protected ImageView depthImageView;
-	protected DeviceMemory depthImageMemory;
+	private Instance instance;
+	private DebugUtilsMessenger debugUtilsMessenger;
+	private PhysicalDevice physicalDevice;
+	private Device device;
+	private Swapchain swapchain;
+	private Image[] swapchainImages;
+	private ImageView[] swapchainImageViews;
+	private PipelineLayout pipelineLayout;
+	private RenderPass renderPass;
+	private Framebuffer[] framebuffers;
+	private CommandPool commandPool;
+	private CommandBuffer[] commandBuffers;
+	private Semaphore[] imageAvailableSemaphore, renderFinishedSemaphore;
+	private Fence[] inFlightFence;
+	private Queue graphicsQueue, presentationQueue;
+	private DescriptorSetLayout[] descriptorSetLayouts;
+	private DescriptorPool descriptorPool;
+	private DescriptorSet[] descriptorSets;
+	private Buffer[] globalUniformsBuffers;
+	private DeviceMemory[] globalUniformsMemories;
+	private nint[] globalUniformsLocations;
+	private Image depthImage;
+	private ImageView depthImageView;
+	private DeviceMemory depthImageMemory;
 
 	public AllocationCallbacks? Allocator => allocator;
 	public Instance Instance => instance ?? throw new NullReferenceException("Instance has not been initialized.");
@@ -102,7 +102,7 @@ internal partial class Renderer : IDisposable
 		throw new NullReferenceException("Failed to find supported format.");
 	}
 
-	protected virtual void InitializeInstance()
+	private void InitializeInstance()
 	{
 		using var appInfo = new ApplicationInfo(
 			next: default,
@@ -129,7 +129,7 @@ internal partial class Renderer : IDisposable
 		instance = instanceCreateInfo.CreateInstance(allocator);
 	}
 
-	protected virtual void InitializeDebugUtilsMessenger()
+	private void InitializeDebugUtilsMessenger()
 	{
 		var debugUtilsMessengerCreateInfo = new DebugUtilsMessengerCreateInfo(
 			next: default,
@@ -143,11 +143,11 @@ internal partial class Renderer : IDisposable
 		debugUtilsMessenger = debugUtilsMessengerCreateInfo.CreateDebugUtilsMessanger(instance, allocator);
 	}
 
-	protected virtual void InitializePhysicalDevice() =>
+	private void InitializePhysicalDevice() =>
 		physicalDevice = instance.PhysicalDevices.Where(x => x.Properties.DeviceType == PhysicalDeviceType.IntegratedGpu).First()
 	;
 
-	protected virtual unsafe void InitializeDevice()
+	private unsafe void InitializeDevice()
 	{
 		graphicsQueueFamilyIndex = find(physicalDevice.QueueFamilyProperties, static (i, x) => x.QueueFlags.HasFlag(QueueFlags.Graphics));
 		presentationQueueFamilyIndex = find(physicalDevice.QueueFamilyProperties, (i, x) => instance.Surface!.IsSupported(physicalDevice, (uint)i));
@@ -265,7 +265,7 @@ internal partial class Renderer : IDisposable
 		;
 	}
 
-	protected virtual void InitializeSwapchain()
+	private void InitializeSwapchain()
 	{
 		(int framebufferWidth, int framebufferHeight) = window.FramebufferSize;
 
@@ -303,7 +303,7 @@ internal partial class Renderer : IDisposable
 		swapchain = swapchainCreateInfo.CreateSwapchain(device, allocator);
 	}
 
-	protected virtual void InitializeImageViews()
+	private void InitializeImageViews()
 	{
 		swapchainImages = swapchain.GetImages();
 		swapchainImageViews = new ImageView[swapchainImages.Length];
@@ -312,7 +312,7 @@ internal partial class Renderer : IDisposable
 			CreateImageView(swapchainImages[i], swapchainImageFormat, ImageAspect.Color, ImageViewType.Generic2D, out swapchainImageViews[i]);
 	}
 
-	protected virtual void InitializeDescriptorSetLayout()
+	private void InitializeDescriptorSetLayout()
 	{
 		var globalUniformsBinding = new DescriptorSetLayoutBinding(
 			binding: 0,
@@ -350,7 +350,7 @@ internal partial class Renderer : IDisposable
 			descriptorSetLayouts[i] = descriptorSetLayoutCreateInfo.CreateDescriptorSetLayout(device, allocator);
 	}
 
-	protected virtual void InitializeDescriptorPool()
+	private void InitializeDescriptorPool()
 	{
 		using var descriptorPoolCreateInfo = new DescriptorPoolCreateInfo(
 			next: default,
@@ -362,7 +362,7 @@ internal partial class Renderer : IDisposable
 		descriptorPool = descriptorPoolCreateInfo.CreateDescriptorPool(device, allocator);
 	}
 
-	protected virtual void InitialzieDescriptorSets()
+	private void InitialzieDescriptorSets()
 	{
 		using var descriptorSetAllocateInfo = new DescriptorSetAllocateInfo(
 			next: default,
@@ -373,7 +373,7 @@ internal partial class Renderer : IDisposable
 		descriptorSets = descriptorSetAllocateInfo.CreateDescriptorSets(device, descriptorPool);
 	}
 
-	protected virtual void InitializeGlobalUniforms()
+	private void InitializeGlobalUniforms()
 	{
 		DeviceSize size = (ulong)Marshal.SizeOf<GlobalUniforms>();
 
@@ -392,7 +392,7 @@ internal partial class Renderer : IDisposable
 		}
 	}
 
-	protected virtual void InitializePipelineLayout()
+	private void InitializePipelineLayout()
 	{
 		using var pipelineLayoutCreateInfo = new PipelineLayoutCreateInfo(
 			next: default,
@@ -404,7 +404,7 @@ internal partial class Renderer : IDisposable
 		pipelineLayout = pipelineLayoutCreateInfo.CreatePipelineLayout(device, allocator);
 	}
 
-	protected virtual void InitializeDepthImage()
+	private void InitializeDepthImage()
 	{
 		depthFormat = FindSupportedFormat(
 			[Format.D32SFloat, Format.D32SFloatS8UInt, Format.D24UNormS8UInt],
@@ -459,7 +459,7 @@ internal partial class Renderer : IDisposable
 		depthImageView = imageViewCreateInfo.CreateImageView(device, allocator);
 	}
 
-	protected virtual void InitializeRenderPass()
+	private void InitializeRenderPass()
 	{
 		var colorAttachment = new AttachmentDescription(
 			flags: default,
@@ -526,7 +526,7 @@ internal partial class Renderer : IDisposable
 		renderPass = renderPassCreateInfo.CreateRenderPass(device, allocator);
 	}
 
-	protected virtual void InitializeFramebuffers()
+	private void InitializeFramebuffers()
 	{
 		framebuffers = new Framebuffer[swapchainImageViews.Length];
 
@@ -546,7 +546,7 @@ internal partial class Renderer : IDisposable
 		}
 	}
 
-	protected virtual void InitializeCommandPool()
+	private void InitializeCommandPool()
 	{
 		var commandPoolCreateInfo = new CommandPoolCreateInfo(
 			next: default,
@@ -557,7 +557,7 @@ internal partial class Renderer : IDisposable
 		commandPool = commandPoolCreateInfo.CreateCommandPool(device, allocator);
 	}
 
-	protected virtual void InitializeCommandBuffers()
+	private void InitializeCommandBuffers()
 	{
 		var commandBufferAllocateInfo = new CommandBufferAllocateInfo(
 			next: default,
@@ -569,7 +569,7 @@ internal partial class Renderer : IDisposable
 		commandBuffers = commandBufferAllocateInfo.CreateCommandBuffers(device, commandPool);
 	}
 
-	protected virtual void InitializeSyncObjects()
+	private void InitializeSyncObjects()
 	{
 		var semaphoreCreateInfo = new SemaphoreCreateInfo(
 			next: default,
@@ -619,7 +619,7 @@ internal partial class Renderer : IDisposable
 		InitializeFramebuffers();
 	}
 
-	public virtual void Initialize()
+	public void Initialize()
 	{
 		InitializeInstance();
 		InitializeDebugUtilsMessenger();
