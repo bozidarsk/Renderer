@@ -31,16 +31,12 @@ internal sealed partial class Renderer : IDisposable
 	private Image[] swapchainImages;
 	private ImageView[] swapchainImageViews;
 	private PipelineLayout pipelineLayout;
-	private RenderPass renderPass;
-	private Framebuffer[] framebuffers;
 	private CommandPool commandPool;
 	private CommandBuffer[] commandBuffers;
 	private Semaphore[] imageAvailableSemaphore, renderFinishedSemaphore;
 	private Fence[] inFlightFence;
 	private Queue graphicsQueue, presentationQueue;
 	private DescriptorSetLayout[] descriptorSetLayouts;
-	private DescriptorPool descriptorPool;
-	private DescriptorSet[] descriptorSets;
 	private Buffer[] globalUniformsBuffers;
 	private DeviceMemory[] globalUniformsMemories;
 	private nint[] globalUniformsLocations;
@@ -350,29 +346,6 @@ internal sealed partial class Renderer : IDisposable
 			descriptorSetLayouts[i] = descriptorSetLayoutCreateInfo.CreateDescriptorSetLayout(device, allocator);
 	}
 
-	private void InitializeDescriptorPool()
-	{
-		using var descriptorPoolCreateInfo = new DescriptorPoolCreateInfo(
-			next: default,
-			flags: DescriptorPoolCreateFlags.FreeDescriptorSet,
-			maxSets: maxFrames,
-			poolSizes: [new(DescriptorType.UniformBuffer, maxFrames * 2)]
-		);
-
-		descriptorPool = descriptorPoolCreateInfo.CreateDescriptorPool(device, allocator);
-	}
-
-	private void InitialzieDescriptorSets()
-	{
-		using var descriptorSetAllocateInfo = new DescriptorSetAllocateInfo(
-			next: default,
-			descriptorPool: descriptorPool,
-			setLayouts: descriptorSetLayouts
-		);
-
-		descriptorSets = descriptorSetAllocateInfo.CreateDescriptorSets(device, descriptorPool);
-	}
-
 	private void InitializeGlobalUniforms()
 	{
 		DeviceSize size = (ulong)Marshal.SizeOf<GlobalUniforms>();
@@ -459,93 +432,6 @@ internal sealed partial class Renderer : IDisposable
 		depthImageView = imageViewCreateInfo.CreateImageView(device, allocator);
 	}
 
-	private void InitializeRenderPass()
-	{
-		var colorAttachment = new AttachmentDescription(
-			flags: default,
-			format: swapchainImageFormat,
-			samples: SampleCount.Bit1,
-			loadOp: AttachmentLoadOp.Clear,
-			storeOp: AttachmentStoreOp.Store,
-			stencilLoadOp: AttachmentLoadOp.DontCare,
-			stencilStoreOp: AttachmentStoreOp.DontCare,
-			initialLayout: ImageLayout.Undefined,
-			finalLayout: ImageLayout.PresentSrc
-		);
-
-		var colorAttachmentRef = new AttachmentReference(
-			attachment: 0,
-			layout: ImageLayout.ColorAttachmentOptimal
-		);
-
-		var depthAttachment = new AttachmentDescription(
-			flags: default,
-			format: depthFormat,
-			samples: SampleCount.Bit1,
-			loadOp: AttachmentLoadOp.Clear,
-			storeOp: AttachmentStoreOp.DontCare,
-			stencilLoadOp: AttachmentLoadOp.DontCare,
-			stencilStoreOp: AttachmentStoreOp.DontCare,
-			initialLayout: ImageLayout.Undefined,
-			finalLayout: ImageLayout.DepthStencilAttachmentOptimal
-		);
-
-		var depthAttachmentRef = new AttachmentReference(
-			attachment: 1,
-			layout: ImageLayout.DepthStencilAttachmentOptimal
-		);
-
-		using var subpass = new SubpassDescription(
-			flags: default,
-			pipelineBindPoint: PipelineBindPoint.Graphics,
-			inputAttachments: null,
-			colorAttachments: [colorAttachmentRef],
-			resolveAttachments: null,
-			depthStencilAttachment: depthAttachmentRef,
-			preserveAttachments: null
-		);
-
-		var dependency = new SubpassDependency(
-			srcSubpass: ~0u,
-			dstSubpass: 0,
-			srcStageMask: PipelineStage.ColorAttachmentOutput | PipelineStage.EarlyFragmentTests,
-			dstStageMask: PipelineStage.ColorAttachmentOutput | PipelineStage.EarlyFragmentTests,
-			srcAccessMask: 0,
-			dstAccessMask: Access.ColorAttachmentWrite | Access.DepthStencilAttachmentWrite,
-			dependencyFlags: default
-		);
-
-		using var renderPassCreateInfo = new RenderPassCreateInfo(
-			next: default,
-			flags: default,
-			attachments: [colorAttachment, depthAttachment],
-			subpasses: [subpass],
-			dependencies: [dependency]
-		);
-
-		renderPass = renderPassCreateInfo.CreateRenderPass(device, allocator);
-	}
-
-	private void InitializeFramebuffers()
-	{
-		framebuffers = new Framebuffer[swapchainImageViews.Length];
-
-		for (int i = 0; i < framebuffers.Length; i++)
-		{
-			using var framebufferCreateInfo = new FramebufferCreateInfo(
-				next: default,
-				flags: default,
-				renderPass: renderPass,
-				attachments: [swapchainImageViews[i], depthImageView],
-				width: extent.Width,
-				height: extent.Height,
-				layers: 1
-			);
-
-			framebuffers[i] = framebufferCreateInfo.CreateFramebuffer(device, allocator);
-		}
-	}
-
 	private void InitializeCommandPool()
 	{
 		var commandPoolCreateInfo = new CommandPoolCreateInfo(
@@ -606,9 +492,6 @@ internal sealed partial class Renderer : IDisposable
 
 		DeviceWaitIdle();
 
-		foreach (var x in framebuffers)
-			x.Dispose();
-
 		foreach (var x in swapchainImageViews)
 			x.Dispose();
 
@@ -616,7 +499,6 @@ internal sealed partial class Renderer : IDisposable
 
 		InitializeSwapchain();
 		InitializeImageViews();
-		InitializeFramebuffers();
 	}
 
 	public void Initialize()
@@ -631,13 +513,9 @@ internal sealed partial class Renderer : IDisposable
 		InitializeSwapchain();
 		InitializeImageViews();
 		InitializeDescriptorSetLayout();
-		// InitializeDescriptorPool();
-		// InitialzieDescriptorSets();
 		InitializeGlobalUniforms();
 		InitializePipelineLayout();
 		InitializeDepthImage();
-		InitializeRenderPass();
-		InitializeFramebuffers();
 		InitializeCommandPool();
 		InitializeCommandBuffers();
 		InitializeSyncObjects();
@@ -678,12 +556,8 @@ internal sealed partial class Renderer : IDisposable
 
 		commandPool.Dispose();
 		pipelineLayout.Dispose();
-		renderPass.Dispose();
 
 		foreach (var x in graphicsPipelines.Values)
-			x.Dispose();
-
-		foreach (var x in framebuffers)
 			x.Dispose();
 
 		foreach (var x in swapchainImageViews)
@@ -695,11 +569,6 @@ internal sealed partial class Renderer : IDisposable
 			x.Dispose();
 		foreach (var x in globalUniformsMemories)
 			x.Dispose();
-
-		foreach (var x in descriptorSets ?? [])
-			x.Dispose();
-
-		descriptorPool?.Dispose();
 
 		foreach (var x in descriptorSetLayouts)
 			x.Dispose();
