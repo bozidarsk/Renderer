@@ -139,9 +139,38 @@ internal sealed partial class Renderer : IDisposable
 		debugUtilsMessenger = debugUtilsMessengerCreateInfo.CreateDebugUtilsMessanger(instance, allocator);
 	}
 
-	private void InitializePhysicalDevice() =>
-		physicalDevice = instance.PhysicalDevices.Where(x => x.Properties.DeviceType == PhysicalDeviceType.IntegratedGpu).First()
-	;
+	private void InitializePhysicalDevice()
+	{
+		var devices = instance.PhysicalDevices;
+
+		if (uint.TryParse(Environment.GetEnvironmentVariable("VK_PHYSICAL_DEVICE_DEVICE_ID"), out var deviceId))
+		{
+			PhysicalDevice? foundDevice = devices.FirstOrDefault(x => x.Properties.DeviceID == deviceId);
+
+			if (foundDevice != null)
+				physicalDevice = foundDevice;
+		}
+		else if (uint.TryParse(Environment.GetEnvironmentVariable("VK_PHYSICAL_DEVICE_VENDOR_ID"), out var vendorId))
+		{
+			PhysicalDevice? foundDevice = devices.FirstOrDefault(x => x.Properties.VendorID == vendorId);
+
+			if (foundDevice != null)
+				physicalDevice = foundDevice;
+		}
+		else if (Enum.TryParse<PhysicalDeviceType>(Environment.GetEnvironmentVariable("VK_PHYSICAL_DEVICE_TYPE"), true, out var type))
+		{
+			PhysicalDevice? foundDevice = devices.FirstOrDefault(x => x.Properties.DeviceType == type);
+
+			if (foundDevice != null)
+				physicalDevice = foundDevice;
+		}
+		else
+		{
+			physicalDevice = devices.First();
+		}
+
+		Console.WriteLine($"Using physical device '{physicalDevice.Properties.DeviceName}'.");
+	}
 
 	private unsafe void InitializeDevice()
 	{
