@@ -106,7 +106,7 @@ internal sealed partial class Renderer : IDisposable
 			applicationVersion: MakeVersion(1, 0, 0),
 			engineName: "No Engine",
 			engineVersion: MakeVersion(1, 0, 0),
-			apiVersion: MakeApiVersion(0, 1, 4, 0)
+			apiVersion: MakeApiVersion(0, 1, 3, 0)
 		);
 
 		var extensions = new List<string>(GLFW.Program.RequiredInstanceExtensions!);
