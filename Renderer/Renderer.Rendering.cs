@@ -79,8 +79,6 @@ internal sealed partial class Renderer
 
 	public unsafe Pipeline CreateGraphicsPipeline(ShaderProgram shaderProgram, RenderTarget? target = null)
 	{
-		var extent = (target != null) ? new Extent2D((uint)target.Width, (uint)target.Height) : this.extent;
-
 		var inputAssembly = new PipelineInputAssemblyStateCreateInfo(
 			next: default,
 			flags: default,
@@ -91,24 +89,8 @@ internal sealed partial class Renderer
 		using var viewport = new PipelineViewportStateCreateInfo(
 			next: default,
 			flags: default,
-			viewports:
-			[
-				new(
-					x: 0f,
-					y: 0f,
-					width: (float)extent.Width,
-					height: (float)extent.Height,
-					minDepth: 0f,
-					maxDepth: 1f
-				)
-			],
-			scissors:
-			[
-				new(
-					offset: new(x: 0, y: 0),
-					extent: extent
-				)
-			]
+			viewports: [default],
+			scissors: [default]
 		);
 
 		var rasterization = new PipelineRasterizationStateCreateInfo(
@@ -178,6 +160,8 @@ internal sealed partial class Renderer
 			dynamicStates:
 			[
 				DynamicState.VertexInput,
+				DynamicState.Scissor,
+				DynamicState.Viewport,
 			]
 		);
 
@@ -219,6 +203,7 @@ internal sealed partial class Renderer
 	private void StartRenderPass(IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTarget? target = null)
 	{
 		var renderTargetData = (target != null) ? AssetManager.GetRenderTargetData(target) : null;
+		var extent = (target != null) ? new Extent2D((uint)target.Width, (uint)target.Height) : this.extent;
 
 		using var dependencyInfoBegin = new DependencyInfo(
 			next: default,
@@ -324,6 +309,8 @@ internal sealed partial class Renderer
 			}
 
 			cmd.BindPipeline(graphicsPipeline, PipelineBindPoint.Graphics);
+			cmd.SetScissors(new Rect2D(offset: new(0, 0), extent: extent));
+			cmd.SetViewports(new Viewport(x: 0, y: 0, width: extent.Width, height: extent.Height, minDepth: 0f, maxDepth: 1f));
 			cmd.SetVertexInput(vertexInputDescription.Bindings, vertexInputDescription.Attributes);
 			cmd.BindVertexBuffers(meshData.VertexBuffer);
 			cmd.BindIndexBuffer(meshData.IndexBuffer, meshData.IndexType);
@@ -411,7 +398,6 @@ internal sealed partial class Renderer
 			renderingInfo.Dispose();
 	}
 
-	// if throws ErrorOutOfDateKhr or SuboptimalKhr it needs swapchain recreation (see https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation)
 	public void DrawFrame(Matrix4x4 projection, Matrix4x4 view, IEnumerable<SceneObject> objects, RenderTarget? target = null)
 	{
 		if (objects == null)

@@ -43,6 +43,8 @@ public class Scene : IDisposable
 		this.Renderer.DeviceWaitIdle();
 	}
 
+	public void Resize() => Renderer.Resize();
+
 	public void Dispose()
 	{
 		this.Root?.Dispose();

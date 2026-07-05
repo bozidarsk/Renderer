@@ -510,24 +510,21 @@ internal sealed partial class Renderer : IDisposable
 
 	public void DeviceWaitIdle() => device.WaitIdle();
 
-	public void RecreateSwapchain()
+	public void Resize()
 	{
-		(int framebufferWidth, int framebufferHeight) = window.FramebufferSize;
-		while (framebufferWidth == 0 || framebufferHeight == 0)
-		{
-			(framebufferWidth, framebufferHeight) = window.FramebufferSize;
-			GLFW.Input.WaitForEvents();
-		}
-
 		DeviceWaitIdle();
 
 		foreach (var x in swapchainImageViews)
 			x.Dispose();
 
 		swapchain.Dispose();
+		depthImageView.Dispose();
+		depthImageMemory.Dispose();
+		depthImage.Dispose();
 
 		InitializeSwapchain();
 		InitializeImageViews();
+		InitializeDepthImage();
 	}
 
 	public void Initialize()
