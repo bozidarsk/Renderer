@@ -427,7 +427,7 @@ internal sealed partial class Renderer : IDisposable
 			usage: ImageUsage.DepthStencilAttachment | ImageUsage.Sampled,
 			sharingMode: SharingMode.Exclusive,
 			queueFamilyIndices: null,
-			initialLayout: ImageLayout.DepthAttachmentOptimal
+			initialLayout: ImageLayout.Undefined
 		);
 
 		depthImage = imageCreateInfo.CreateImage(device, allocator);

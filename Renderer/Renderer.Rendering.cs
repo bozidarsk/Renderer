@@ -239,6 +239,19 @@ internal sealed partial class Renderer
 					dstQueueFamilyIndex: ~0u,
 					image: swapchainImages[swapchainImageIndex],
 					subresourceRange: new ImageSubresourceRange(ImageAspect.Color, 0, 1, 0, 1)
+				),
+				new ImageMemoryBarrier2(
+					next: default,
+					srcStage: PipelineStage2.None,
+					srcAccess: Access2.None,
+					dstStage: PipelineStage2.EarlyFragmentTests,
+					dstAccess: Access2.DepthStencilAttachmentRead | Access2.DepthStencilAttachmentWrite,
+					oldLayout: ImageLayout.Undefined,
+					newLayout: ImageLayout.DepthAttachmentOptimal,
+					srcQueueFamilyIndex: ~0u,
+					dstQueueFamilyIndex: ~0u,
+					image: depthImage,
+					subresourceRange: new ImageSubresourceRange(ImageAspect.Depth, 0, 1, 0, 1)
 				)
 			]
 		);
