@@ -28,7 +28,7 @@ public sealed class Font
 {
 	private readonly Glyph[] glyphs;
 	private readonly Dictionary<uint, int> map;
-	private readonly float scale;
+	private readonly float baseScale;
 
 	private static string[] searchDirectories =
 	[
@@ -45,7 +45,7 @@ public sealed class Font
 	#endif
 	];
 
-	internal TextMesh CreateMesh(string text)
+	internal TextMesh CreateMesh(string text, float fontSize)
 	{
 		if (text == null)
 			throw new ArgumentNullException();
@@ -60,10 +60,10 @@ public sealed class Font
 		for (int i = 0; i < indices.Length; i++)
 			indices[i] = map[(uint)unicode[i * 2] | (uint)((uint)unicode[i * 2 + 1] << 8)];
 
-		return CreateMesh(indices);
+		return CreateMesh(indices, fontSize);
 	}
 
-	private TextMesh CreateMesh(Span<int> glyphIndices)
+	private TextMesh CreateMesh(Span<int> glyphIndices, float fontSize)
 	{
 		var outerVertices = new List<OuterTextVertex>();
 		var innerVertices = new List<InnerTextVertex>();
@@ -71,6 +71,7 @@ public sealed class Font
 		var innerIndices = new List<uint>();
 
 		var offset = Vector3.Zero;
+		var scale = this.baseScale * fontSize;
 
 		for (int i = 0; i < glyphIndices.Length; i++)
 		{
@@ -625,7 +626,7 @@ public sealed class Font
 		for (int i = 0; i < glyphCount; i++)
 			this.glyphs[i] = ReadGlyph(reader, i, glyphLocations, advanceWidths);
 
-		this.scale = 1f / (float)unitsPerEm;
+		this.baseScale = 1f / (float)unitsPerEm;
 	}
 
 	private record struct Table(Tag Tag, uint CheckSum, uint Offset, uint Length);

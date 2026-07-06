@@ -16,6 +16,11 @@ public class Mesh
 	public Type IndexType => this.Indices.GetType().GetElementType()!;
 	public int IndexCount => this.Indices.Length;
 
+	public static readonly Mesh<DefaultVertex, byte> Empty = new(
+		[new DefaultVertex()],
+		[0, 0, 0]
+	);
+
 	public Mesh(string filename) : this(filename, default, default) { }
 
 	internal protected Mesh(string filename, Type? vertexType, Type? indexType)

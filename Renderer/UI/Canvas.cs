@@ -11,7 +11,7 @@ public class Canvas : SceneObject
 {
 	public int Width { private set; get; }
 	public int Height { private set; get; }
-	public float Scale { private set; get; } = 0.01f;
+	public float Scale { private set; get; } = 1;
 
 	public CameraLayer CameraLayer
 	{
