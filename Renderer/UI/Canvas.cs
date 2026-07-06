@@ -33,12 +33,12 @@ public class Canvas : SceneObject
 		get;
 	} = CameraLayer.Main;
 
-	private Camera camera;
-	private SceneObject canvasTexture;
+	private readonly Camera camera;
+	private readonly SceneObject canvasTexture;
 
-	private Vulkan.Buffer maskBuffer;
-	private Vulkan.DeviceMemory maskMemory;
-	private nint maskLocation;
+	private readonly Vulkan.Buffer maskBuffer;
+	private readonly Vulkan.DeviceMemory maskMemory;
+	private readonly nint maskLocation;
 
 	public void Resize(int width, int height, float scale)
 	{
