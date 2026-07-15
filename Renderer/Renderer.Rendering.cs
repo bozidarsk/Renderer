@@ -203,7 +203,7 @@ internal sealed partial class Renderer
 	private void StartRenderPass(IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTarget? target = null)
 	{
 		var renderTargetData = (target != null) ? AssetManager.GetRenderTargetData(target) : null;
-		var extent = (target != null) ? new Extent2D((uint)target.Width, (uint)target.Height) : this.extent;
+		var extent = (target != null) ? new Extent2D((uint)target.Width, (uint)target.Height) : this.swapchainExtent;
 
 		using var dependencyInfoBegin = new DependencyInfo(
 			next: default,
@@ -244,7 +244,7 @@ internal sealed partial class Renderer
 		var renderingInfo = (renderTargetData != null) ? renderTargetData.RenderingInfo : new RenderingInfo(
 			next: default,
 			flags: default,
-			renderArea: new(offset: new(0, 0), extent: this.extent),
+			renderArea: new(offset: new(0, 0), extent: this.swapchainExtent),
 			layerCount: 1,
 			viewMask: 0,
 			colorAttachments: [

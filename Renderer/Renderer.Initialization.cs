@@ -18,7 +18,7 @@ internal sealed partial class Renderer : IDisposable
 	private Queue<IDisposable>[] toBeDisposed;
 	private uint graphicsQueueFamilyIndex, presentationQueueFamilyIndex;
 	private Format swapchainImageFormat, depthFormat;
-	private Extent2D extent;
+	private Extent2D swapchainExtent;
 
 	private uint currentFrame = 0;
 	private uint maxFrames => (uint)swapchainImageViews.Length;
@@ -300,7 +300,7 @@ internal sealed partial class Renderer : IDisposable
 		uint imageCount = swapchainProperties.Capabilities.MinImageCount + 1;
 
 		/*Extent2D*/
-		extent = swapchainProperties.GetExtent(framebufferWidth, framebufferHeight);
+		swapchainExtent = swapchainProperties.GetExtent(framebufferWidth, framebufferHeight);
 		swapchainImageFormat = surfaceFormat.Format;
 
 		if (swapchainProperties.Capabilities.MaxImageCount > 0 && imageCount > swapchainProperties.Capabilities.MaxImageCount)
@@ -313,7 +313,7 @@ internal sealed partial class Renderer : IDisposable
 			minImageCount: imageCount,
 			imageFormat: swapchainImageFormat,
 			imageColorSpace: surfaceFormat.ColorSpace,
-			imageExtent: extent,
+			imageExtent: swapchainExtent,
 			imageArrayLayers: 1,
 			imageUsage: ImageUsage.ColorAttachment,
 			imageSharingMode: (graphicsQueueFamilyIndex != presentationQueueFamilyIndex) ? SharingMode.Concurrent : SharingMode.Exclusive,
@@ -419,7 +419,7 @@ internal sealed partial class Renderer : IDisposable
 			flags: default,
 			imageType: ImageType.Generic2D,
 			format: depthFormat,
-			extent: new(extent.Width, extent.Height, 1),
+			extent: new(swapchainExtent.Width, swapchainExtent.Height, 1),
 			mipLevels: 1,
 			arrayLayers: 1,
 			samples: SampleCount.Bit1,
