@@ -48,6 +48,7 @@ internal sealed partial class Renderer : IDisposable
 	public Instance Instance => instance ?? throw new NullReferenceException("Instance has not been initialized.");
 	public PhysicalDevice PhysicalDevice => physicalDevice ?? throw new NullReferenceException("PhysicalDevice has not been initialized.");
 	public Device Device => device ?? throw new NullReferenceException("Device has not been initialized.");
+	public Extent2D SwapchainExtent => swapchainExtent;
 
 	public AssetManager AssetManager { get; }
 

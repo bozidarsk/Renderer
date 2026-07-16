@@ -196,8 +196,8 @@ public class Canvas : SceneObject
 		)
 		{ Layer = this.TextureLayer };
 
-		(int width, int height) = this.Scene.Window.Size;
-		Resize(width, height, this.Scale);
+		var extent = scene.Renderer.SwapchainExtent;
+		Resize((int)extent.Width, (int)extent.Height, this.Scale);
 
 		DeviceSize size = sizeof(uint);
 		this.Scene.Renderer.CreateBuffer(size, BufferUsage.TransferDst, out maskBuffer);
@@ -215,6 +215,8 @@ public class Canvas : SceneObject
 			foreach (var x in this.Children.OfType<UIObject>())
 				x.RaiseEvent(new(EventType.MouseButton, EventPropagationType.Tunnel, s, e, id));
 		};
+
+		this.Scene.Window.OnFramebufferSize += (s, e) => Resize(scene.Size.x, scene.Size.y, this.Scale);
 
 		AddChild(canvasTexture);
 		AddChild(camera);

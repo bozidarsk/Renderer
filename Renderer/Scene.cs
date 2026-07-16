@@ -15,6 +15,15 @@ public class Scene : IDisposable
 
 	public SceneObject? Root { set; get; } = null;
 
+	public Vector2Int Size
+	{
+		get
+		{
+			var extent = Renderer.SwapchainExtent;
+			return new((int)extent.Width, (int)extent.Height);
+		}
+	}
+
 	public event EventHandler<DebugUtilsMessengerEventArgs>? DebugUtilsMessageReceived;
 
 	public void Run()
@@ -80,5 +89,7 @@ public class Scene : IDisposable
 		this.Renderer.DebugUtilsMessageReceived += (s, e) => this.DebugUtilsMessageReceived?.Invoke(s, e);
 
 		this.Renderer.Initialize();
+
+		this.Window.OnFramebufferSize += (s, e) => Resize();
 	}
 }
