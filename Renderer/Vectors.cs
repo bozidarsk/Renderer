@@ -19,6 +19,7 @@ public struct Vector4
 	public static Vector4 operator /(float x, Vector4 a) => new Vector4(a.x / x, a.y / x, a.z / x, a.w / x);
 	public static Vector4 operator +(Vector4 a, Vector4 b) => new Vector4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 	public static Vector4 operator -(Vector4 a, Vector4 b) => new Vector4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+	public static Vector4 operator -(Vector4 v) => new Vector4(-v.x, -v.y, -v.z, -v.w);
 
 	public static bool operator ==(Vector4 a, Vector4 b) => a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
 	public static bool operator !=(Vector4 a, Vector4 b) => a.x != b.x && a.y != b.y && a.z != b.z && a.w != b.w;
@@ -58,6 +59,7 @@ public struct Vector3
 	public static Vector3 operator /(float x, Vector3 a) => new Vector3(a.x / x, a.y / x, a.z / x);
 	public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
 	public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
+	public static Vector3 operator -(Vector3 v) => new Vector3(-v.x, -v.y, -v.z);
 
 	public static bool operator ==(Vector3 a, Vector3 b) => a.x == b.x && a.y == b.y && a.z == b.z;
 	public static bool operator !=(Vector3 a, Vector3 b) => a.x != b.x && a.y != b.y && a.z != b.z;
@@ -96,6 +98,7 @@ public struct Vector2
 	public static Vector2 operator /(float x, Vector2 a) => new Vector2(a.x / x, a.y / x);
 	public static Vector2 operator +(Vector2 a, Vector2 b) => new Vector2(a.x + b.x, a.y + b.y);
 	public static Vector2 operator -(Vector2 a, Vector2 b) => new Vector2(a.x - b.x, a.y - b.y);
+	public static Vector2 operator -(Vector2 v) => new Vector2(-v.x, -v.y);
 
 	public static bool operator ==(Vector2 a, Vector2 b) => a.x == b.x && a.y == b.y;
 	public static bool operator !=(Vector2 a, Vector2 b) => a.x != b.x && a.y != b.y;
@@ -130,6 +133,7 @@ public struct Vector4Int
 	public static Vector4Int operator /(int x, Vector4Int a) => new Vector4Int(a.x / x, a.y / x, a.z / x, a.w / x);
 	public static Vector4Int operator +(Vector4Int a, Vector4Int b) => new Vector4Int(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 	public static Vector4Int operator -(Vector4Int a, Vector4Int b) => new Vector4Int(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w);
+	public static Vector4Int operator -(Vector4Int v) => new Vector4Int(-v.x, -v.y, -v.z, -v.w);
 
 	public static bool operator ==(Vector4Int a, Vector4Int b) => a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
 	public static bool operator !=(Vector4Int a, Vector4Int b) => a.x != b.x && a.y != b.y && a.z != b.z && a.w != b.w;
@@ -167,6 +171,7 @@ public struct Vector3Int
 	public static Vector3Int operator /(int x, Vector3Int a) => new Vector3Int(a.x / x, a.y / x, a.z / x);
 	public static Vector3Int operator +(Vector3Int a, Vector3Int b) => new Vector3Int(a.x + b.x, a.y + b.y, a.z + b.z);
 	public static Vector3Int operator -(Vector3Int a, Vector3Int b) => new Vector3Int(a.x - b.x, a.y - b.y, a.z - b.z);
+	public static Vector3Int operator -(Vector3Int v) => new Vector3Int(-v.x, -v.y, -v.z);
 
 	public static bool operator ==(Vector3Int a, Vector3Int b) => a.x == b.x && a.y == b.y && a.z == b.z;
 	public static bool operator !=(Vector3Int a, Vector3Int b) => a.x != b.x && a.y != b.y && a.z != b.z;
@@ -205,6 +210,7 @@ public struct Vector2Int
 	public static Vector2Int operator /(int x, Vector2Int a) => new Vector2Int(a.x / x, a.y / x);
 	public static Vector2Int operator +(Vector2Int a, Vector2Int b) => new Vector2Int(a.x + b.x, a.y + b.y);
 	public static Vector2Int operator -(Vector2Int a, Vector2Int b) => new Vector2Int(a.x - b.x, a.y - b.y);
+	public static Vector2Int operator -(Vector2Int v) => new Vector2Int(-v.x, -v.y);
 
 	public static bool operator ==(Vector2Int a, Vector2Int b) => a.x == b.x && a.y == b.y;
 	public static bool operator !=(Vector2Int a, Vector2Int b) => a.x != b.x && a.y != b.y;

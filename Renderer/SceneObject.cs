@@ -63,7 +63,7 @@ public class SceneObject : IDisposable
 
 			for (var obj = this; obj != null; obj = obj.Parent)
 				if (obj.TryGetComponent<Transform>(out Transform transform))
-					model *= transform;
+					model *= (Matrix4x4)transform;
 
 			return model;
 		}

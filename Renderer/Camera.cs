@@ -16,7 +16,7 @@ public class Camera : SceneObject
 
 		this.Scene.Renderer.DrawFrame(
 			projection: this.Projection,
-			view: TryGetComponent<Transform>(out Transform transform) ? transform : Matrix4x4.Identity,
+			view: TryGetComponent<Transform>(out Transform transform) ? (Matrix4x4)transform : Matrix4x4.Identity,
 			objects: objects,
 			target: this.Target
 		);

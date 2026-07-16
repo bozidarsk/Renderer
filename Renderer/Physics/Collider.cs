@@ -18,14 +18,14 @@ public abstract class Collider : Component
 		var a = source.GetComponent<Collider>();
 		var b = target.GetComponent<Collider>();
 
-		Matrix4x4 aOriginalTransform = a.transform;
-		Matrix4x4 bOriginalTransform = b.transform;
+		Matrix4x4 aOriginalTransform = (Matrix4x4)a.transform;
+		Matrix4x4 bOriginalTransform = (Matrix4x4)b.transform;
 
 		if (a.ApplyObjectTransform)
-			a.transform *= source.Transform;
+			a.transform *= (Matrix4x4)source.Transform;
 
 		if (b.ApplyObjectTransform)
-			b.transform *= target.Transform;
+			b.transform *= (Matrix4x4)target.Transform;
 
 		bool hit;
 
