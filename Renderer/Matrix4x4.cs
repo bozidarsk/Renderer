@@ -221,10 +221,10 @@ public struct Matrix4x4
 		return Matrix4x4.Zero with
 		{
 			m00 = f / ratio,
-			m11 = -f,
-			m22 = near / (far - near),
+			m11 = f,
+			m22 = -near / (far - near),
 			m23 = (near * far) / (far - near),
-			m32 = -1f
+			m32 = 1f,
 		};
 	}
 
@@ -233,12 +233,11 @@ public struct Matrix4x4
 		return Matrix4x4.Identity with
 		{
 			m00 = 2f / (right - left),
-			m11 = -2f / (top - bottom),
-			m22 = -2f / (near - far),
-
+			m11 = 2f / (top - bottom),
+			m22 = -1f / (far - near),
 			m03 = -(right + left) / (right - left),
-			m13 = -(top + bottom) / (top - bottom),
-			m23 = near / (near - far)
+			m13 = (top + bottom) / (top - bottom),
+			m23 = far / (far - near)
 		};
 	}
 
@@ -247,8 +246,6 @@ public struct Matrix4x4
 		Vector3 forward = (to - from).Normalized;
 		Vector3 right = Vector3.Cross(forward, up).Normalized;
 		Vector3 cameraUp = Vector3.Cross(right, forward);
-
-		forward *= -1;
 
 		return new()
 		{
