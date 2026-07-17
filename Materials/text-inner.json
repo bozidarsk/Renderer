@@ -1,0 +1,13 @@
+{
+	"shaders": [
+		"Renderer/Shaders/TextInner.vert.hlsl",
+		"Renderer/Shaders/TextInner.frag.hlsl"
+	],
+	"uniforms": [
+		{
+			"name": "COLOR",
+			"type": "Color",
+			"default": { "r": 1, "g": 1, "b": 1, "a": 1 }
+		}
+	]
+}

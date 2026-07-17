@@ -30,7 +30,7 @@ public class Rectangle : UIObject
 		byte[] indices = [0, 2, 1, 2, 0, 3];
 
 		this.meshFilter = new MeshFilter(new Mesh<RectangleVertex, byte>(vertices, indices));
-		this.meshRenderer = new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/rectangle.vert.hlsl", "Renderer/Shaders/rectangle.frag.hlsl")));
+		this.meshRenderer = new MeshRenderer(new Material("Renderer/Materials/rectangle.json"));
 
 		AddComponent(meshFilter);
 		AddComponent(meshRenderer);

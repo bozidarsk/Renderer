@@ -127,13 +127,13 @@ internal sealed partial class Renderer
 		stagingMemory.Dispose();
 	}
 
-	public unsafe void CreateUniformsBuffer(IReadOnlyDictionary<string, object> data, out Buffer? buffer, out DeviceMemory? memory, out DeviceSize size)
+	public unsafe void CreateUniformsBuffer(IEnumerable<object?> data, out Buffer? buffer, out DeviceMemory? memory, out DeviceSize size)
 	{
 		var bytes = new List<byte>();
 
-		foreach (var x in data.Values.Where(x => x.GetType().IsValueType && !x.GetType().IsGenericType))
+		foreach (var x in data.Where(x => x != null && x.GetType().IsValueType && !x.GetType().IsGenericType))
 		{
-			(var currentSize, var alignment) = getTypeLayout(x.GetType());
+			(var currentSize, var alignment) = getTypeLayout(x!.GetType());
 
 			if (currentSize == 0)
 				continue;

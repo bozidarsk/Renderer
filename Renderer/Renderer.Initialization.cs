@@ -15,6 +15,8 @@ internal sealed partial class Renderer : IDisposable
 	private readonly GLFW.Window window;
 	private readonly AllocationCallbacks? allocator;
 
+	private readonly int maxTextures = int.TryParse(Environment.GetEnvironmentVariable("VK_MAX_TEXTURES"), out int value) ? value : 16;
+
 	private Queue<IDisposable>[] toBeDisposed;
 	private uint graphicsQueueFamilyIndex, presentationQueueFamilyIndex;
 	private Format swapchainImageFormat, depthFormat;
@@ -208,7 +210,6 @@ internal sealed partial class Renderer : IDisposable
 		);
 
 		var extendedDynamicState3Features = new PhysicalDeviceExtendedDynamicState3Features(
-
 			next: (nint)(&vertexInputDynamicStateFeatures),
 			tessellationDomainOrigin: false,
 			depthClampEnable: false,
@@ -253,8 +254,32 @@ internal sealed partial class Renderer : IDisposable
 			synchronization2: true
 		);
 
-		using var deviceCreateInfo = new DeviceCreateInfo(
+		var descriptorIndexingFeatures = new PhysicalDeviceDescriptorIndexingFeatures(
 			next: (nint)(&synchronization2Features),
+			shaderInputAttachmentArrayDynamicIndexing: false,
+			shaderUniformTexelBufferArrayDynamicIndexing: false,
+			shaderStorageTexelBufferArrayDynamicIndexing: false,
+			shaderUniformBufferArrayNonUniformIndexing: false,
+			shaderSampledImageArrayNonUniformIndexing: false,
+			shaderStorageBufferArrayNonUniformIndexing: false,
+			shaderStorageImageArrayNonUniformIndexing: false,
+			shaderInputAttachmentArrayNonUniformIndexing: false,
+			shaderUniformTexelBufferArrayNonUniformIndexing: false,
+			shaderStorageTexelBufferArrayNonUniformIndexing: false,
+			descriptorBindingUniformBufferUpdateAfterBind: false,
+			descriptorBindingSampledImageUpdateAfterBind: false,
+			descriptorBindingStorageImageUpdateAfterBind: false,
+			descriptorBindingStorageBufferUpdateAfterBind: false,
+			descriptorBindingUniformTexelBufferUpdateAfterBind: false,
+			descriptorBindingStorageTexelBufferUpdateAfterBind: false,
+			descriptorBindingUpdateUnusedWhilePending: false,
+			descriptorBindingPartiallyBound: true,
+			descriptorBindingVariableDescriptorCount: false,
+			runtimeDescriptorArray: false
+		);
+
+		using var deviceCreateInfo = new DeviceCreateInfo(
+			next: (nint)(&descriptorIndexingFeatures),
 			flags: default,
 			queueCreateInfos: (graphicsQueueFamilyIndex != presentationQueueFamilyIndex) ? [graphicsDeviceQueueCreateInfo, presentationDeviceQueueCreateInfo] : [graphicsDeviceQueueCreateInfo],
 			enabledLayerNames: null,
@@ -340,6 +365,11 @@ internal sealed partial class Renderer : IDisposable
 
 	private void InitializeDescriptorSetLayout()
 	{
+		using var bindingFlagsCreateInfo = new DescriptorSetLayoutBindingFlagsCreateInfo(
+			next: default,
+			bindingFlags: new DescriptorBindingFlags[] { default, DescriptorBindingFlags.PartiallyBound }.Concat(Enumerable.Repeat(DescriptorBindingFlags.PartiallyBound, maxTextures)).ToArray()
+		);
+
 		var globalUniformsBinding = new DescriptorSetLayoutBinding(
 			binding: 0,
 			descriptorType: DescriptorType.UniformBuffer,
@@ -356,18 +386,19 @@ internal sealed partial class Renderer : IDisposable
 			immutableSamplers: null
 		);
 
-		var samplersBinding = new DescriptorSetLayoutBinding(
-			binding: 2,
-			descriptorType: DescriptorType.CombinedImageSampler,
-			descriptorCount: 1,
-			stage: ShaderStage.AllGraphics,
-			immutableSamplers: null
-		);
-
 		using var descriptorSetLayoutCreateInfo = new DescriptorSetLayoutCreateInfo(
 			next: default,
 			flags: DescriptorSetLayoutCreateFlags.PushDescriptor,
-			bindings: [globalUniformsBinding, objectUniformsBinding, samplersBinding]
+			bindings: new[] { globalUniformsBinding, objectUniformsBinding }.Concat(
+					Enumerable.Range(2, maxTextures).Select(x => new DescriptorSetLayoutBinding(
+						binding: (uint)x,
+						descriptorType: DescriptorType.CombinedImageSampler,
+						descriptorCount: 1,
+						stage: ShaderStage.AllGraphics,
+						immutableSamplers: null
+					)
+				)
+			).ToArray()
 		);
 
 		descriptorSetLayouts = new DescriptorSetLayout[maxFrames];

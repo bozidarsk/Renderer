@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="Clipper2" Version="1.5.4" />
+    <PackageReference Include="JsonSchema.Net" Version="9.2.2" />
     <PackageReference Include="System.IO.Hashing" Version="9.0.7" />
   </ItemGroup>
 

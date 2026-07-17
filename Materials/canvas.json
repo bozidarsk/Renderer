@@ -1,0 +1,12 @@
+{
+	"shaders": [
+		"Renderer/Shaders/canvas.vert.hlsl",
+		"Renderer/Shaders/canvas.frag.hlsl"
+	],
+	"uniforms": [
+		{
+			"name": "texture0",
+			"type": "Texture"
+		}
+	]
+}

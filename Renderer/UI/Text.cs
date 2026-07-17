@@ -88,13 +88,13 @@ public sealed class Text : UIObject
 		outer = new UIObject(scene,
 			new Transform(),
 			new MeshFilter(Mesh.Empty),
-			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextOuter.vert.hlsl", "Renderer/Shaders/TextOuter.frag.hlsl")))
+			new MeshRenderer(new Material("Renderer/Materials/text-outer.json"))
 		);
 
 		inner = new UIObject(scene,
 			new Transform(),
 			new MeshFilter(Mesh.Empty),
-			new MeshRenderer(new Material(new ShaderProgram("Renderer/Shaders/TextInner.vert.hlsl", "Renderer/Shaders/TextInner.frag.hlsl")))
+			new MeshRenderer(new Material("Renderer/Materials/text-inner.json"))
 		);
 
 		AddChild(inner);

@@ -342,27 +342,29 @@ internal sealed partial class Renderer
 			}
 
 			var textures = material.Uniforms
-				.Select(x => x.Value)
 				.OfType<Texture>()
 				.Select(x => AssetManager.GetTextureData(x))
-				.Select(x => new DescriptorImageInfo(sampler: x.Sampler, imageView: x.ImageView, imageLayout: ImageLayout.ShaderReadOnlyOptimal))
+				.Index()
+				.Select(x => new WriteDescriptorSet(
+						next: default,
+						destinationSet: default,
+						destinationBinding: (uint)(2 + x.Index),
+						destinationArrayElement: 0,
+						descriptorType: DescriptorType.CombinedImageSampler,
+						imageInfos: [new DescriptorImageInfo(sampler: x.Item.Sampler, imageView: x.Item.ImageView, imageLayout: ImageLayout.ShaderReadOnlyOptimal)],
+						bufferInfos: null,
+						texelBufferViews: null
+					)
+				)
 				.ToArray()
 			;
 
 			if (textures.Length > 0)
 			{
-				using var texturesDescriptorWrite = new WriteDescriptorSet(
-					next: default,
-					destinationSet: default,
-					destinationBinding: 2,
-					destinationArrayElement: 0,
-					descriptorType: DescriptorType.CombinedImageSampler,
-					imageInfos: textures,
-					bufferInfos: null,
-					texelBufferViews: null
-				);
+				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, textures);
 
-				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, texturesDescriptorWrite);
+				foreach (var x in textures)
+					toBeDisposed[currentFrame].Enqueue(x);
 			}
 
 			cmd.DrawIndexed(mesh.IndexCount);

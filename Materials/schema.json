@@ -1,0 +1,439 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Material",
+	"description": "Describes shaders and their properties.",
+	"type": "object",
+	"required": ["shaders"],
+	"additionalProperties": false,
+	"properties": {
+		"shaders": {
+			"type": "array",
+			"description": "An array of shader file paths.",
+			"uniqueItems": true,
+			"items": {
+				"type": "string"
+			}
+		},
+		"uniforms": {
+			"type": "array",
+			"description": "An array describing shader properties/uniforms.",
+			"uniqueItems": true,
+			"default": [],
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["name", "type"],
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "The name of the uniform variable."
+					},
+					"type": {
+						"enum": [
+							"int",
+							"uint",
+							"float",
+							"Color",
+							"Vector2",
+							"Vector3",
+							"Vector4",
+							"Vector2Int",
+							"Vector3Int",
+							"Vector4Int",
+							"Matrix4x4",
+							"Texture"
+						],
+						"description": "The type of the uniform variable."
+					},
+					"default": {
+						"description": "The default value of the uniform variable.",
+						"default": null
+					}
+				},
+				"if": {
+					"properties": {
+						"type": {
+							"enum": ["int"]
+						}
+					}
+				},
+				"then": {
+					"properties": {
+						"default": {
+							"type": "integer"
+						}
+					}
+				},
+				"else": {
+					"if": {
+						"properties": {
+							"type": {
+								"enum": ["uint"]
+							}
+						}
+					},
+					"then": {
+						"properties": {
+							"default": {
+								"type": "integer",
+								"minimum": 0
+							}
+						}
+					},
+					"else": {
+						"if": {
+							"properties": {
+								"type": {
+									"enum": ["float"]
+								}
+							}
+						},
+						"then": {
+							"properties": {
+								"default": {
+									"type": "number"
+								}
+							}
+						},
+						"else": {
+							"if": {
+								"properties": {
+									"type": {
+										"enum": ["Color"]
+									}
+								}
+							},
+							"then": {
+								"properties": {
+									"default": {
+										"type": "object",
+										"additionalProperties": false,
+										"properties": {
+											"r": {
+												"type": "number",
+												"minimum": 0,
+												"maximum": 1,
+												"default": 0
+											},
+											"g": {
+												"type": "number",
+												"minimum": 0,
+												"maximum": 1,
+												"default": 0
+											},
+											"b": {
+												"type": "number",
+												"minimum": 0,
+												"maximum": 1,
+												"default": 0
+											},
+											"a": {
+												"type": "number",
+												"minimum": 0,
+												"maximum": 1,
+												"default": 0
+											}
+										}
+									}
+								}
+							},
+							"else": {
+								"if": {
+									"properties": {
+										"type": {
+											"enum": ["Vector2"]
+										}
+									}
+								},
+								"then": {
+									"properties": {
+										"default": {
+											"type": "object",
+											"additionalProperties": false,
+											"properties": {
+												"x": {
+													"type": "number",
+													"default": 0
+												},
+												"y": {
+													"type": "number",
+													"default": 0
+												}
+											}
+										}
+									}
+								},
+								"else": {
+									"if": {
+										"properties": {
+											"type": {
+												"enum": ["Vector3"]
+											}
+										}
+									},
+									"then": {
+										"properties": {
+											"default": {
+												"type": "object",
+												"additionalProperties": false,
+												"properties": {
+													"x": {
+														"type": "number",
+														"default": 0
+													},
+													"y": {
+														"type": "number",
+														"default": 0
+													},
+													"z": {
+														"type": "number",
+														"default": 0
+													}
+												}
+											}
+										}
+									},
+									"else": {
+										"if": {
+											"properties": {
+												"type": {
+													"enum": ["Vector4"]
+												}
+											}
+										},
+										"then": {
+											"properties": {
+												"default": {
+													"type": "object",
+													"additionalProperties": false,
+													"properties": {
+														"x": {
+															"type": "number",
+															"default": 0
+														},
+														"y": {
+															"type": "number",
+															"default": 0
+														},
+														"z": {
+															"type": "number",
+															"default": 0
+														},
+														"w": {
+															"type": "number",
+															"default": 0
+														}
+													}
+												}
+											}
+										},
+										"else": {
+											"if": {
+												"properties": {
+													"type": {
+														"enum": ["Vector2Int"]
+													}
+												}
+											},
+											"then": {
+												"properties": {
+													"default": {
+														"type": "object",
+														"additionalProperties": false,
+														"properties": {
+															"x": {
+																"type": "integer",
+																"default": 0
+															},
+															"y": {
+																"type": "integer",
+																"default": 0
+															}
+														}
+													}
+												}
+											},
+											"else": {
+												"if": {
+													"properties": {
+														"type": {
+															"enum": [
+																"Vector3Int"
+															]
+														}
+													}
+												},
+												"then": {
+													"properties": {
+														"default": {
+															"type": "object",
+															"additionalProperties": false,
+															"properties": {
+																"x": {
+																	"type": "integer",
+																	"default": 0
+																},
+																"y": {
+																	"type": "integer",
+																	"default": 0
+																},
+																"z": {
+																	"type": "integer",
+																	"default": 0
+																}
+															}
+														}
+													}
+												},
+												"else": {
+													"if": {
+														"properties": {
+															"type": {
+																"enum": [
+																	"Vector4Int"
+																]
+															}
+														}
+													},
+													"then": {
+														"properties": {
+															"default": {
+																"type": "object",
+																"additionalProperties": false,
+																"properties": {
+																	"x": {
+																		"type": "integer",
+																		"default": 0
+																	},
+																	"y": {
+																		"type": "integer",
+																		"default": 0
+																	},
+																	"z": {
+																		"type": "integer",
+																		"default": 0
+																	},
+																	"w": {
+																		"type": "integer",
+																		"default": 0
+																	}
+																}
+															}
+														}
+													},
+													"else": {
+														"if": {
+															"properties": {
+																"type": {
+																	"enum": [
+																		"Matrix4x4"
+																	]
+																}
+															}
+														},
+														"then": {
+															"properties": {
+																"default": {
+																	"type": "object",
+																	"additionalProperties": false,
+																	"properties": {
+																		"m00": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m01": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m02": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m03": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m10": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m11": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m12": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m13": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m20": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m21": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m22": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m23": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m30": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m31": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m32": {
+																			"type": "number",
+																			"default": 0
+																		},
+																		"m33": {
+																			"type": "number",
+																			"default": 0
+																		}
+																	}
+																}
+															}
+														},
+														"else": {
+															"if": {
+																"properties": {
+																	"type": {
+																		"enum": [
+																			"Texture"
+																		]
+																	}
+																}
+															},
+															"then": {
+																"properties": {
+																	"default": {
+																		"type": "null"
+																	}
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
