@@ -1,7 +1,7 @@
 {
 	"shaders": [
-		"Renderer/Shaders/TextOuter.vert.hlsl",
-		"Renderer/Shaders/TextOuter.frag.hlsl"
+		"Renderer/Shaders/text-outer.vert.hlsl",
+		"Renderer/Shaders/text-outer.frag.hlsl"
 	],
 	"uniforms": [
 		{

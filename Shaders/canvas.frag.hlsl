@@ -16,8 +16,8 @@ struct CanvasFragment
 	float2 uv;
 };
 
-[vk::binding(2)] Texture2D texture0 : register(t0);
-[vk::binding(2)] SamplerState texture0Sampler : register(s0);
+Texture2D texture0 : register(t2);
+SamplerState texture0Sampler : register(s2);
 
 float4 main(CanvasFragment input)
 {

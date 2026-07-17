@@ -1,7 +1,7 @@
 {
 	"shaders": [
 		"Renderer/Vulkan/Shaders/default.vert.hlsl",
-		"Renderer/Vulkan/Shaders/default.texture.frag.hlsl"
+		"Renderer/Vulkan/Shaders/default-texture.frag.hlsl"
 	],
 	"uniforms": [
 		{
