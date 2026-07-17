@@ -21,7 +21,7 @@ struct CanvasFragment
 
 float4 main(CanvasFragment input)
 {
-	float2 uv = float2(input.uv.x, 1 - input.uv.y);
+	float2 uv = float2(input.uv.x, input.uv.y);
 
 	return texture0.Sample(texture0Sampler, uv);
 }

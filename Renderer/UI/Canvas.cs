@@ -187,7 +187,7 @@ public class Canvas : SceneObject
 			new() { Position = new(-1, -1, 0), UV = new(0, 1) }
 		];
 
-		byte[] indices = [0, 1, 2, 2, 3, 0];
+		byte[] indices = [0, 2, 1, 2, 0, 3];
 
 		canvasTexture = new SceneObject(this.Scene,
 			new Transform(),
