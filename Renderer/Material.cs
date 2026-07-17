@@ -21,7 +21,7 @@ public sealed class Material
 		}
 	}
 
-	public Material(string[] shaders, Uniform[]? uniforms)
+	public Material(string[] shaders, UniformDescription[]? uniforms)
 	{
 		if (shaders == null)
 			throw new ArgumentNullException();
@@ -48,5 +48,5 @@ public sealed class Material
 		}
 	}
 
-	public record Uniform(string Name, Type Type, object? DefaultValue = null);
+	public record UniformDescription(string Name, Type Type, object? DefaultValue = null);
 }
