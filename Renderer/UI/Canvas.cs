@@ -192,7 +192,7 @@ public class Canvas : SceneObject
 		canvasTexture = new SceneObject(this.Scene,
 			new Transform(),
 			new MeshFilter(new Mesh<CanvasVertex, byte>(vertices, indices)),
-			new MeshRenderer(new Material("Renderer/Materials/canvas.json"))
+			new MeshRenderer(new Material(shaders: ["Renderer/Shaders/canvas.vert.hlsl", "Renderer/Shaders/canvas.frag.hlsl"], uniforms: [new("texture0", typeof(Texture))]))
 		)
 		{ Layer = this.TextureLayer };
 
