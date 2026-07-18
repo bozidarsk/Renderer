@@ -7,7 +7,7 @@ namespace Renderer;
 
 public class Buffer
 {
-	public Array Data { get; }
+	internal Array Data { set; get; }
 	public int Length { get; }
 	public int Stride { get; }
 	public int Size { get; }
@@ -24,7 +24,7 @@ public class Buffer
 
 public class Buffer<T> : Buffer, IEnumerable<T> where T : struct
 {
-	new public T[] Data => (T[])base.Data;
+	new public IReadOnlyList<T> Data => (T[])base.Data;
 
 	public IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)Data).GetEnumerator();
 	IEnumerator IEnumerable.GetEnumerator() => Data.GetEnumerator();
