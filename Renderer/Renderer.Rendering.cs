@@ -7,10 +7,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using Vulkan;
-using Vulkan.ShaderCompiler;
-
-using Buffer = Vulkan.Buffer;
 using Renderer.UI;
+
+using VkBuffer = Vulkan.Buffer;
 
 namespace Renderer;
 
@@ -277,7 +276,7 @@ internal sealed partial class Renderer
 		using var globalDescriptorWrite = new WriteDescriptorSet(
 			next: default,
 			destinationSet: default,
-			destinationBinding: GLOBAL_UNIFORMS_BINDING,
+			destinationBinding: (uint)GLOBAL_UNIFORMS_BINDING,
 			destinationArrayElement: 0,
 			descriptorType: DescriptorType.UniformBuffer,
 			imageInfos: null,
@@ -319,7 +318,7 @@ internal sealed partial class Renderer
 			var pushConstants = new PushConstants(obj.Model, (obj is UIObject uiObject) ? uiObject.Id : 0);
 			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 0, size: (uint)Marshal.SizeOf<PushConstants>(), ref Unsafe.As<PushConstants, byte>(ref pushConstants));
 
-			CreateUniformsBuffer(material.Uniforms, out Buffer? uniformsBuffer, out DeviceMemory? uniformsMemory, out DeviceSize uniformsSize);
+			CreateUniformsBuffer(material.Uniforms, out VkBuffer? uniformsBuffer, out DeviceMemory? uniformsMemory, out DeviceSize uniformsSize);
 			bool hasUniforms = uniformsSize != 0;
 
 			if (hasUniforms)
@@ -327,7 +326,7 @@ internal sealed partial class Renderer
 				using var objectDescriptorWrite = new WriteDescriptorSet(
 					next: default,
 					destinationSet: default,
-					destinationBinding: OBJECT_UNIFORMS_BINDING,
+					destinationBinding: (uint)OBJECT_UNIFORMS_BINDING,
 					destinationArrayElement: 0,
 					descriptorType: DescriptorType.UniformBuffer,
 					imageInfos: null,
@@ -364,6 +363,32 @@ internal sealed partial class Renderer
 				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, textures);
 
 				foreach (var x in textures)
+					toBeDisposed[currentFrame].Enqueue(x);
+			}
+
+			var buffers = material.Uniforms
+				.OfType<Buffer>()
+				.Select(x => AssetManager.GetBufferData(x))
+				.Index()
+				.Select(x => new WriteDescriptorSet(
+						next: default,
+						destinationSet: default,
+						destinationBinding: (uint)(BUFFERS_BINDING + x.Index),
+						destinationArrayElement: 0,
+						descriptorType: DescriptorType.StorageBuffer,
+						imageInfos: null,
+						bufferInfos: [new DescriptorBufferInfo(buffer: x.Item.Buffer, offset: 0, range: ~0ul)],
+						texelBufferViews: null
+					)
+				)
+				.ToArray()
+			;
+
+			if (buffers.Length > 0)
+			{
+				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, buffers);
+
+				foreach (var x in buffers)
 					toBeDisposed[currentFrame].Enqueue(x);
 			}
 

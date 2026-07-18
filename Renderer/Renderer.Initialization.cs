@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 using Vulkan;
 
-using Buffer = Vulkan.Buffer;
+using VkBuffer = Vulkan.Buffer;
 
 namespace Renderer;
 
@@ -37,7 +37,7 @@ internal sealed partial class Renderer : IDisposable
 	private Fence[] inFlightFence;
 	private Queue graphicsQueue, presentationQueue;
 	private DescriptorSetLayout[] descriptorSetLayouts;
-	private Buffer[] globalUniformsBuffers;
+	private VkBuffer[] globalUniformsBuffers;
 	private DeviceMemory[] globalUniformsMemories;
 	private nint[] globalUniformsLocations;
 	private Image depthImage;
@@ -53,9 +53,11 @@ internal sealed partial class Renderer : IDisposable
 	public AssetManager AssetManager { get; }
 
 	public static readonly int MAX_TEXTURES = int.TryParse(Environment.GetEnvironmentVariable("VK_MAX_TEXTURES"), out int value) ? value : 16;
-	public const int GLOBAL_UNIFORMS_BINDING = 0;
-	public const int OBJECT_UNIFORMS_BINDING = 1;
-	public const int TEXTURES_BINDING = 2;
+	public static readonly int MAX_BUFFERS = int.TryParse(Environment.GetEnvironmentVariable("VK_MAX_BUFFERS"), out int value) ? value : 16;
+	public static readonly int GLOBAL_UNIFORMS_BINDING = 0;
+	public static readonly int OBJECT_UNIFORMS_BINDING = 1;
+	public static readonly int TEXTURES_BINDING = 2;
+	public static readonly int BUFFERS_BINDING = 2 + MAX_TEXTURES;
 
 	public static uint MakeVersion(int major, int minor, int patch) => ((((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
 	public static uint MakeApiVersion(int variant, int major, int minor, int patch) => ((((uint)variant) << 29) | (((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
@@ -370,11 +372,11 @@ internal sealed partial class Renderer : IDisposable
 	{
 		using var bindingFlagsCreateInfo = new DescriptorSetLayoutBindingFlagsCreateInfo(
 			next: default,
-			bindingFlags: new DescriptorBindingFlags[] { default, DescriptorBindingFlags.PartiallyBound }.Concat(Enumerable.Repeat(DescriptorBindingFlags.PartiallyBound, MAX_TEXTURES)).ToArray()
+			bindingFlags: new DescriptorBindingFlags[] { default, DescriptorBindingFlags.PartiallyBound }.Concat(Enumerable.Repeat(DescriptorBindingFlags.PartiallyBound, MAX_TEXTURES + MAX_BUFFERS)).ToArray()
 		);
 
 		var globalUniformsBinding = new DescriptorSetLayoutBinding(
-			binding: GLOBAL_UNIFORMS_BINDING,
+			binding: (uint)GLOBAL_UNIFORMS_BINDING,
 			descriptorType: DescriptorType.UniformBuffer,
 			descriptorCount: 1,
 			stage: ShaderStage.AllGraphics,
@@ -382,26 +384,35 @@ internal sealed partial class Renderer : IDisposable
 		);
 
 		var objectUniformsBinding = new DescriptorSetLayoutBinding(
-			binding: OBJECT_UNIFORMS_BINDING,
+			binding: (uint)OBJECT_UNIFORMS_BINDING,
 			descriptorType: DescriptorType.UniformBuffer,
 			descriptorCount: 1,
 			stage: ShaderStage.AllGraphics,
 			immutableSamplers: null
 		);
 
+		var texturesBindings = Enumerable.Range(TEXTURES_BINDING, MAX_TEXTURES).Select(x => new DescriptorSetLayoutBinding(
+				binding: (uint)x,
+				descriptorType: DescriptorType.CombinedImageSampler,
+				descriptorCount: 1,
+				stage: ShaderStage.AllGraphics,
+				immutableSamplers: null
+			)
+		);
+
+		var buffersBindings = Enumerable.Range(BUFFERS_BINDING, MAX_BUFFERS).Select(x => new DescriptorSetLayoutBinding(
+				binding: (uint)x,
+				descriptorType: DescriptorType.CombinedImageSampler,
+				descriptorCount: 1,
+				stage: ShaderStage.AllGraphics,
+				immutableSamplers: null
+			)
+		);
+
 		using var descriptorSetLayoutCreateInfo = new DescriptorSetLayoutCreateInfo(
 			next: default,
 			flags: DescriptorSetLayoutCreateFlags.PushDescriptor,
-			bindings: new[] { globalUniformsBinding, objectUniformsBinding }.Concat(
-					Enumerable.Range(TEXTURES_BINDING, MAX_TEXTURES).Select(x => new DescriptorSetLayoutBinding(
-						binding: (uint)x,
-						descriptorType: DescriptorType.CombinedImageSampler,
-						descriptorCount: 1,
-						stage: ShaderStage.AllGraphics,
-						immutableSamplers: null
-					)
-				)
-			).ToArray()
+			bindings: new[] { [globalUniformsBinding, objectUniformsBinding], texturesBindings, buffersBindings }.SelectMany(x => x).ToArray()
 		);
 
 		descriptorSetLayouts = new DescriptorSetLayout[maxFrames];
@@ -414,13 +425,13 @@ internal sealed partial class Renderer : IDisposable
 	{
 		DeviceSize size = (ulong)Marshal.SizeOf<GlobalUniforms>();
 
-		globalUniformsBuffers = new Buffer[maxFrames];
+		globalUniformsBuffers = new VkBuffer[maxFrames];
 		globalUniformsMemories = new DeviceMemory[maxFrames];
 		globalUniformsLocations = new nint[maxFrames];
 
 		for (int i = 0; i < maxFrames; i++)
 		{
-			CreateBuffer(size, BufferUsage.UniformBuffer, out Buffer buffer);
+			CreateBuffer(size, BufferUsage.UniformBuffer, out VkBuffer buffer);
 			CreateBufferMemory(buffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out DeviceMemory memory);
 
 			globalUniformsBuffers[i] = buffer;

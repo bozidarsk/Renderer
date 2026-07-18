@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Linq;
-using System.IO;
 
 using Vulkan;
 
-using Buffer = Vulkan.Buffer;
+using VkBuffer = Vulkan.Buffer;
 
 namespace Renderer;
 
@@ -24,7 +20,7 @@ internal record ShaderProgramData(ShaderModule[] Modules, PipelineShaderStageCre
 	}
 }
 
-internal record MeshData(Buffer VertexBuffer, DeviceMemory VertexBufferMemory, Buffer IndexBuffer, DeviceMemory IndexBufferMemory, IndexType IndexType) : IDisposable
+internal record MeshData(VkBuffer VertexBuffer, DeviceMemory VertexBufferMemory, VkBuffer IndexBuffer, DeviceMemory IndexBufferMemory, IndexType IndexType) : IDisposable
 {
 	public void Dispose()
 	{
@@ -54,6 +50,15 @@ internal record RenderTargetData(RenderingInfo RenderingInfo, ImageMemoryBarrier
 	}
 }
 
+internal record BufferData(VkBuffer Buffer, DeviceMemory Memory) : IDisposable
+{
+	public void Dispose()
+	{
+		Memory.Dispose();
+		Buffer.Dispose();
+	}
+}
+
 internal class AssetManager : IDisposable
 {
 	private readonly Renderer renderer;
@@ -62,6 +67,7 @@ internal class AssetManager : IDisposable
 	private readonly Dictionary<Mesh, MeshData> meshes = new();
 	private readonly Dictionary<Texture, TextureData> textures = new();
 	private readonly Dictionary<RenderTarget, RenderTargetData> renderTargets = new();
+	private readonly Dictionary<Buffer, BufferData> buffers = new();
 
 	public ShaderProgramData GetShaderProgramData(ShaderProgram shaderProgram)
 	{
@@ -108,8 +114,8 @@ internal class AssetManager : IDisposable
 		if (meshes.TryGetValue(mesh, out MeshData? meshData))
 			return meshData!;
 
-		renderer.CreateStagingBuffer(mesh.Vertices, BufferUsage.VertexBuffer, out Buffer vertexBuffer, out DeviceMemory vertexBufferMemory);
-		renderer.CreateStagingBuffer(mesh.Indices, BufferUsage.IndexBuffer, out Buffer indexBuffer, out DeviceMemory indexBufferMemory);
+		renderer.CreateStagingBuffer(mesh.Vertices, BufferUsage.VertexBuffer, out VkBuffer vertexBuffer, out DeviceMemory vertexBufferMemory);
+		renderer.CreateStagingBuffer(mesh.Indices, BufferUsage.IndexBuffer, out VkBuffer indexBuffer, out DeviceMemory indexBufferMemory);
 
 		meshData = new(
 			vertexBuffer,
@@ -141,7 +147,7 @@ internal class AssetManager : IDisposable
 
 		if (texture.Data != null)
 		{
-			renderer.CreateStagingBuffer(texture.Data, BufferUsage.TransferSrc, out Buffer buffer, out DeviceMemory memory);
+			renderer.CreateStagingBuffer(texture.Data, BufferUsage.TransferSrc, out VkBuffer buffer, out DeviceMemory memory);
 
 			renderer.CreateImage(texture.Width, texture.Height, texture.Type, texture.Usage, texture.Format, out image);
 			renderer.CreateImageMemory(image, out imageMemory);
@@ -265,6 +271,19 @@ internal class AssetManager : IDisposable
 		return renderTargetData;
 	}
 
+	public BufferData GetBufferData(Buffer buffer)
+	{
+		if (buffers.TryGetValue(buffer, out BufferData? bufferData))
+			return bufferData!;
+
+		renderer.CreateStagingBuffer(buffer.Data, BufferUsage.StorageBuffer | BufferUsage.TransferSrc | BufferUsage.TransferDst, out VkBuffer vkBuffer, out DeviceMemory memory);
+
+		bufferData = new(vkBuffer, memory);
+
+		buffers[buffer] = bufferData;
+		return bufferData;
+	}
+
 	public void Dispose()
 	{
 		foreach (var x in shaderPrograms.Values)
@@ -277,6 +296,9 @@ internal class AssetManager : IDisposable
 			x.Dispose();
 
 		foreach (var x in renderTargets.Values)
+			x.Dispose();
+
+		foreach (var x in buffers.Values)
 			x.Dispose();
 	}
 

@@ -6,13 +6,13 @@ using System.Runtime.CompilerServices;
 
 using Vulkan;
 
-using Buffer = Vulkan.Buffer;
+using VkBuffer = Vulkan.Buffer;
 
 namespace Renderer;
 
 internal sealed partial class Renderer
 {
-	public void CreateBuffer(DeviceSize size, BufferUsage usage, out Buffer buffer)
+	public void CreateBuffer(DeviceSize size, BufferUsage usage, out VkBuffer buffer)
 	{
 		using var createInfo = new BufferCreateInfo(
 			next: default,
@@ -26,7 +26,7 @@ internal sealed partial class Renderer
 		buffer = createInfo.CreateBuffer(device, allocator);
 	}
 
-	public void CreateBufferMemory(Buffer buffer, MemoryProperty properties, out DeviceMemory memory)
+	public void CreateBufferMemory(VkBuffer buffer, MemoryProperty properties, out DeviceMemory memory)
 	{
 		var memoryRequirements = buffer.MemoryRequirements;
 
@@ -40,7 +40,7 @@ internal sealed partial class Renderer
 		memory.Bind(buffer);
 	}
 
-	public void CopyBuffer(Buffer source, Buffer destination, DeviceSize size, CommandBuffer? cmd = null)
+	public void CopyBuffer(VkBuffer source, VkBuffer destination, DeviceSize size, CommandBuffer? cmd = null)
 	{
 		bool createCmd = cmd == null;
 
@@ -53,7 +53,7 @@ internal sealed partial class Renderer
 			EndSingleTimeCommand(cmd);
 	}
 
-	public void CopyBufferToImage(Buffer buffer, Image image, int width, int height, ImageAspect aspect, CommandBuffer? cmd = null)
+	public void CopyBufferToImage(VkBuffer buffer, Image image, int width, int height, ImageAspect aspect, CommandBuffer? cmd = null)
 	{
 		bool createCmd = cmd == null;
 
@@ -80,7 +80,7 @@ internal sealed partial class Renderer
 			EndSingleTimeCommand(cmd);
 	}
 
-	public void CopyImageToBuffer(Image image, Buffer buffer, int width, int height, ImageAspect aspect, CommandBuffer? cmd = null)
+	public void CopyImageToBuffer(Image image, VkBuffer buffer, int width, int height, ImageAspect aspect, CommandBuffer? cmd = null)
 	{
 		bool createCmd = cmd == null;
 
@@ -107,11 +107,11 @@ internal sealed partial class Renderer
 			EndSingleTimeCommand(cmd);
 	}
 
-	public unsafe void CreateStagingBuffer(Array data, BufferUsage usage, out Buffer buffer, out DeviceMemory memory)
+	public unsafe void CreateStagingBuffer(Array data, BufferUsage usage, out VkBuffer buffer, out DeviceMemory memory)
 	{
 		DeviceSize size = (ulong)Marshal.SizeOf(data.GetValue(0)!.GetType()) * (ulong)data.LongLength;
 
-		CreateBuffer(size, BufferUsage.TransferSrc, out Buffer stagingBuffer);
+		CreateBuffer(size, BufferUsage.TransferSrc, out VkBuffer stagingBuffer);
 		CreateBufferMemory(stagingBuffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out DeviceMemory stagingMemory);
 
 		nint stagingLocation = stagingMemory.Map(size: size, offset: default, flags: default);
@@ -127,7 +127,7 @@ internal sealed partial class Renderer
 		stagingMemory.Dispose();
 	}
 
-	public unsafe void CreateUniformsBuffer(IEnumerable<object?> data, out Buffer? buffer, out DeviceMemory? memory, out DeviceSize size)
+	public unsafe void CreateUniformsBuffer(IEnumerable<object?> data, out VkBuffer? buffer, out DeviceMemory? memory, out DeviceSize size)
 	{
 		var bytes = new List<byte>();
 

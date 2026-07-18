@@ -29,16 +29,21 @@ public class ShaderProgram
 		InvertY = true,
 		MacroDefinitions = new[]
 		{
-			("GLOBAL_UNIFORMS", $"register(b{Renderer.GLOBAL_UNIFORMS_BINDING})"),
-			("UNIFORMS", $"register(b{Renderer.OBJECT_UNIFORMS_BINDING})"),
-		}.Concat(
+			[
+				("GLOBAL_UNIFORMS", $"register(b{Renderer.GLOBAL_UNIFORMS_BINDING})"),
+				("UNIFORMS", $"register(b{Renderer.OBJECT_UNIFORMS_BINDING})"),
+			],
 			Enumerable.Range(0, Renderer.MAX_TEXTURES).Select<int, (string, string)[]>(x =>
 				[
 					($"TEXTURE{x}", $"register(t{Renderer.TEXTURES_BINDING + x})"),
 					($"SAMPLER{x}", $"register(s{Renderer.TEXTURES_BINDING + x})")
 				]
-			).SelectMany(x => x)
-		).ToArray()
+			).SelectMany(x => x),
+			Enumerable.Range(0, Renderer.MAX_BUFFERS).Select(x =>
+					($"BUFFER{x}", $"register(t{Renderer.BUFFERS_BINDING + x})")
+			)
+		}
+		.SelectMany(x => x).ToArray()
 	};
 
 	public ShaderProgram(params string[] filenames)
