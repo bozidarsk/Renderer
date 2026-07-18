@@ -3,8 +3,8 @@
 
 #include <common.hlsl>
 
-Texture2D texture0 : register(t2);
-SamplerState texture0Sampler : register(s2);
+Texture2D texture0 : TEXTURE0;
+SamplerState texture0Sampler : SAMPLER0;
 
 float4 main(Fragment input)
 {

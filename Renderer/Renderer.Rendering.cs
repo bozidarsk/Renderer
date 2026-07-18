@@ -277,7 +277,7 @@ internal sealed partial class Renderer
 		using var globalDescriptorWrite = new WriteDescriptorSet(
 			next: default,
 			destinationSet: default,
-			destinationBinding: 0,
+			destinationBinding: GLOBAL_UNIFORMS_BINDING,
 			destinationArrayElement: 0,
 			descriptorType: DescriptorType.UniformBuffer,
 			imageInfos: null,
@@ -327,7 +327,7 @@ internal sealed partial class Renderer
 				using var objectDescriptorWrite = new WriteDescriptorSet(
 					next: default,
 					destinationSet: default,
-					destinationBinding: 1,
+					destinationBinding: OBJECT_UNIFORMS_BINDING,
 					destinationArrayElement: 0,
 					descriptorType: DescriptorType.UniformBuffer,
 					imageInfos: null,
@@ -348,7 +348,7 @@ internal sealed partial class Renderer
 				.Select(x => new WriteDescriptorSet(
 						next: default,
 						destinationSet: default,
-						destinationBinding: (uint)(2 + x.Index),
+						destinationBinding: (uint)(TEXTURES_BINDING + x.Index),
 						destinationArrayElement: 0,
 						descriptorType: DescriptorType.CombinedImageSampler,
 						imageInfos: [new DescriptorImageInfo(sampler: x.Item.Sampler, imageView: x.Item.ImageView, imageLayout: ImageLayout.ShaderReadOnlyOptimal)],

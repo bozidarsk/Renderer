@@ -15,8 +15,6 @@ internal sealed partial class Renderer : IDisposable
 	private readonly GLFW.Window window;
 	private readonly AllocationCallbacks? allocator;
 
-	private readonly int maxTextures = int.TryParse(Environment.GetEnvironmentVariable("VK_MAX_TEXTURES"), out int value) ? value : 16;
-
 	private Queue<IDisposable>[] toBeDisposed;
 	private uint graphicsQueueFamilyIndex, presentationQueueFamilyIndex;
 	private Format swapchainImageFormat, depthFormat;
@@ -53,6 +51,11 @@ internal sealed partial class Renderer : IDisposable
 	public Extent2D SwapchainExtent => swapchainExtent;
 
 	public AssetManager AssetManager { get; }
+
+	public static readonly int MAX_TEXTURES = int.TryParse(Environment.GetEnvironmentVariable("VK_MAX_TEXTURES"), out int value) ? value : 16;
+	public const int GLOBAL_UNIFORMS_BINDING = 0;
+	public const int OBJECT_UNIFORMS_BINDING = 1;
+	public const int TEXTURES_BINDING = 2;
 
 	public static uint MakeVersion(int major, int minor, int patch) => ((((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
 	public static uint MakeApiVersion(int variant, int major, int minor, int patch) => ((((uint)variant) << 29) | (((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
@@ -367,11 +370,11 @@ internal sealed partial class Renderer : IDisposable
 	{
 		using var bindingFlagsCreateInfo = new DescriptorSetLayoutBindingFlagsCreateInfo(
 			next: default,
-			bindingFlags: new DescriptorBindingFlags[] { default, DescriptorBindingFlags.PartiallyBound }.Concat(Enumerable.Repeat(DescriptorBindingFlags.PartiallyBound, maxTextures)).ToArray()
+			bindingFlags: new DescriptorBindingFlags[] { default, DescriptorBindingFlags.PartiallyBound }.Concat(Enumerable.Repeat(DescriptorBindingFlags.PartiallyBound, MAX_TEXTURES)).ToArray()
 		);
 
 		var globalUniformsBinding = new DescriptorSetLayoutBinding(
-			binding: 0,
+			binding: GLOBAL_UNIFORMS_BINDING,
 			descriptorType: DescriptorType.UniformBuffer,
 			descriptorCount: 1,
 			stage: ShaderStage.AllGraphics,
@@ -379,7 +382,7 @@ internal sealed partial class Renderer : IDisposable
 		);
 
 		var objectUniformsBinding = new DescriptorSetLayoutBinding(
-			binding: 1,
+			binding: OBJECT_UNIFORMS_BINDING,
 			descriptorType: DescriptorType.UniformBuffer,
 			descriptorCount: 1,
 			stage: ShaderStage.AllGraphics,
@@ -390,7 +393,7 @@ internal sealed partial class Renderer : IDisposable
 			next: default,
 			flags: DescriptorSetLayoutCreateFlags.PushDescriptor,
 			bindings: new[] { globalUniformsBinding, objectUniformsBinding }.Concat(
-					Enumerable.Range(2, maxTextures).Select(x => new DescriptorSetLayoutBinding(
+					Enumerable.Range(TEXTURES_BINDING, MAX_TEXTURES).Select(x => new DescriptorSetLayoutBinding(
 						binding: (uint)x,
 						descriptorType: DescriptorType.CombinedImageSampler,
 						descriptorCount: 1,

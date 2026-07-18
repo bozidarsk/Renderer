@@ -45,7 +45,7 @@ struct Fragment
 	float4 color;
 };
 
-cbuffer GlobalUniforms : register(b0)
+cbuffer GlobalUniforms : GLOBAL_UNIFORMS
 {
 	float4x4 VIEW;
 	float4x4 PROJECTION;

@@ -4,7 +4,7 @@
 
 #include <common.hlsl>
 
-cbuffer ObjectUniforms : register(b1)
+cbuffer Uniforms : UNIFORMS
 {
 	float4 COLOR;
 }
