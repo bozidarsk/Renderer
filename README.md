@@ -24,20 +24,20 @@ By default it uses **hlsl** as the shader language but users can also write thei
 - environment {[Vulkan.ShaderCompiler.TargetEnvironment](https://github.com/bozidarsk/Vulkan-cs/tree/main/Vulkan/ShaderCompiler/TargetEnvironment.cs)} {[Vulkan.ShaderCompiler.EnvironmentVersion](https://github.com/bozidarsk/Vulkan-cs/tree/main/Vulkan/ShaderCompiler/EnvironmentVersion.cs)}
 - spirv {[Vulkan.ShaderCompiler.SPIRVVersion](https://github.com/bozidarsk/Vulkan-cs/tree/main/Vulkan/ShaderCompiler/SPIRVVersion.cs)}
 - optimization {*disabled*|*off*}|{[Vulkan.ShaderCompiler.OptimizationLevel](https://github.com/bozidarsk/Vulkan-cs/tree/main/Vulkan/ShaderCompiler/OptimizationLevel.cs)}
-- GenerateDebugInfo
-- WarningsAsErrors
-- SuppressWarnings
-- AutoBindUniforms
-- AutoCombinedImageSampler
-- HLSLIOMapping
-- HLSLOffsets
-- PreserveBindings
-- AutoMapLocations
-- HLSLFunctionality1
-- HLSL16BitTypes
-- VulkanRulesRelaxed
-- InvertY
-- NanClamp
+- GenerateDebugInfo [*true*|*false*]
+- WarningsAsErrors [*true*|*false*]
+- SuppressWarnings [*true*|*false*]
+- AutoBindUniforms [*true*|*false*]
+- AutoCombinedImageSampler [*true*|*false*]
+- HLSLIOMapping [*true*|*false*]
+- HLSLOffsets [*true*|*false*]
+- PreserveBindings [*true*|*false*]
+- AutoMapLocations [*true*|*false*]
+- HLSLFunctionality1 [*true*|*false*]
+- HLSL16BitTypes [*true*|*false*]
+- VulkanRulesRelaxed [*true*|*false*]
+- InvertY [*true*|*false*]
+- NanClamp [*true*|*false*]
 ## Depth
 The renderer only uses a depth buffer (not stencil), and the value is reversed (reversed-depth). Objects closer to the camera have a greater depth value.
 ## Uniforms

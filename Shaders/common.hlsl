@@ -10,20 +10,20 @@
 // #pragma environment {Vulkan.ShaderCompiler.TargetEnvironment} {Vulkan.ShaderCompiler.EnvironmentVersion}
 // #pragma spirv {Vulkan.ShaderCompiler.SPIRVVersion}
 // #pragma optimization {disabled|off}|{Vulkan.ShaderCompiler.OptimizationLevel}
-// #pragma GenerateDebugInfo
-// #pragma WarningsAsErrors
-// #pragma SuppressWarnings
-// #pragma AutoBindUniforms
-// #pragma AutoCombinedImageSampler
-// #pragma HLSLIOMapping
-// #pragma HLSLOffsets
-// #pragma PreserveBindings
-// #pragma AutoMapLocations
-// #pragma HLSLFunctionality1
-// #pragma HLSL16BitTypes
-// #pragma VulkanRulesRelaxed
-// #pragma InvertY
-// #pragma NanClamp
+// #pragma GenerateDebugInfo [true|false]
+// #pragma WarningsAsErrors [true|false]
+// #pragma SuppressWarnings [true|false]
+// #pragma AutoBindUniforms [true|false]
+// #pragma AutoCombinedImageSampler [true|false]
+// #pragma HLSLIOMapping [true|false]
+// #pragma HLSLOffsets [true|false]
+// #pragma PreserveBindings [true|false]
+// #pragma AutoMapLocations [true|false]
+// #pragma HLSLFunctionality1 [true|false]
+// #pragma HLSL16BitTypes [true|false]
+// #pragma VulkanRulesRelaxed [true|false]
+// #pragma InvertY [true|false]
+// #pragma NanClamp [true|false]
 
 #ifndef COMMON_HLSL
 #define COMMON_HLSL
