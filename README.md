@@ -3,7 +3,7 @@
 The renderer checks for the following environment variables, in this order:
 - `VK_PHYSICAL_DEVICE_DEVICE_ID` - Gpu device id. (value must be a base 10 integer)
 - `VK_PHYSICAL_DEVICE_VENDOR_ID` - Gpu vendor id. (value must be a base 10 integer)
-- `VK_PHYSICAL_DEVICE_TYPE` - Gpu type. (see [Vulkan.PhysicalDeviceType](Renderer/Vulkan/Vulkan/PhysicalDeviceType.cs))
+- `VK_PHYSICAL_DEVICE_TYPE` - Gpu type. (see [Vulkan.PhysicalDeviceType](Vulkan/Vulkan/PhysicalDeviceType.cs))
 
 # Scene
 It uses a **left handed, +y up** coordinate system. There is one root `SceneObject` and from there everything grows as a tree. Every `SceneObject` has a `Layer` property, which is used to determine by which camera the object will be rendered - it is a mask. For an object to be rendered by a camera the expression `(camera.Layer & object.Layer) != 0` must be true. An object can receive events when the scene started/first loaded, before every frame and when a collision happens.
@@ -14,16 +14,16 @@ The canvas is the root `SceneObject` for ui elements. If the scene root is the m
 ## Compilation
 By default it uses **hlsl** as the shader language but users can also write their shaders in **glsl** too. The shader compiler reads all lines that start with `#pragma` for more options. They are not case sensitive:
 ### Pipeline Specific Options:
-- stage {[Vulkan.ShaderStage](Renderer/Vulkan/Vulkan/ShaderStage.cs)} [entryPoint]
-- cull {[Vulkan.CullMode](Renderer/Vulkan/Vulkan/CullMode.cs)}
-- frontface {[Vulkan.FrontFace](Renderer/Vulkan/Vulkan/FrontFace.cs)}
-- blend {*disabled*|*off*}|{{[Vulkan.BlendFactor](Renderer/Vulkan/Vulkan/BlendFactor.cs)} [[Vulkan.BlendOp](Renderer/Vulkan/Vulkan/BlendOp.cs)] {[Vulkan.BlendFactor](Renderer/Vulkan/Vulkan/BlendFactor.cs)}}
+- stage {[Vulkan.ShaderStage](Vulkan/Vulkan/ShaderStage.cs)} [entryPoint]
+- cull {[Vulkan.CullMode](Vulkan/Vulkan/CullMode.cs)}
+- frontface {[Vulkan.FrontFace](Vulkan/Vulkan/FrontFace.cs)}
+- blend {*disabled*|*off*}|{{[Vulkan.BlendFactor](Vulkan/Vulkan/BlendFactor.cs)} [[Vulkan.BlendOp](Vulkan/Vulkan/BlendOp.cs)] {[Vulkan.BlendFactor](Vulkan/Vulkan/BlendFactor.cs)}}
 ### Compiler Specific Options:
 - language {*glsl*|*hlsl*}
-- {[Vulkan.ShaderCompiler.Limit](Renderer/Vulkan/Vulkan/ShaderCompiler/Limit.cs)} {value}
-- environment {[Vulkan.ShaderCompiler.TargetEnvironment](Renderer/Vulkan/Vulkan/ShaderCompiler/TargetEnvironment.cs)} {[Vulkan.ShaderCompiler.EnvironmentVersion](Renderer/Vulkan/Vulkan/ShaderCompiler/EnvironmentVersion.cs)}
-- spirv {[Vulkan.ShaderCompiler.SPIRVVersion](Renderer/Vulkan/Vulkan/ShaderCompiler/SPIRVVersion.cs)}
-- optimization {*disabled*|*off*}|{[Vulkan.ShaderCompiler.OptimizationLevel](Renderer/Vulkan/Vulkan/ShaderCompiler/OptimizationLevel.cs)}
+- {[Vulkan.ShaderCompiler.Limit](Vulkan/Vulkan/ShaderCompiler/Limit.cs)} {value}
+- environment {[Vulkan.ShaderCompiler.TargetEnvironment](Vulkan/Vulkan/ShaderCompiler/TargetEnvironment.cs)} {[Vulkan.ShaderCompiler.EnvironmentVersion](Vulkan/Vulkan/ShaderCompiler/EnvironmentVersion.cs)}
+- spirv {[Vulkan.ShaderCompiler.SPIRVVersion](Vulkan/Vulkan/ShaderCompiler/SPIRVVersion.cs)}
+- optimization {*disabled*|*off*}|{[Vulkan.ShaderCompiler.OptimizationLevel](Vulkan/Vulkan/ShaderCompiler/OptimizationLevel.cs)}
 - GenerateDebugInfo
 - WarningsAsErrors
 - SuppressWarnings
