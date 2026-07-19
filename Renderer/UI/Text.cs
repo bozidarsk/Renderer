@@ -82,8 +82,7 @@ public sealed class Text : UIObject
 		innerFilter.Mesh = mesh.Inner;
 	}
 
-	public Text(Scene scene) : this(scene, []) { }
-	public Text(Scene scene, params Component[] components) : base(scene, components)
+	public Text(Scene scene) : base(scene, new RectTransform())
 	{
 		outer = new UIObject(scene,
 			new Transform(),

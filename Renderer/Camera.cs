@@ -22,6 +22,5 @@ public class Camera : SceneObject
 		);
 	}
 
-	public Camera(Scene scene) : base(scene) { }
-	public Camera(Scene scene, params Component[] components) : base(scene, components) { }
+	public Camera(Scene scene) : base(scene, new Transform()) { }
 }

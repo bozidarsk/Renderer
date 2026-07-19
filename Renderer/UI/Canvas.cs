@@ -173,8 +173,7 @@ public class Canvas : SceneObject
 		base.Dispose();
 	}
 
-	public Canvas(Scene scene) : this(scene, []) { }
-	public Canvas(Scene scene, params Component[] components) : base(scene, components)
+	public Canvas(Scene scene) : base(scene, new Transform())
 	{
 		base.Layer = CameraLayer.None;
 

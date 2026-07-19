@@ -17,23 +17,29 @@ public class Rectangle : UIObject
 		get;
 	}
 
-	public Rectangle(Scene scene) : this(scene, []) { }
-	public Rectangle(Scene scene, params Component[] components) : base(scene, components)
+	public Rectangle(Scene scene) : base(scene,
+		new RectTransform(),
+		new MeshFilter(
+			new Mesh<RectangleVertex, byte>(
+				[
+					new() { Position = new(-1, 1, 0) },
+					new() { Position = new(1, 1, 0) },
+					new() { Position = new(1, -1, 0) },
+					new() { Position = new(-1, -1, 0) },
+				],
+				[0, 2, 1, 2, 0, 3]
+			)
+		),
+		new MeshRenderer(
+			new Material(
+				shaders: ["Renderer/Shaders/rectangle.vert.hlsl", "Renderer/Shaders/rectangle.frag.hlsl"],
+				uniforms: [new("COLOR", typeof(Color), Color.White)]
+			)
+		)
+	)
 	{
-		RectangleVertex[] vertices = [
-			new() { Position = new(-1, 1, 0) },
-			new() { Position = new(1, 1, 0) },
-			new() { Position = new(1, -1, 0) },
-			new() { Position = new(-1, -1, 0) },
-		];
-
-		byte[] indices = [0, 2, 1, 2, 0, 3];
-
-		this.meshFilter = new MeshFilter(new Mesh<RectangleVertex, byte>(vertices, indices));
-		this.meshRenderer = new MeshRenderer(new Material(shaders: ["Renderer/Shaders/rectangle.vert.hlsl", "Renderer/Shaders/rectangle.frag.hlsl"], uniforms: [new("COLOR", typeof(Color), Color.White)]));
-
-		AddComponent(meshFilter);
-		AddComponent(meshRenderer);
+		this.meshFilter = GetComponent<MeshFilter>();
+		this.meshRenderer = GetComponent<MeshRenderer>();
 
 		this.Color = Color.White;
 	}
