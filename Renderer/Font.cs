@@ -22,7 +22,7 @@ internal struct InnerTextVertex : IVertex
 	public Vector3 Normal { set { } }
 }
 
-internal sealed record TextMesh(Mesh<OuterTextVertex> Outer, Mesh<InnerTextVertex> Inner);
+internal sealed record TextMesh(Mesh<OuterTextVertex> Outer, Mesh<InnerTextVertex> Inner, Rect Rect);
 
 public sealed class Font
 {
@@ -73,6 +73,9 @@ public sealed class Font
 		var offset = Vector3.Zero;
 		var scale = this.baseScale * fontSize;
 
+		var min = new Vector2(float.MaxValue, float.MaxValue);
+		var max = new Vector2(float.MinValue, float.MinValue);
+
 		for (int i = 0; i < glyphIndices.Length; i++)
 		{
 			var g = glyphs[glyphIndices[i]];
@@ -82,6 +85,14 @@ public sealed class Font
 				(var vertices, var indices) = CreateOuterMesh(g, offset, scale);
 				outerVertices.AddRange(vertices);
 				outerIndices.AddRange(indices.Select(x => (uint)x + count));
+
+				foreach (var v in vertices)
+				{
+					min.x = MathF.Min(min.x, v.Position.x);
+					min.y = MathF.Min(min.y, v.Position.y);
+					max.x = MathF.Max(max.x, v.Position.x);
+					max.y = MathF.Max(max.y, v.Position.y);
+				}
 			}
 
 			{
@@ -89,14 +100,25 @@ public sealed class Font
 				(var vertices, var indices) = CreateInnerMesh(g, offset, scale);
 				innerVertices.AddRange(vertices);
 				innerIndices.AddRange(indices.Select(x => (uint)x + count));
+
+				foreach (var v in vertices)
+				{
+					min.x = MathF.Min(min.x, v.Position.x);
+					min.y = MathF.Min(min.y, v.Position.y);
+					max.x = MathF.Max(max.x, v.Position.x);
+					max.y = MathF.Max(max.y, v.Position.y);
+				}
 			}
 
 			offset.x += g.Spacing * scale;
 		}
 
+		var extent = max - min;
+
 		return new(
 			new Mesh<OuterTextVertex>(outerVertices.ToArray(), outerIndices.ToArray()),
-			new Mesh<InnerTextVertex>(innerVertices.ToArray(), innerIndices.ToArray())
+			new Mesh<InnerTextVertex>(innerVertices.ToArray(), innerIndices.ToArray()),
+			new Rect(x: min.x, y: max.y, width: extent.x, height: extent.y)
 		);
 	}
 

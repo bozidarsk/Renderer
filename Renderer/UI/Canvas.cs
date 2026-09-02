@@ -7,7 +7,7 @@ using Renderer;
 
 namespace Renderer.UI;
 
-public class Canvas : SceneObject
+public class Canvas : Panel
 {
 	public int Width { private set; get; }
 	public int Height { private set; get; }
@@ -35,6 +35,7 @@ public class Canvas : SceneObject
 
 	private readonly Camera camera;
 	private readonly SceneObject canvasTexture;
+	private readonly RectTransform rectTransform;
 
 	private readonly Vulkan.Buffer maskBuffer;
 	private readonly Vulkan.DeviceMemory maskMemory;
@@ -133,6 +134,9 @@ public class Canvas : SceneObject
 		);
 
 		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = camera.Target.ColorAttachments[0].Texture;
+
+		rectTransform.Rect = new(x: -this.Width / 2f, y: this.Height / 2f, width: this.Width, height: this.Height);
+		ComputeLayout();
 	}
 
 	private uint SampleId((double x, double y) position) => SampleId((int)position.x, (int)position.y);
@@ -173,9 +177,11 @@ public class Canvas : SceneObject
 		base.Dispose();
 	}
 
-	public Canvas(Scene scene) : base(scene, new Transform())
+	public Canvas(Scene scene) : base(scene)
 	{
 		base.Layer = CameraLayer.None;
+
+		rectTransform = GetComponent<RectTransform>();
 
 		camera = new Camera(base.Scene) { Layer = this.CameraLayer };
 
@@ -211,8 +217,7 @@ public class Canvas : SceneObject
 			if (id == 0)
 				return;
 
-			foreach (var x in this.Children.OfType<UIObject>())
-				x.RaiseEvent(new(EventType.MouseButton, EventPropagationType.Tunnel, s, e, id));
+			RaiseEvent(new(EventType.MouseButton, EventPropagationType.Tunnel, s, e, id));
 		};
 
 		this.Scene.Window.OnFramebufferSize += (s, e) => Resize(scene.Size.x, scene.Size.y, this.Scale);

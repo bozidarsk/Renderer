@@ -40,7 +40,7 @@ public sealed class Text : UIObject
 			RecreateMesh();
 		}
 		get;
-	} = 24;
+	}
 
 	public string Value
 	{
@@ -53,7 +53,7 @@ public sealed class Text : UIObject
 			RecreateMesh();
 		}
 		get;
-	} = "";
+	}
 
 	public Color Color
 	{
@@ -65,12 +65,14 @@ public sealed class Text : UIObject
 			innerRenderer.Material["COLOR"] = value;
 		}
 		get;
-	} = Color.White;
+	}
 
 	private readonly UIObject outer, inner;
 
 	private readonly MeshFilter outerFilter, innerFilter;
 	private readonly MeshRenderer outerRenderer, innerRenderer;
+
+	private readonly RectTransform rectTransform;
 
 	private void RecreateMesh()
 	{
@@ -80,6 +82,10 @@ public sealed class Text : UIObject
 		TextMesh mesh = this.Font.CreateMesh(this.Value, this.FontSize);
 		outerFilter.Mesh = mesh.Outer;
 		innerFilter.Mesh = mesh.Inner;
+
+		rectTransform.Rect = mesh.Rect;
+
+		GetCanvas()?.ComputeLayout();
 	}
 
 	public Text(Scene scene) : base(scene, new RectTransform())
@@ -103,5 +109,11 @@ public sealed class Text : UIObject
 		innerFilter = inner.GetComponent<MeshFilter>();
 		outerRenderer = outer.GetComponent<MeshRenderer>();
 		innerRenderer = inner.GetComponent<MeshRenderer>();
+
+		rectTransform = GetComponent<RectTransform>();
+
+		this.FontSize = 24;
+		this.Value = "";
+		this.Color = Color.White;
 	}
 }

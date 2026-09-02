@@ -4,7 +4,8 @@ namespace Renderer.UI;
 
 public class RectTransform : Transform
 {
-	public Anchors Anchors { get; } = new(false, false, false, false);
+	public Rect Rect;
+	public Alignment Alignment = Alignment.Center;
+	public Anchors Anchors = Anchors.None;
+	public Sides<float> Margin = new(0, 0, 0, 0);
 }
-
-public record Anchors(bool Top, bool Bottom, bool Left, bool Right);

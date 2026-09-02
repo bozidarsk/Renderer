@@ -75,6 +75,8 @@ public class UIObject : SceneObject
 			x.Dispatch(uiEvent.Type, uiEvent.Sender, uiEvent.Args);
 	}
 
+	protected Canvas? GetCanvas() => (this is Canvas canvas) ? canvas : (Parent as UIObject)?.GetCanvas();
+
 	public static bool operator ==(UIObject? a, UIObject? b) => a?.Id == b?.Id;
 	public static bool operator !=(UIObject? a, UIObject? b) => a?.Id != b?.Id;
 

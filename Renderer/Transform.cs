@@ -6,7 +6,7 @@ public class Transform : Component
 
 	public Transform Inversed => new(matrix.Inversed);
 
-	public Vector3 Position
+	public Vector3 LocalPosition
 	{
 		set
 		{
@@ -16,7 +16,7 @@ public class Transform : Component
 		get;
 	} = Vector3.Zero;
 
-	public Vector3 Scale
+	public Vector3 LocalScale
 	{
 		set
 		{
@@ -28,14 +28,14 @@ public class Transform : Component
 		get;
 	} = Vector3.One;
 
-	public Quaternion Rotation
+	public Quaternion LocalRotation
 	{
 		set
 		{
 			field = value;
 
 			var rotation = Matrix4x4.Rotate(value);
-			var scale = this.Scale;
+			var scale = this.LocalScale;
 
 			var x = matrix.x;
 			var rotx = rotation.x;
@@ -61,15 +61,16 @@ public class Transform : Component
 		get;
 	} = Quaternion.Identity;
 
-	public Vector3 Right => matrix.x.Normalized;
-	public Vector3 Left => -matrix.x.Normalized;
-	public Vector3 Up => matrix.y.Normalized;
-	public Vector3 Down => -matrix.y.Normalized;
-	public Vector3 Forward => matrix.z.Normalized;
-	public Vector3 Back => -matrix.z.Normalized;
+	public Vector3 LocalRight => matrix.x.Normalized;
+	public Vector3 LocalLeft => -matrix.x.Normalized;
+	public Vector3 LocalUp => matrix.y.Normalized;
+	public Vector3 LocalDown => -matrix.y.Normalized;
+	public Vector3 LocalForward => matrix.z.Normalized;
+	public Vector3 LocalBack => -matrix.z.Normalized;
 
 	public void Translate(Vector3 dir) => matrix *= Matrix4x4.Translate(dir);
 	public void Rotate(Quaternion rot) => matrix *= Matrix4x4.Rotate(rot);
+	public void Scale(Vector3 scale) => matrix *= Matrix4x4.Scale(scale);
 
 	public static explicit operator Matrix4x4(Transform x) => x.matrix;
 
