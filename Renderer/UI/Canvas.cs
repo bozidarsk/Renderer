@@ -135,7 +135,7 @@ public class Canvas : Panel
 
 		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = camera.Target.ColorAttachments[0].Texture;
 
-		rectTransform.Rect = new(x: -this.Width / 2f, y: this.Height / 2f, width: this.Width, height: this.Height);
+		rectTransform.Rect = new(x: -(Width * Scale) / 2f, y: (Height * Scale) / 2f, width: (Width * Scale), height: (Height * Scale));
 		ComputeLayout();
 	}
 
