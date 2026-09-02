@@ -66,7 +66,7 @@ public class Canvas : Panel
 			colorAttachments:
 			[
 				new(
-					new Texture(Width, Height, format: Format.R8G8B8A8SRGB, usage: ImageUsage.ColorAttachment | ImageUsage.Sampled, aspect: ImageAspect.Color, initialLayout: ImageLayout.ShaderReadOnlyOptimal),
+					new Texture(Width, Height, format: Format.R8G8B8A8UNorm, usage: ImageUsage.ColorAttachment | ImageUsage.Sampled, aspect: ImageAspect.Color, initialLayout: ImageLayout.ShaderReadOnlyOptimal),
 					AttachmentLoadOp.Clear,
 					AttachmentStoreOp.Store,
 					new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f)),

@@ -12,7 +12,7 @@ public class RenderTexture : RenderTarget
 		height,
 		colorAttachments: [
 			new(
-				new Texture(width, height, format: Format.R8G8B8A8SRGB, usage: ImageUsage.ColorAttachment | ImageUsage.Sampled, aspect: ImageAspect.Color, initialLayout: ImageLayout.ShaderReadOnlyOptimal),
+				new Texture(width, height, format: Format.R8G8B8A8UNorm, usage: ImageUsage.ColorAttachment | ImageUsage.Sampled, aspect: ImageAspect.Color, initialLayout: ImageLayout.ShaderReadOnlyOptimal),
 				AttachmentLoadOp.Clear,
 				AttachmentStoreOp.Store,
 				new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f)),
