@@ -50,15 +50,6 @@ internal record RenderTargetData(RenderingInfo RenderingInfo, ImageMemoryBarrier
 	}
 }
 
-internal record BufferData(VkBuffer Buffer, DeviceMemory Memory) : IDisposable
-{
-	public void Dispose()
-	{
-		Memory.Dispose();
-		Buffer.Dispose();
-	}
-}
-
 internal class AssetManager : IDisposable
 {
 	private readonly Renderer renderer;
@@ -67,7 +58,6 @@ internal class AssetManager : IDisposable
 	private readonly Dictionary<Mesh, MeshData> meshes = new();
 	private readonly Dictionary<Texture, TextureData> textures = new();
 	private readonly Dictionary<RenderTarget, RenderTargetData> renderTargets = new();
-	private readonly Dictionary<Buffer, BufferData> buffers = new();
 
 	public ShaderProgramData GetShaderProgramData(ShaderProgram shaderProgram)
 	{
@@ -271,19 +261,6 @@ internal class AssetManager : IDisposable
 		return renderTargetData;
 	}
 
-	public BufferData GetBufferData(Buffer buffer)
-	{
-		if (buffers.TryGetValue(buffer, out BufferData? bufferData))
-			return bufferData!;
-
-		renderer.CreateStagingBuffer(buffer.Data, BufferUsage.StorageBuffer | BufferUsage.TransferSrc | BufferUsage.TransferDst, out VkBuffer vkBuffer, out DeviceMemory memory);
-
-		bufferData = new(vkBuffer, memory);
-
-		buffers[buffer] = bufferData;
-		return bufferData;
-	}
-
 	public void Dispose()
 	{
 		foreach (var x in shaderPrograms.Values)
@@ -296,9 +273,6 @@ internal class AssetManager : IDisposable
 			x.Dispose();
 
 		foreach (var x in renderTargets.Values)
-			x.Dispose();
-
-		foreach (var x in buffers.Values)
 			x.Dispose();
 	}
 

@@ -366,32 +366,6 @@ internal sealed partial class Renderer
 					toBeDisposed[currentFrame].Enqueue(x);
 			}
 
-			var buffers = material.Uniforms
-				.OfType<Buffer>()
-				.Select(x => AssetManager.GetBufferData(x))
-				.Index()
-				.Select(x => new WriteDescriptorSet(
-						next: default,
-						destinationSet: default,
-						destinationBinding: (uint)(BUFFERS_BINDING + x.Index),
-						destinationArrayElement: 0,
-						descriptorType: DescriptorType.StorageBuffer,
-						imageInfos: null,
-						bufferInfos: [new DescriptorBufferInfo(buffer: x.Item.Buffer, offset: 0, range: ~0ul)],
-						texelBufferViews: null
-					)
-				)
-				.ToArray()
-			;
-
-			if (buffers.Length > 0)
-			{
-				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, buffers);
-
-				foreach (var x in buffers)
-					toBeDisposed[currentFrame].Enqueue(x);
-			}
-
 			cmd.DrawIndexed(mesh.IndexCount);
 		}
 
