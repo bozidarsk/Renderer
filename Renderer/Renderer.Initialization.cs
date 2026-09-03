@@ -402,7 +402,7 @@ internal sealed partial class Renderer : IDisposable
 
 		var buffersBindings = Enumerable.Range(BUFFERS_BINDING, MAX_BUFFERS).Select(x => new DescriptorSetLayoutBinding(
 				binding: (uint)x,
-				descriptorType: DescriptorType.CombinedImageSampler,
+				descriptorType: DescriptorType.StorageBuffer,
 				descriptorCount: 1,
 				stage: ShaderStage.AllGraphics,
 				immutableSamplers: null
