@@ -164,8 +164,6 @@ internal sealed partial class Renderer
 			]
 		);
 
-		var shaderProgramData = AssetManager.GetShaderProgramData(shaderProgram);
-
 		using var renderingInfo = new PipelineRenderingCreateInfo(
 			next: default,
 			viewMask: 0,
@@ -177,7 +175,7 @@ internal sealed partial class Renderer
 		using var graphicsPipelineCreateInfo = new GraphicsPipelineCreateInfo(
 			next: (nint)(&renderingInfo),
 			flags: default,
-			stages: shaderProgramData.Stages,
+			stages: shaderProgram.Stages,
 			vertexInputState: default,
 			inputAssemblyState: inputAssembly,
 			tessellationState: null,
@@ -201,15 +199,14 @@ internal sealed partial class Renderer
 
 	private void StartRenderPass(IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTarget? target = null)
 	{
-		var renderTargetData = (target != null) ? AssetManager.GetRenderTargetData(target) : null;
 		var extent = (target != null) ? new Extent2D((uint)target.Width, (uint)target.Height) : this.swapchainExtent;
 
-		using var dependencyInfoBegin = new DependencyInfo(
+		var dependencyInfoBegin = target?.BeginDependencyInfo ?? new DependencyInfo(
 			next: default,
 			dependencyFlags: default,
 			memoryBarriers: null,
 			bufferMemoryBarriers: null,
-			imageMemoryBarriers: (renderTargetData != null) ? renderTargetData.BeginDependencies :
+			imageMemoryBarriers:
 			[
 				new ImageMemoryBarrier2(
 					next: default,
@@ -240,7 +237,7 @@ internal sealed partial class Renderer
 			]
 		);
 
-		var renderingInfo = (renderTargetData != null) ? renderTargetData.RenderingInfo : new RenderingInfo(
+		var renderingInfo = target?.RenderingInfo ?? new RenderingInfo(
 			next: default,
 			flags: default,
 			renderArea: new(offset: new(0, 0), extent: this.swapchainExtent),
@@ -293,7 +290,6 @@ internal sealed partial class Renderer
 		{
 			var material = obj.GetComponent<MeshRenderer>().Material;
 			var mesh = obj.GetComponent<MeshFilter>().Mesh;
-			var meshData = AssetManager.GetMeshData(mesh);
 
 			if (!graphicsPipelines.TryGetValue((material.ShaderProgram, target), out var graphicsPipeline))
 			{
@@ -311,8 +307,8 @@ internal sealed partial class Renderer
 			cmd.SetScissors(new Rect2D(offset: new(0, 0), extent: extent));
 			cmd.SetViewports(new Viewport(x: 0, y: 0, width: extent.Width, height: extent.Height, minDepth: 0f, maxDepth: 1f));
 			cmd.SetVertexInput(vertexInputDescription.Bindings, vertexInputDescription.Attributes);
-			cmd.BindVertexBuffers(meshData.VertexBuffer);
-			cmd.BindIndexBuffer(meshData.IndexBuffer, meshData.IndexType);
+			cmd.BindVertexBuffers(mesh.VertexBuffer);
+			cmd.BindIndexBuffer(mesh.IndexBuffer, mesh.IndexType);
 			cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, globalDescriptorWrite);
 
 			var pushConstants = new PushConstants(obj.Model, (obj is UIObject uiObject) ? uiObject.Id : 0);
@@ -342,7 +338,6 @@ internal sealed partial class Renderer
 
 			var textures = material.Uniforms
 				.OfType<Texture>()
-				.Select(x => AssetManager.GetTextureData(x))
 				.Index()
 				.Select(x => new WriteDescriptorSet(
 						next: default,
@@ -369,12 +364,12 @@ internal sealed partial class Renderer
 			cmd.DrawIndexed(mesh.IndexCount);
 		}
 
-		using var dependencyInfoEnd = new DependencyInfo(
+		var dependencyInfoEnd = target?.EndDependencyInfo ?? new DependencyInfo(
 			next: default,
 			dependencyFlags: default,
 			memoryBarriers: null,
 			bufferMemoryBarriers: null,
-			imageMemoryBarriers: (renderTargetData != null) ? renderTargetData.EndDependencies :
+			imageMemoryBarriers:
 			[
 				new ImageMemoryBarrier2(
 					next: default,
@@ -395,8 +390,12 @@ internal sealed partial class Renderer
 		cmd.EndRendering();
 		cmd.PipelineBarrier2(dependencyInfoEnd);
 
-		if (renderTargetData == null)
+		if (target == null)
+		{
 			renderingInfo.Dispose();
+			dependencyInfoBegin.Dispose();
+			dependencyInfoEnd.Dispose();
+		}
 	}
 
 	public void DrawFrame(Matrix4x4 projection, Matrix4x4 view, IEnumerable<SceneObject> objects, RenderTarget? target = null)

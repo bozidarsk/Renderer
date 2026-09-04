@@ -10,7 +10,7 @@ using Renderer.UI;
 
 namespace Renderer;
 
-public class SceneObject : IDisposable
+public class SceneObject
 {
 	public readonly Scene Scene;
 	private List<Component> components = new();
@@ -159,20 +159,6 @@ public class SceneObject : IDisposable
 	{
 		components = this.components.OfType<T>().ToArray();
 		return components.Any();
-	}
-
-	public virtual void Dispose()
-	{
-		Parent?.RemoveChild(this);
-
-		while (children.Count > 0)
-			children[0].Dispose();
-
-		foreach (var x in components.OfType<IDisposable>())
-			x.Dispose();
-
-		IsEnabled = false;
-		components.Clear();
 	}
 
 	public SceneObject(Scene scene) => this.Scene = scene ?? throw new ArgumentNullException();

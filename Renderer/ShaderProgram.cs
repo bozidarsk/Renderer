@@ -8,9 +8,11 @@ using Vulkan.ShaderCompiler;
 
 namespace Renderer;
 
-public class ShaderProgram
+public class ShaderProgram : Asset
 {
 	public Shader[] Shaders { get; }
+	internal ShaderModule[] Modules { get; }
+	internal PipelineShaderStageCreateInfo[] Stages { get; }
 
 	public CullMode? CullMode => this.Shaders.Select(x => x.CullMode).FirstOrDefault(x => x != null);
 	public FrontFace? FrontFace => this.Shaders.Select(x => x.FrontFace).FirstOrDefault(x => x != null);
@@ -46,12 +48,23 @@ public class ShaderProgram
 		.SelectMany(x => x).ToArray()
 	};
 
+	protected override void Free()
+	{
+		foreach (var x in Stages)
+			renderer.ToBeDisposed(x);
+
+		foreach (var x in Modules)
+			renderer.ToBeDisposed(x);
+	}
+
 	public ShaderProgram(params string[] filenames)
 	{
 		if (filenames == null)
 			throw new ArgumentNullException();
 
 		this.Shaders = new Shader[filenames.Length];
+		this.Modules = new ShaderModule[filenames.Length];
+		this.Stages = new PipelineShaderStageCreateInfo[filenames.Length];
 
 		for (int i = 0; i < filenames.Length; i++)
 		{
@@ -64,7 +77,7 @@ public class ShaderProgram
 
 			if (!query.Any())
 			{
-				Shader shader = shaderCompiler.Compile(filename, shaderCompilerOptions);
+				var shader = shaderCompiler.Compile(filename, shaderCompilerOptions);
 
 				compiledShaders.Add(shader);
 				this.Shaders[i] = shader;
@@ -73,6 +86,25 @@ public class ShaderProgram
 			{
 				this.Shaders[i] = query.First();
 			}
+
+			using var shaderModuleCreateInfo = new ShaderModuleCreateInfo(
+				next: default,
+				flags: default,
+				code: this.Shaders[i].Code
+			);
+
+			var module = shaderModuleCreateInfo.CreateShaderModule(renderer.Device, renderer.Allocator);
+			var stage = new PipelineShaderStageCreateInfo(
+				next: default,
+				flags: default,
+				stage: this.Shaders[i].Stage,
+				module: module,
+				name: this.Shaders[i].EntryPoint,
+				specializationInfo: null
+			);
+
+			this.Modules[i] = module;
+			this.Stages[i] = stage;
 		}
 	}
 }

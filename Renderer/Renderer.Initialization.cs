@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Vulkan;
 
@@ -33,7 +34,7 @@ internal sealed partial class Renderer : IDisposable
 	private PipelineLayout pipelineLayout;
 	private CommandPool commandPool;
 	private CommandBuffer[] commandBuffers;
-	private Semaphore[] imageAvailableSemaphore, renderFinishedSemaphore;
+	private Vulkan.Semaphore[] imageAvailableSemaphore, renderFinishedSemaphore;
 	private Fence[] inFlightFence;
 	private Queue graphicsQueue, presentationQueue;
 	private DescriptorSetLayout descriptorSetLayout;
@@ -44,13 +45,13 @@ internal sealed partial class Renderer : IDisposable
 	private ImageView depthImageView;
 	private DeviceMemory depthImageMemory;
 
+	private readonly Lock disposingLock = new();
+
 	public AllocationCallbacks? Allocator => allocator;
 	public Instance Instance => instance ?? throw new NullReferenceException("Instance has not been initialized.");
 	public PhysicalDevice PhysicalDevice => physicalDevice ?? throw new NullReferenceException("PhysicalDevice has not been initialized.");
 	public Device Device => device ?? throw new NullReferenceException("Device has not been initialized.");
 	public Extent2D SwapchainExtent => swapchainExtent;
-
-	public AssetManager AssetManager { get; }
 
 	public static readonly int MAX_TEXTURES = int.TryParse(Environment.GetEnvironmentVariable("VK_MAX_TEXTURES"), out int value) ? value : 16;
 	public static readonly int MAX_BUFFERS = int.TryParse(Environment.GetEnvironmentVariable("VK_MAX_BUFFERS"), out int value) ? value : 16;
@@ -59,11 +60,33 @@ internal sealed partial class Renderer : IDisposable
 	public static readonly int TEXTURES_BINDING = 2;
 	public static readonly int BUFFERS_BINDING = 2 + MAX_TEXTURES;
 
+	private static readonly Lock currentLock = new();
+
+	public static Renderer? Current
+	{
+		set
+		{
+			lock (currentLock)
+				field = value;
+	 	}
+		get;
+	}
+
+	public static Renderer Require() => Current ?? throw new InvalidOperationException("There is no current renderer.");
+
 	public static uint MakeVersion(int major, int minor, int patch) => ((((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
 	public static uint MakeApiVersion(int variant, int major, int minor, int patch) => ((((uint)variant) << 29) | (((uint)major) << 22) | (((uint)minor) << 12) | ((uint)patch));
 
 	private readonly DebugUtilsMessengerCallback debugUtilsMessengerCallback;
 	public event EventHandler<DebugUtilsMessengerEventArgs>? DebugUtilsMessageReceived;
+
+	public readonly List<WeakReference> Assets = [];
+
+	public void ToBeDisposed(IDisposable disposable)
+	{
+		lock (disposingLock)
+			toBeDisposed[currentFrame].Enqueue(disposable);
+	}
 
 	public uint FindMemoryType(uint typeFilter, MemoryProperty properties)
 	{
@@ -539,8 +562,8 @@ internal sealed partial class Renderer : IDisposable
 			flags: FenceCreateFlags.Signaled
 		);
 
-		imageAvailableSemaphore = new Semaphore[maxFrames];
-		renderFinishedSemaphore = new Semaphore[maxFrames];
+		imageAvailableSemaphore = new Vulkan.Semaphore[maxFrames];
+		renderFinishedSemaphore = new Vulkan.Semaphore[maxFrames];
 		inFlightFence = new Fence[maxFrames];
 
 		for (int i = 0; i < maxFrames; i++)
@@ -601,15 +624,22 @@ internal sealed partial class Renderer : IDisposable
 
 	public void Dispose()
 	{
-		AssetManager.Dispose();
+		device.WaitIdle();
 
-		depthImageView.Dispose();
-		depthImage.Dispose();
-		depthImageMemory.Dispose();
+		foreach (var x in Assets)
+			(x.Target as IDisposable)?.Dispose();
 
 		foreach (var x in toBeDisposed)
 			while (x.Count > 0)
 				x.Dequeue().Dispose();
+
+		GC.Collect();
+		GC.WaitForPendingFinalizers();
+		GC.Collect();
+
+		depthImageView.Dispose();
+		depthImage.Dispose();
+		depthImageMemory.Dispose();
 
 		foreach (var x in globalUniformsMemories)
 			x.Unmap();
@@ -658,7 +688,7 @@ internal sealed partial class Renderer : IDisposable
 			return false;
 		};
 
-		this.AssetManager = new(this);
+		Renderer.Current = this;
 	}
 #pragma warning restore
 }

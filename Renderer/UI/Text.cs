@@ -76,7 +76,7 @@ public sealed class Text : UIObject
 
 	private void RecreateMesh()
 	{
-		if (this.Font == null || this.Value == null)
+		if (this.Font == null || string.IsNullOrWhiteSpace(this.Value))
 			return;
 
 		TextMesh mesh = this.Font.CreateMesh(this.Value, this.FontSize);

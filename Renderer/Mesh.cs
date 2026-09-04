@@ -4,22 +4,60 @@ using System.Linq;
 using System.Numerics;
 using System.Diagnostics;
 
+using Vulkan;
+
 namespace Renderer;
 
-public class Mesh
+public class Mesh : Asset
 {
-	public Array Vertices { get; }
-	public Type VertexType => this.Vertices.GetType().GetElementType()!;
-	public int VertexCount => this.Vertices.Length;
+	internal Vulkan.Buffer VertexBuffer { private set; get; }
+	internal DeviceMemory VertexBufferMemory { private set; get; }
+	internal Vulkan.Buffer IndexBuffer { private set; get; }
+	internal DeviceMemory IndexBufferMemory { private set; get; }
 
-	public Array Indices { get; }
-	public Type IndexType => this.Indices.GetType().GetElementType()!;
-	public int IndexCount => this.Indices.Length;
+	internal int VertexCount { private set; get; }
+	internal Type VertexType { private set; get; }
+
+	internal int IndexCount { private set; get; }
+	internal IndexType IndexType { private set; get; }
 
 	public static readonly Mesh<DefaultVertex, byte> Empty = new(
 		[new DefaultVertex()],
 		[0, 0, 0]
 	);
+
+	private void Initialize(Array vertices, Array indices)
+	{
+		renderer.CreateStagingBuffer(vertices, BufferUsage.VertexBuffer, out var vertexBuffer, out var vertexBufferMemory);
+		renderer.CreateStagingBuffer(indices, BufferUsage.IndexBuffer, out var indexBuffer, out var indexBufferMemory);
+
+		this.VertexBuffer = vertexBuffer;
+		this.VertexBufferMemory = vertexBufferMemory;
+		this.IndexBuffer = indexBuffer;
+		this.IndexBufferMemory = indexBufferMemory;
+
+		this.VertexCount = vertices.Length;
+		this.IndexCount = indices.Length;
+
+		this.VertexType = vertices.GetType().GetElementType()!;
+		this.IndexType = indices.GetType().GetElementType()! switch
+		{
+			Type t when t == typeof(byte) => IndexType.UInt8,
+			Type t when t == typeof(ushort) => IndexType.UInt16,
+			Type t when t == typeof(uint) => IndexType.UInt32,
+			Type t => throw new ArgumentOutOfRangeException(nameof(IndexType), $"Cannot map mesh index type '{t.FullName}' to a vulkan index type.")
+		};
+	}
+
+	protected override void Free()
+	{
+		renderer.ToBeDisposed(VertexBuffer);
+		renderer.ToBeDisposed(VertexBufferMemory);
+		renderer.ToBeDisposed(IndexBuffer);
+		renderer.ToBeDisposed(IndexBufferMemory);
+	}
+
+#pragma warning disable CS8618
 
 	public Mesh(string filename) : this(filename, default, default) { }
 
@@ -31,23 +69,25 @@ public class Mesh
 		vertexType ??= typeof(DefaultVertex);
 		indexType ??= typeof(uint);
 
+		Array vertices, indices;
+
 		var extension = Path.GetExtension(filename).ToLower();
 		switch (extension)
 		{
 			case ".obj":
 				var obj = OBJ.FromFile(filename);
-				this.Vertices = Array.CreateInstance(vertexType, obj.Vertices.Count);
-				for (int i = 0; i < this.Vertices.Length; i++)
+				vertices = Array.CreateInstance(vertexType, obj.Vertices.Count);
+				for (int i = 0; i < vertices.Length; i++)
 				{
-					object v = this.Vertices.GetValue(i)!;
+					object v = vertices.GetValue(i)!;
 
 					((IVertex)v).Position = (obj.Vertices.Count != 0) ? obj.Vertices[i] : default;
 					((IVertex)v).Normal = (obj.Normals.Count != 0) ? obj.Normals[i] : default;
 					((IVertex)v).UV = (obj.Textures.Count != 0) ? obj.Textures[i] : default;
 
-					this.Vertices.SetValue(v, i);
+					vertices.SetValue(v, i);
 				}
-				this.Indices = indexType switch
+				indices = indexType switch
 				{
 					Type t when t == typeof(byte) => obj.Indices.Select(x => checked((byte)x)).ToArray(),
 					Type t when t == typeof(ushort) => obj.Indices.Select(x => checked((ushort)x)).ToArray(),
@@ -58,13 +98,15 @@ public class Mesh
 			default:
 				throw new InvalidOperationException($"Failed to parse mesh of type '{extension}'.");
 		}
+
+		Initialize(vertices, indices);
 	}
 
-	internal protected Mesh(Array vertices, Array indices)
-	{
-		this.Vertices = vertices ?? throw new ArgumentNullException();
-		this.Indices = indices ?? throw new ArgumentNullException();
-	}
+	internal protected Mesh(Array vertices, Array indices) =>
+		Initialize(vertices ?? throw new ArgumentNullException(), indices ?? throw new ArgumentNullException())
+	;
+
+#pragma warning restore
 }
 
 public class Mesh<TVertex> : Mesh

@@ -56,8 +56,6 @@ public class Scene : IDisposable
 
 	public void Dispose()
 	{
-		this.Root?.Dispose();
-
 		this.Renderer.Dispose();
 		this.Window.Dispose();
 		GLFW.Program.Terminate();

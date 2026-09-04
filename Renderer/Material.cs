@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Renderer;
 
-public sealed class Material
+public class Material : Asset
 {
 	public ShaderProgram ShaderProgram { get; }
 	public IEnumerable<object?> Uniforms => uniforms.Values;
@@ -19,6 +19,11 @@ public sealed class Material
 
 			uniforms[name] = uniforms.ContainsKey(name) ? value : throw new ArgumentException($"Material does not have a property named '{name}'.");
 		}
+	}
+
+	protected override void Free()
+	{
+		renderer.ToBeDisposed(ShaderProgram);
 	}
 
 	public Material(string[] shaders, UniformDescription[]? uniforms)

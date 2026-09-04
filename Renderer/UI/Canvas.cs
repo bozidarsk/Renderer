@@ -143,10 +143,10 @@ public class Canvas : Panel
 	private uint SampleId((int x, int y) position) => SampleId(position.x, position.y);
 	private uint SampleId(int x, int y)
 	{
-		var textureData = this.Scene.Renderer.AssetManager.GetTextureData(camera.Target!.ColorAttachments[1].Texture);
+		var texture = camera.Target!.ColorAttachments[1].Texture;
 
 		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
-		cmd.CopyImageToBuffer(textureData.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
+		cmd.CopyImageToBuffer(texture.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
 				bufferOffset: 0,
 				bufferRowLength: 0,
 				bufferImageHeight: 0,
@@ -166,15 +166,6 @@ public class Canvas : Panel
 		unsafe { id = *((uint*)maskLocation); }
 
 		return id;
-	}
-
-	public override void Dispose()
-	{
-		canvasTexture.Dispose();
-		camera.Dispose();
-		maskBuffer.Dispose();
-		maskMemory.Dispose();
-		base.Dispose();
 	}
 
 	public Canvas(Scene scene) : base(scene)
@@ -208,6 +199,10 @@ public class Canvas : Panel
 		this.Scene.Renderer.CreateBuffer(size, BufferUsage.TransferDst, out maskBuffer);
 		this.Scene.Renderer.CreateBufferMemory(maskBuffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out maskMemory);
 		maskLocation = maskMemory.Map(size: size, offset: default, flags: default);
+
+		// for now maskBuffer and maskMemory will leak
+		maskBuffer.Name = "maskBuffer";
+		maskMemory.Name = "maskMemory";
 
 		this.Scene.Window.OnMouseButton += (s, e) =>
 		{
