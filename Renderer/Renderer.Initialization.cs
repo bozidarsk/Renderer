@@ -36,7 +36,7 @@ internal sealed partial class Renderer : IDisposable
 	private Semaphore[] imageAvailableSemaphore, renderFinishedSemaphore;
 	private Fence[] inFlightFence;
 	private Queue graphicsQueue, presentationQueue;
-	private DescriptorSetLayout[] descriptorSetLayouts;
+	private DescriptorSetLayout descriptorSetLayout;
 	private VkBuffer[] globalUniformsBuffers;
 	private DeviceMemory[] globalUniformsMemories;
 	private nint[] globalUniformsLocations;
@@ -415,10 +415,7 @@ internal sealed partial class Renderer : IDisposable
 			bindings: new[] { [globalUniformsBinding, objectUniformsBinding], texturesBindings, buffersBindings }.SelectMany(x => x).ToArray()
 		);
 
-		descriptorSetLayouts = new DescriptorSetLayout[maxFrames];
-
-		for (int i = 0; i < maxFrames; i++)
-			descriptorSetLayouts[i] = descriptorSetLayoutCreateInfo.CreateDescriptorSetLayout(device, allocator);
+		descriptorSetLayout = descriptorSetLayoutCreateInfo.CreateDescriptorSetLayout(device, allocator);
 	}
 
 	private void InitializeGlobalUniforms()
@@ -445,7 +442,7 @@ internal sealed partial class Renderer : IDisposable
 		using var pipelineLayoutCreateInfo = new PipelineLayoutCreateInfo(
 			next: default,
 			flags: default,
-			setLayouts: [descriptorSetLayouts[0]],
+			setLayouts: [descriptorSetLayout],
 			pushConstantRanges: [new(stage: ShaderStage.All, offset: 0, size: physicalDevice.Properties.Limits.MaxPushConstantsSize)]
 		);
 
@@ -642,8 +639,7 @@ internal sealed partial class Renderer : IDisposable
 		foreach (var x in globalUniformsMemories)
 			x.Dispose();
 
-		foreach (var x in descriptorSetLayouts)
-			x.Dispose();
+		descriptorSetLayout.Dispose();
 
 		device.Dispose();
 		debugUtilsMessenger.Dispose();
