@@ -61,7 +61,7 @@ public class Mesh : Asset
 
 	public Mesh(string filename) : this(filename, default, default) { }
 
-	internal protected Mesh(string filename, Type? vertexType, Type? indexType)
+	private protected Mesh(string filename, Type? vertexType, Type? indexType)
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
@@ -102,7 +102,7 @@ public class Mesh : Asset
 		Initialize(vertices, indices);
 	}
 
-	internal protected Mesh(Array vertices, Array indices) =>
+	private protected Mesh(Array vertices, Array indices) =>
 		Initialize(vertices ?? throw new ArgumentNullException(), indices ?? throw new ArgumentNullException())
 	;
 
