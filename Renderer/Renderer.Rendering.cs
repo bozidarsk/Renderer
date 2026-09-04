@@ -332,8 +332,8 @@ internal sealed partial class Renderer
 
 				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, objectDescriptorWrite);
 
-				toBeDisposed[currentFrame].Enqueue(uniformsBuffer!);
-				toBeDisposed[currentFrame].Enqueue(uniformsMemory!);
+				ToBeDisposed(uniformsBuffer!);
+				ToBeDisposed(uniformsMemory!);
 			}
 
 			var textures = material.Uniforms
@@ -358,7 +358,7 @@ internal sealed partial class Renderer
 				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, textures);
 
 				foreach (var x in textures)
-					toBeDisposed[currentFrame].Enqueue(x);
+					ToBeDisposed(x);
 			}
 
 			cmd.DrawIndexed(mesh.IndexCount);
@@ -406,8 +406,13 @@ internal sealed partial class Renderer
 		inFlightFence[currentFrame].Wait();
 		inFlightFence[currentFrame].Reset();
 
-		while (toBeDisposed[currentFrame].Count > 0)
-			toBeDisposed[currentFrame].Dequeue().Dispose();
+		lock (disposingLock)
+		{
+			foreach (var x in toBeDisposed[currentFrame])
+				x.Dispose();
+
+			toBeDisposed[currentFrame].Clear();
+		}
 
 		Marshal.StructureToPtr(new GlobalUniforms(view.Inversed, projection, view.t), globalUniformsLocations[currentFrame], false);
 

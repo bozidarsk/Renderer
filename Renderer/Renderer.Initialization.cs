@@ -16,7 +16,7 @@ internal sealed partial class Renderer : IDisposable
 	private readonly GLFW.Window window;
 	private readonly AllocationCallbacks? allocator;
 
-	private Queue<IDisposable>[] toBeDisposed;
+	private List<IDisposable>[] toBeDisposed;
 	private uint graphicsQueueFamilyIndex, presentationQueueFamilyIndex;
 	private Format swapchainImageFormat, depthFormat;
 	private Extent2D swapchainExtent;
@@ -85,7 +85,7 @@ internal sealed partial class Renderer : IDisposable
 	public void ToBeDisposed(IDisposable disposable)
 	{
 		lock (disposingLock)
-			toBeDisposed[currentFrame].Enqueue(disposable);
+			toBeDisposed[currentFrame].Add(disposable);
 	}
 
 	public uint FindMemoryType(uint typeFilter, MemoryProperty properties)
@@ -612,7 +612,7 @@ internal sealed partial class Renderer : IDisposable
 		InitializeCommandBuffers();
 		InitializeSyncObjects();
 
-		toBeDisposed = new Queue<IDisposable>[maxFrames];
+		toBeDisposed = new List<IDisposable>[maxFrames];
 		for (int i = 0; i < maxFrames; i++)
 			toBeDisposed[i] = new();
 
@@ -629,9 +629,13 @@ internal sealed partial class Renderer : IDisposable
 		foreach (var x in Assets)
 			(x.Target as IDisposable)?.Dispose();
 
-		foreach (var x in toBeDisposed)
-			while (x.Count > 0)
-				x.Dequeue().Dispose();
+		foreach (var list in toBeDisposed)
+		{
+			foreach (var x in list)
+				x.Dispose();
+
+			list.Clear();
+		}
 
 		GC.Collect();
 		GC.WaitForPendingFinalizers();
