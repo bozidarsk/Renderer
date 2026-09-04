@@ -5,5 +5,5 @@
 
 float4 main(Fragment input)
 {
-	return float4(input.worldPosition, 1);
+	return input.color;
 }

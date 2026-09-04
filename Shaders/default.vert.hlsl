@@ -10,7 +10,7 @@ Fragment main(Vertex input)
 	output.worldPosition = (MODEL * float4(input.position, 1)).xyz;
 	output.normal = PROJECTION * (VIEW * (MODEL * float4(input.normal, 0)));
 	output.uv = input.uv;
-	output.color = float4(input.position, 1);
+	output.color = input.color;
 
 	return output;
 }

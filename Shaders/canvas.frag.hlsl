@@ -21,7 +21,5 @@ SamplerState texture0Sampler : SAMPLER0;
 
 float4 main(CanvasFragment input)
 {
-	float2 uv = float2(input.uv.x, input.uv.y);
-
-	return texture0.Sample(texture0Sampler, uv);
+	return texture0.Sample(texture0Sampler, input.uv);
 }
