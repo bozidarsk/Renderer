@@ -629,6 +629,10 @@ internal sealed partial class Renderer : IDisposable
 		foreach (var x in Assets)
 			(x.Target as IDisposable)?.Dispose();
 
+		GC.Collect();
+		GC.WaitForPendingFinalizers();
+		GC.Collect();
+
 		foreach (var list in toBeDisposed)
 		{
 			foreach (var x in list)
@@ -636,10 +640,6 @@ internal sealed partial class Renderer : IDisposable
 
 			list.Clear();
 		}
-
-		GC.Collect();
-		GC.WaitForPendingFinalizers();
-		GC.Collect();
 
 		depthImageView.Dispose();
 		depthImage.Dispose();
