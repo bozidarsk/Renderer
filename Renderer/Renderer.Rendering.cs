@@ -197,7 +197,7 @@ internal sealed partial class Renderer
 		return pipeline;
 	}
 
-	private void StartRenderPass(IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTarget? target = null)
+	private void StartRendering(CommandBuffer cmd, IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTarget? target = null)
 	{
 		var extent = (target != null) ? new Extent2D((uint)target.Width, (uint)target.Height) : this.swapchainExtent;
 
@@ -280,8 +280,6 @@ internal sealed partial class Renderer
 			bufferInfos: [new(buffer: globalUniformsBuffers[currentFrame], offset: default, range: (ulong)Marshal.SizeOf<GlobalUniforms>())],
 			texelBufferViews: null
 		);
-
-		var cmd = commandBuffers[currentFrame];
 
 		cmd.PipelineBarrier2(dependencyInfoBegin);
 		cmd.BeginRendering(renderingInfo);
@@ -403,56 +401,38 @@ internal sealed partial class Renderer
 		if (objects == null)
 			throw new ArgumentNullException();
 
-		inFlightFence[currentFrame].Wait();
-		inFlightFence[currentFrame].Reset();
+		uint frameIndex = currentFrame;
+
+		// if (inFlightTimelineValues[frameIndex] != 0)
+			// graphicsQueueContext.Wait(inFlightTimelineValues[frameIndex]);
 
 		lock (disposingLock)
 		{
-			foreach (var x in toBeDisposed[currentFrame])
+			foreach (var x in toBeDisposed[frameIndex])
 				x.Dispose();
 
-			toBeDisposed[currentFrame].Clear();
+			toBeDisposed[frameIndex].Clear();
 		}
 
-		Marshal.StructureToPtr(new GlobalUniforms(view.Inversed, projection, view.t), globalUniformsLocations[currentFrame], false);
+		Marshal.StructureToPtr(new GlobalUniforms(view.Inversed, projection, view.t), globalUniformsLocations[frameIndex], false);
 
-		uint imageIndex = (target == null) ? swapchain.GetNextImage(imageAvailableSemaphore[currentFrame]) : ~0u;
+		uint imageIndex = (target == null) ? swapchain.GetNextImage(semaphore: null, fence: imageAvailableFence[frameIndex]) : ~0u;
 
-		var cmd = commandBuffers[currentFrame];
+		inFlightTimelineValues[frameIndex] = graphicsQueueContext.Submit(
+			action: cmd =>
+			{
+				if (target == null)
+				{
+					imageAvailableFence[frameIndex].Wait();
+					imageAvailableFence[frameIndex].Reset();
+				}
 
-		using var beginInfo = new CommandBufferBeginInfo(
-			next: default,
-			usage: default,
-			inheritanceInfo: null
+				StartRendering(cmd, objects, imageIndex, target);
+			},
+			onCompleted: (target == null) ? () => presentationQueueContext.Present(swapchains: [swapchain], imageIndices: [imageIndex]) : null
 		);
 
-		cmd.Reset(default);
-		cmd.Begin(beginInfo);
-		StartRenderPass(objects, imageIndex, target);
-		cmd.End();
-
-		using var submitInfo = new SubmitInfo(
-			next: default,
-			waitSemaphores: (target == null) ? [imageAvailableSemaphore[currentFrame]] : null,
-			waitDstStageMasks: (target == null) ? [PipelineStage.ColorAttachmentOutput] : null,
-			commandBuffers: [cmd],
-			signalSemaphores: (target == null) ? [renderFinishedSemaphore[imageIndex]] : null
-		);
-
-		graphicsQueue.Submit(inFlightFence[currentFrame], submitInfo);
-
-		if (target == null)
-		{
-			using var presentInfo = new PresentInfo(
-				next: default,
-				waitSemaphores: [renderFinishedSemaphore[imageIndex]],
-				swapchains: [swapchain],
-				imageIndices: [imageIndex],
-				results: null
-			);
-
-			presentationQueue.Present(presentInfo);
-		}
+		graphicsQueueContext.Wait(inFlightTimelineValues[frameIndex]);
 
 		if (++currentFrame >= maxFrames)
 			currentFrame = 0;

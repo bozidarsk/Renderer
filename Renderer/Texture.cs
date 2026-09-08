@@ -30,16 +30,24 @@ public class Texture : Asset
 		{
 			renderer.CreateStagingBuffer(data, BufferUsage.TransferSrc, out var buffer, out var memory);
 
-			renderer.TransitionImageLayout(image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, this.Aspect);
-			renderer.CopyBufferToImage(buffer, image, this.Width, this.Height, this.Aspect);
-			renderer.TransitionImageLayout(image, ImageLayout.TransferDstOptimal, this.InitialLayout, this.Aspect);
+			renderer.TransferQueueContext.Wait(renderer.TransferQueueContext.Submit(cmd =>
+				{
+					renderer.TransitionImageLayout(cmd, image, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, this.Aspect);
+					renderer.CopyBufferToImage(cmd, buffer, image, this.Width, this.Height, this.Aspect);
+					renderer.TransitionImageLayout(cmd, image, ImageLayout.TransferDstOptimal, this.InitialLayout, this.Aspect);
+				}
+			));
 
 			memory.Dispose();
 			buffer.Dispose();
 		}
 		else
 		{
-			renderer.TransitionImageLayout(image, ImageLayout.Undefined, this.InitialLayout, this.Aspect);
+			renderer.TransferQueueContext.Wait(renderer.TransferQueueContext.Submit(cmd =>
+				{
+					renderer.TransitionImageLayout(cmd, image, ImageLayout.Undefined, this.InitialLayout, this.Aspect);
+				}
+			));
 		}
 
 		renderer.CreateImageView(image, this.Format, this.Aspect, this.Type switch

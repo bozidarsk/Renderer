@@ -145,22 +145,24 @@ public class Canvas : Panel
 	{
 		var texture = camera.Target!.ColorAttachments[1].Texture;
 
-		CommandBuffer cmd = this.Scene.Renderer.BeginSingleTimeCommand();
-		cmd.CopyImageToBuffer(texture.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
-				bufferOffset: 0,
-				bufferRowLength: 0,
-				bufferImageHeight: 0,
-				imageSubresource: new(
-					aspect: ImageAspect.Color,
-					mipLevel: 0,
-					baseArrayLayer: 0,
-					layerCount: 1
-				),
-				imageOffset: new(x: x, y: y, z: 0),
-				imageExtent: new(width: 1, height: 1, depth: 1)
-			)
-		);
-		this.Scene.Renderer.EndSingleTimeCommand(cmd);
+		Scene.Renderer.TransferQueueContext.Wait(Scene.Renderer.TransferQueueContext.Submit(cmd =>
+			{
+				cmd.CopyImageToBuffer(texture.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
+						bufferOffset: 0,
+						bufferRowLength: 0,
+						bufferImageHeight: 0,
+						imageSubresource: new(
+							aspect: ImageAspect.Color,
+							mipLevel: 0,
+							baseArrayLayer: 0,
+							layerCount: 1
+						),
+						imageOffset: new(x: x, y: y, z: 0),
+						imageExtent: new(width: 1, height: 1, depth: 1)
+					)
+				);
+			}
+		));
 
 		uint id;
 		unsafe { id = *((uint*)maskLocation); }

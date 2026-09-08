@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 using Vulkan;
 
@@ -17,7 +16,6 @@ internal sealed partial class Renderer : IDisposable
 	private readonly AllocationCallbacks? allocator;
 
 	private List<IDisposable>[] toBeDisposed;
-	private uint graphicsQueueFamilyIndex, presentationQueueFamilyIndex;
 	private Format swapchainImageFormat, depthFormat;
 	private Extent2D swapchainExtent;
 
@@ -32,11 +30,6 @@ internal sealed partial class Renderer : IDisposable
 	private Image[] swapchainImages;
 	private ImageView[] swapchainImageViews;
 	private PipelineLayout pipelineLayout;
-	private CommandPool commandPool;
-	private CommandBuffer[] commandBuffers;
-	private Vulkan.Semaphore[] imageAvailableSemaphore, renderFinishedSemaphore;
-	private Fence[] inFlightFence;
-	private Queue graphicsQueue, presentationQueue;
 	private DescriptorSetLayout descriptorSetLayout;
 	private VkBuffer[] globalUniformsBuffers;
 	private DeviceMemory[] globalUniformsMemories;
@@ -45,6 +38,11 @@ internal sealed partial class Renderer : IDisposable
 	private ImageView depthImageView;
 	private DeviceMemory depthImageMemory;
 
+	private Fence[] imageAvailableFence;
+	private ulong[] inFlightTimelineValues;
+
+	private QueueContext graphicsQueueContext, presentationQueueContext, computeQueueContext, transferQueueContext;
+
 	private readonly Lock disposingLock = new();
 
 	public AllocationCallbacks? Allocator => allocator;
@@ -52,6 +50,11 @@ internal sealed partial class Renderer : IDisposable
 	public PhysicalDevice PhysicalDevice => physicalDevice ?? throw new NullReferenceException("PhysicalDevice has not been initialized.");
 	public Device Device => device ?? throw new NullReferenceException("Device has not been initialized.");
 	public Extent2D SwapchainExtent => swapchainExtent;
+
+	public QueueContext GraphicsQueueContext => graphicsQueueContext ?? throw new NullReferenceException("GraphicsQueueContext has not been initialized.");
+	public QueueContext PresentationQueueContext => presentationQueueContext ?? throw new NullReferenceException("PresentationQueueContext has not been initialized.");
+	public QueueContext ComputeQueueContext => computeQueueContext ?? throw new NullReferenceException("ComputeQueueContext has not been initialized.");
+	public QueueContext TransferQueueContext => transferQueueContext ?? throw new NullReferenceException("TransferQueueContext has not been initialized.");
 
 	public static readonly int MAX_TEXTURES = int.TryParse(Environment.GetEnvironmentVariable("VK_MAX_TEXTURES"), out int value) ? value : 16;
 	public static readonly int MAX_BUFFERS = int.TryParse(Environment.GetEnvironmentVariable("VK_MAX_BUFFERS"), out int value) ? value : 16;
@@ -68,7 +71,7 @@ internal sealed partial class Renderer : IDisposable
 		{
 			lock (currentLock)
 				field = value;
-	 	}
+		}
 		get;
 	}
 
@@ -205,8 +208,36 @@ internal sealed partial class Renderer : IDisposable
 
 	private unsafe void InitializeDevice()
 	{
-		graphicsQueueFamilyIndex = find(physicalDevice.QueueFamilyProperties, static (i, x) => x.QueueFlags.HasFlag(QueueFlags.Graphics));
-		presentationQueueFamilyIndex = find(physicalDevice.QueueFamilyProperties, (i, x) => instance.Surface!.IsSupported(physicalDevice, (uint)i));
+		uint graphicsQueueFamilyIndex, presentationQueueFamilyIndex, computeQueueFamilyIndex, transferQueueFamilyIndex;
+		var properties = physicalDevice.QueueFamilyProperties;
+
+		{
+			graphicsQueueFamilyIndex = findQueueFamilyIndex(properties, (i, x) => (x.QueueFlags & QueueFlags.Graphics) != 0 && (x.QueueFlags & QueueFlags.Compute) == 0);
+
+			if (graphicsQueueFamilyIndex == ~0u)
+				graphicsQueueFamilyIndex = findQueueFamilyIndex(properties, (i, x) => (x.QueueFlags & QueueFlags.Graphics) != 0);
+		}
+
+		{
+			presentationQueueFamilyIndex = findQueueFamilyIndex(properties, (i, x) => instance.Surface!.IsSupported(physicalDevice, (uint)i));
+		}
+
+		{
+			computeQueueFamilyIndex = findQueueFamilyIndex(properties, (i, x) => (x.QueueFlags & QueueFlags.Compute) != 0 && (x.QueueFlags & QueueFlags.Graphics) == 0);
+
+			if (computeQueueFamilyIndex == ~0u)
+				computeQueueFamilyIndex = findQueueFamilyIndex(properties, (i, x) => (x.QueueFlags & QueueFlags.Compute) != 0);
+		}
+
+		{
+			transferQueueFamilyIndex = findQueueFamilyIndex(properties, (i, x) => (x.QueueFlags & QueueFlags.Transfer) != 0 && (x.QueueFlags & QueueFlags.Graphics) == 0 && (x.QueueFlags & QueueFlags.Compute) == 0);
+
+			if (transferQueueFamilyIndex == ~0u)
+				transferQueueFamilyIndex = findQueueFamilyIndex(properties, (i, x) => (x.QueueFlags & QueueFlags.Transfer) != 0 && (x.QueueFlags & QueueFlags.Compute) == 0);
+
+			if (transferQueueFamilyIndex == ~0u)
+				transferQueueFamilyIndex = findQueueFamilyIndex(properties, (i, x) => (x.QueueFlags & QueueFlags.Transfer) != 0);
+		}
 
 		using var graphicsDeviceQueueCreateInfo = new DeviceQueueCreateInfo(
 			next: default,
@@ -219,6 +250,20 @@ internal sealed partial class Renderer : IDisposable
 			next: default,
 			flags: default,
 			queueFamilyIndex: presentationQueueFamilyIndex,
+			queuePriorities: [1f]
+		);
+
+		using var computeDeviceQueueCreateInfo = new DeviceQueueCreateInfo(
+			next: default,
+			flags: default,
+			queueFamilyIndex: computeQueueFamilyIndex,
+			queuePriorities: [1f]
+		);
+
+		using var transferDeviceQueueCreateInfo = new DeviceQueueCreateInfo(
+			next: default,
+			flags: default,
+			queueFamilyIndex: transferQueueFamilyIndex,
 			queuePriorities: [1f]
 		);
 
@@ -309,7 +354,7 @@ internal sealed partial class Renderer : IDisposable
 		using var deviceCreateInfo = new DeviceCreateInfo(
 			next: (nint)(&descriptorIndexingFeatures),
 			flags: default,
-			queueCreateInfos: (graphicsQueueFamilyIndex != presentationQueueFamilyIndex) ? [graphicsDeviceQueueCreateInfo, presentationDeviceQueueCreateInfo] : [graphicsDeviceQueueCreateInfo],
+			queueCreateInfos: new[] { graphicsDeviceQueueCreateInfo, presentationDeviceQueueCreateInfo, computeDeviceQueueCreateInfo, transferDeviceQueueCreateInfo }.DistinctBy(x => x.QueueFamilyIndex).ToArray(),
 			enabledLayerNames: null,
 			enabledExtensionNames:
 			[
@@ -327,7 +372,18 @@ internal sealed partial class Renderer : IDisposable
 
 		device = deviceCreateInfo.CreateDevice(physicalDevice, allocator);
 
-		static uint find(QueueFamilyProperties[] properties, Func<int, QueueFamilyProperties, bool> predicate) =>
+		var map = new Dictionary<uint, QueueContext>();
+
+		foreach (var x in stackalloc[] { graphicsQueueFamilyIndex, presentationQueueFamilyIndex, computeQueueFamilyIndex, transferQueueFamilyIndex })
+			if (!map.ContainsKey(x))
+				map[x] = new QueueContext(this, x);
+
+		graphicsQueueContext = map[graphicsQueueFamilyIndex];
+		presentationQueueContext = map[presentationQueueFamilyIndex];
+		computeQueueContext = map[computeQueueFamilyIndex];
+		transferQueueContext = map[transferQueueFamilyIndex];
+
+		static uint findQueueFamilyIndex(QueueFamilyProperties[] properties, Func<int, QueueFamilyProperties, bool> predicate) =>
 			(uint)properties
 			.Index()
 			.Where(x =>
@@ -340,6 +396,7 @@ internal sealed partial class Renderer : IDisposable
 				(int i, QueueFamilyProperties q) = x;
 				return i;
 			})
+			.Append(-1)
 			.First()
 		;
 	}
@@ -370,8 +427,8 @@ internal sealed partial class Renderer : IDisposable
 			imageExtent: swapchainExtent,
 			imageArrayLayers: 1,
 			imageUsage: ImageUsage.ColorAttachment,
-			imageSharingMode: (graphicsQueueFamilyIndex != presentationQueueFamilyIndex) ? SharingMode.Concurrent : SharingMode.Exclusive,
-			queueFamilyIndices: (graphicsQueueFamilyIndex != presentationQueueFamilyIndex) ? [graphicsQueueFamilyIndex, presentationQueueFamilyIndex] : [graphicsQueueFamilyIndex],
+			imageSharingMode: SharingMode.Concurrent,
+			queueFamilyIndices: new[] { graphicsQueueContext, presentationQueueContext, computeQueueContext, transferQueueContext }.DistinctBy(x => x.FamilyIndex).Select(x => x.FamilyIndex).ToArray(),
 			preTransform: swapchainProperties.Capabilities.CurrentTransform,
 			compositeAlpha: CompositeAlphaFlags.Opaque,
 			presentMode: presentMode,
@@ -527,50 +584,20 @@ internal sealed partial class Renderer : IDisposable
 		depthImageView = imageViewCreateInfo.CreateImageView(device, allocator);
 	}
 
-	private void InitializeCommandPool()
-	{
-		var commandPoolCreateInfo = new CommandPoolCreateInfo(
-			next: default,
-			flags: CommandPoolCreateFlags.ResetCommandBuffer,
-			queueFamilyIndex: graphicsQueueFamilyIndex
-		);
-
-		commandPool = commandPoolCreateInfo.CreateCommandPool(device, allocator);
-	}
-
-	private void InitializeCommandBuffers()
-	{
-		var commandBufferAllocateInfo = new CommandBufferAllocateInfo(
-			next: default,
-			commandPool: commandPool,
-			level: CommandBufferLevel.Primary,
-			commandBufferCount: maxFrames
-		);
-
-		commandBuffers = commandBufferAllocateInfo.CreateCommandBuffers(device, commandPool);
-	}
-
 	private void InitializeSyncObjects()
 	{
-		var semaphoreCreateInfo = new SemaphoreCreateInfo(
+		var fenceCreateInfo = new FenceCreateInfo(
 			next: default,
 			flags: default
 		);
 
-		var fenceCreateInfo = new FenceCreateInfo(
-			next: default,
-			flags: FenceCreateFlags.Signaled
-		);
-
-		imageAvailableSemaphore = new Vulkan.Semaphore[maxFrames];
-		renderFinishedSemaphore = new Vulkan.Semaphore[maxFrames];
-		inFlightFence = new Fence[maxFrames];
+		imageAvailableFence = new Fence[maxFrames];
+		inFlightTimelineValues = new ulong[maxFrames];
 
 		for (int i = 0; i < maxFrames; i++)
 		{
-			imageAvailableSemaphore[i] = semaphoreCreateInfo.CreateSemaphore(device, allocator);
-			renderFinishedSemaphore[i] = semaphoreCreateInfo.CreateSemaphore(device, allocator);
-			inFlightFence[i] = fenceCreateInfo.CreateFence(device, allocator);
+			imageAvailableFence[i] = fenceCreateInfo.CreateFence(device, allocator);
+			inFlightTimelineValues[i] = 0;
 		}
 	}
 
@@ -608,23 +635,19 @@ internal sealed partial class Renderer : IDisposable
 		InitializeGlobalUniforms();
 		InitializePipelineLayout();
 		InitializeDepthImage();
-		InitializeCommandPool();
-		InitializeCommandBuffers();
 		InitializeSyncObjects();
 
 		toBeDisposed = new List<IDisposable>[maxFrames];
 		for (int i = 0; i < maxFrames; i++)
 			toBeDisposed[i] = new();
 
-		graphicsQueue = device.GetQueue(graphicsQueueFamilyIndex, 0);
-		presentationQueue = device.GetQueue(presentationQueueFamilyIndex, 0);
-
 		Console.WriteLine("Vulkan Initialized!");
 	}
 
 	public void Dispose()
 	{
-		device.WaitIdle();
+		foreach (var x in new[] { graphicsQueueContext, presentationQueueContext, computeQueueContext, transferQueueContext }.DistinctBy(x => x.FamilyIndex))
+			x.Dispose();
 
 		foreach (var x in Assets)
 			(x.Target as IDisposable)?.Dispose();
@@ -648,16 +671,9 @@ internal sealed partial class Renderer : IDisposable
 		foreach (var x in globalUniformsMemories)
 			x.Unmap();
 
-		foreach (var x in imageAvailableSemaphore)
+		foreach (var x in imageAvailableFence)
 			x.Dispose();
 
-		foreach (var x in renderFinishedSemaphore)
-			x.Dispose();
-
-		foreach (var x in inFlightFence)
-			x.Dispose();
-
-		commandPool.Dispose();
 		pipelineLayout.Dispose();
 
 		foreach (var x in graphicsPipelines.Values)

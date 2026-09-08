@@ -19,8 +19,8 @@ internal sealed partial class Renderer
 			flags: default,
 			size: size,
 			usage: usage,
-			sharingMode: SharingMode.Exclusive,
-			queueFamilyIndices: default
+			sharingMode: SharingMode.Concurrent,
+			queueFamilyIndices: new[] { graphicsQueueContext, presentationQueueContext, computeQueueContext, transferQueueContext }.DistinctBy(x => x.FamilyIndex).Select(x => x.FamilyIndex).ToArray()
 		);
 
 		buffer = createInfo.CreateBuffer(device, allocator);
@@ -40,26 +40,13 @@ internal sealed partial class Renderer
 		memory.Bind(buffer);
 	}
 
-	public void CopyBuffer(VkBuffer source, VkBuffer destination, DeviceSize size, CommandBuffer? cmd = null)
+	public void CopyBuffer(CommandBuffer cmd, VkBuffer source, VkBuffer destination, DeviceSize size)
 	{
-		bool createCmd = cmd == null;
-
-		if (createCmd)
-			cmd = BeginSingleTimeCommand();
-
-		cmd!.CopyBuffer(source, destination, size);
-
-		if (createCmd)
-			EndSingleTimeCommand(cmd);
+		cmd.CopyBuffer(source, destination, size);
 	}
 
-	public void CopyBufferToImage(VkBuffer buffer, Image image, int width, int height, ImageAspect aspect, CommandBuffer? cmd = null)
+	public void CopyBufferToImage(CommandBuffer cmd, VkBuffer buffer, Image image, int width, int height, ImageAspect aspect)
 	{
-		bool createCmd = cmd == null;
-
-		if (createCmd)
-			cmd = BeginSingleTimeCommand();
-
 		var region = new BufferImageCopy(
 			bufferOffset: 0,
 			bufferRowLength: 0,
@@ -74,19 +61,11 @@ internal sealed partial class Renderer
 			imageExtent: new(width: (uint)width, height: (uint)height, depth: 1)
 		);
 
-		cmd!.CopyBufferToImage(buffer, image, ImageLayout.TransferDstOptimal, region);
-
-		if (createCmd)
-			EndSingleTimeCommand(cmd);
+		cmd.CopyBufferToImage(buffer, image, ImageLayout.TransferDstOptimal, region);
 	}
 
-	public void CopyImageToBuffer(Image image, VkBuffer buffer, int width, int height, ImageAspect aspect, CommandBuffer? cmd = null)
+	public void CopyImageToBuffer(CommandBuffer cmd, Image image, VkBuffer buffer, int width, int height, ImageAspect aspect)
 	{
-		bool createCmd = cmd == null;
-
-		if (createCmd)
-			cmd = BeginSingleTimeCommand();
-
 		var region = new BufferImageCopy(
 			bufferOffset: 0,
 			bufferRowLength: 0,
@@ -101,10 +80,7 @@ internal sealed partial class Renderer
 			imageExtent: new(width: (uint)width, height: (uint)height, depth: 1)
 		);
 
-		cmd!.CopyImageToBuffer(image, buffer, ImageLayout.TransferSrcOptimal, region);
-
-		if (createCmd)
-			EndSingleTimeCommand(cmd);
+		cmd.CopyImageToBuffer(image, buffer, ImageLayout.TransferSrcOptimal, region);
 	}
 
 	public unsafe void CreateStagingBuffer(Array data, BufferUsage usage, out VkBuffer buffer, out DeviceMemory memory)
@@ -120,11 +96,15 @@ internal sealed partial class Renderer
 		CreateBuffer(size, BufferUsage.TransferDst | usage, out buffer);
 		CreateBufferMemory(buffer, MemoryProperty.DeviceLocal, out memory);
 
-		CopyBuffer(stagingBuffer, buffer, size);
-
-		stagingMemory.Unmap();
-		stagingBuffer.Dispose();
-		stagingMemory.Dispose();
+		var tmp = buffer;
+		// transferQueueContext.Wait(transferQueueContext.Submit(cmd => CopyBuffer(cmd, stagingBuffer, tmp, size)));
+		transferQueueContext.Submit(cmd => CopyBuffer(cmd, stagingBuffer, tmp, size), onCompleted: () =>
+			{
+				stagingMemory.Unmap();
+				stagingBuffer.Dispose();
+				stagingMemory.Dispose();
+		 	}
+		);
 	}
 
 	public unsafe void CreateUniformsBuffer(IEnumerable<object?> data, out VkBuffer? buffer, out DeviceMemory? memory, out DeviceSize size)
@@ -191,8 +171,8 @@ internal sealed partial class Renderer
 			samples: SampleCount.Bit1,
 			tiling: ImageTiling.Optimal,
 			usage: usage,
-			sharingMode: SharingMode.Exclusive,
-			queueFamilyIndices: null,
+			sharingMode: SharingMode.Concurrent,
+			queueFamilyIndices: new[] { graphicsQueueContext, presentationQueueContext, computeQueueContext, transferQueueContext }.DistinctBy(x => x.FamilyIndex).Select(x => x.FamilyIndex).ToArray(),
 			initialLayout: ImageLayout.Undefined
 		);
 
@@ -260,6 +240,8 @@ internal sealed partial class Renderer
 	}
 
 	public void TransitionImageLayout(
+		CommandBuffer cmd,
+
 		Image image,
 
 		ImageLayout from,
@@ -270,15 +252,9 @@ internal sealed partial class Renderer
 		Access destinationAccess,
 		PipelineStage destinationStage,
 
-		ImageAspect aspect,
-		CommandBuffer? cmd = null
+		ImageAspect aspect
 	)
 	{
-		bool createCmd = cmd == null;
-
-		if (createCmd)
-			cmd = BeginSingleTimeCommand();
-
 		var barrier = new ImageMemoryBarrier(
 			next: default,
 			srcAccess: sourceAccess,
@@ -297,7 +273,7 @@ internal sealed partial class Renderer
 			)
 		);
 
-		cmd!.PipelineBarrier(
+		cmd.PipelineBarrier(
 			srcStage: sourceStage,
 			dstStage: destinationStage,
 			dependencyFlags: default,
@@ -305,12 +281,9 @@ internal sealed partial class Renderer
 			bufferMemoryBarriers: null,
 			imageMemoryBarriers: [barrier]
 		);
-
-		if (createCmd)
-			EndSingleTimeCommand(cmd);
 	}
 
-	public void TransitionImageLayout(Image image, ImageLayout from, ImageLayout to, ImageAspect aspect, CommandBuffer? cmd = null)
+	public void TransitionImageLayout(CommandBuffer cmd, Image image, ImageLayout from, ImageLayout to, ImageAspect aspect)
 	{
 		Access sourceAccess, destinationAccess;
 		PipelineStage sourceStage, destinationStage;
@@ -422,45 +395,6 @@ internal sealed partial class Renderer
 		else
 			throw new InvalidOperationException($"Unsupported layer transition from '{from}' to '{to}'.");
 
-		TransitionImageLayout(image, from, sourceAccess, sourceStage, to, destinationAccess, destinationStage, aspect, cmd);
-	}
-
-	public CommandBuffer BeginSingleTimeCommand()
-	{
-		var allocateInfo = new CommandBufferAllocateInfo(
-			next: default,
-			commandPool: commandPool,
-			level: CommandBufferLevel.Primary,
-			commandBufferCount: 1
-		);
-
-		var cmd = allocateInfo.CreateCommandBuffers(device, commandPool).Single();
-
-		using var beginInfo = new CommandBufferBeginInfo(
-			next: default,
-			usage: CommandBufferUsage.OneTimeSubmit,
-			inheritanceInfo: null
-		);
-
-		cmd.Begin(beginInfo);
-		return cmd;
-	}
-
-	public void EndSingleTimeCommand(CommandBuffer cmd)
-	{
-		cmd.End();
-
-		using var submitInfo = new SubmitInfo(
-			next: default,
-			waitSemaphores: null,
-			waitDstStageMasks: null,
-			commandBuffers: [cmd],
-			signalSemaphores: null
-		);
-
-		graphicsQueue.Submit(null, submitInfo);
-		graphicsQueue.WaitIdle();
-
-		cmd.Dispose();
+		TransitionImageLayout(cmd, image, from, sourceAccess, sourceStage, to, destinationAccess, destinationStage, aspect);
 	}
 }
