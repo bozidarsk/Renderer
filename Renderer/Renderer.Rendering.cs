@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using Vulkan;
 using Renderer.UI;
-
-using VkBuffer = Vulkan.Buffer;
 
 namespace Renderer;
 
@@ -18,7 +16,7 @@ internal sealed partial class Renderer
 	private readonly Dictionary<Type, (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes)> vertexInputDescriptions = new();
 	private readonly Dictionary<(ShaderProgram, RenderTarget?), Pipeline> graphicsPipelines = new();
 
-	public (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes) CreateVertexInputDescriptions(Type vertexType)
+	private (VertexInputBindingDescription2[] Bindings, VertexInputAttributeDescription2[] Attributes) CreateVertexInputDescriptions(Type vertexType)
 	{
 		if (vertexType == null)
 			throw new ArgumentNullException();
@@ -76,7 +74,7 @@ internal sealed partial class Renderer
 		return (bindingDescriptions2, attributeDescriptions2);
 	}
 
-	public unsafe Pipeline CreateGraphicsPipeline(ShaderProgram shaderProgram, RenderTarget? target = null)
+	private unsafe Pipeline CreateGraphicsPipeline(ShaderProgram shaderProgram, RenderTarget? target = null)
 	{
 		var inputAssembly = new PipelineInputAssemblyStateCreateInfo(
 			next: default,
@@ -197,7 +195,148 @@ internal sealed partial class Renderer
 		return pipeline;
 	}
 
-	private void StartRendering(CommandBuffer cmd, IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTarget? target = null)
+	private bool CreateUniformBuffer(CommandBuffer cmd, uint frameIndex, IEnumerable<object?> data, out Vulkan.Buffer? buffer, out DeviceMemory? bufferMemory, out DeviceSize size)
+	{
+		var bytes = new List<byte>();
+
+		foreach (var x in data)
+		{
+			(var currentSize, var alignment) = getTypeLayout(x?.GetType());
+
+			if (currentSize == 0)
+				continue;
+
+			var padding = (bytes.Count % alignment != 0) ? alignment - (bytes.Count % alignment) : 0;
+
+			bytes.AddRange(Enumerable.Repeat((byte)0, padding + currentSize));
+
+			unsafe
+			{
+				fixed (byte* pointer = CollectionsMarshal.AsSpan(bytes))
+					Marshal.StructureToPtr(x!, (nint)pointer + bytes.Count - padding - currentSize, false);
+			}
+		}
+
+		size = (ulong)bytes.Count;
+
+		if (size == 0)
+		{
+			buffer = null;
+			bufferMemory = null;
+
+			return false;
+		}
+
+		using var stagingBufferCreateInfo = new BufferCreateInfo(
+			next: default,
+			flags: default,
+			size: size,
+			usage: BufferUsage.TransferSrc,
+			sharingMode: SharingMode.Concurrent,
+			queueFamilyIndices: QueueFamilyIndices
+		);
+
+		var stagingBuffer = stagingBufferCreateInfo.CreateBuffer(device, allocator);
+
+		var stagingBufferMemoryRequirements = stagingBuffer.MemoryRequirements;
+
+		var stagingBufferAllocateInfo = new MemoryAllocateInfo(
+			next: default,
+			allocationSize: stagingBufferMemoryRequirements.Size,
+			memoryTypeIndex: FindMemoryType(stagingBufferMemoryRequirements.MemoryType, MemoryProperty.HostVisible | MemoryProperty.HostCoherent)
+		);
+
+		var stagingBufferMemory = stagingBufferAllocateInfo.CreateDeviceMemory(device, allocator);
+		stagingBufferMemory.Bind(stagingBuffer);
+
+		unsafe
+		{
+			bytes.CopyTo(new Span<byte>((void*)stagingBufferMemory.Map(size: size, offset: default, flags: default), checked((int)(ulong)size)));
+			stagingBufferMemory.Unmap();
+		}
+
+		using var bufferCreateInfo = new BufferCreateInfo(
+			next: default,
+			flags: default,
+			size: size,
+			usage: BufferUsage.TransferDst | BufferUsage.UniformBuffer,
+			sharingMode: SharingMode.Concurrent,
+			queueFamilyIndices: QueueFamilyIndices
+		);
+
+		buffer = bufferCreateInfo.CreateBuffer(device, allocator);
+
+		var bufferMemoryRequirements = buffer.MemoryRequirements;
+
+		var bufferAllocateInfo = new MemoryAllocateInfo(
+			next: default,
+			allocationSize: bufferMemoryRequirements.Size,
+			memoryTypeIndex: FindMemoryType(bufferMemoryRequirements.MemoryType, MemoryProperty.DeviceLocal)
+		);
+
+		bufferMemory = bufferAllocateInfo.CreateDeviceMemory(device, allocator);
+		bufferMemory.Bind(buffer);
+
+		var copyRegion = new BufferCopy(
+			sourceOffset: 0,
+			destinationOffset: 0,
+			size: size
+		);
+
+		using var dependencyInfo = new DependencyInfo(
+			next: default,
+			dependencyFlags: default,
+			memoryBarriers: null,
+			bufferMemoryBarriers:
+			[
+				new(
+					next: default,
+					srcStage: PipelineStage2.Transfer,
+					srcAccess: Access2.TransferWrite,
+					dstStage: PipelineStage2.VertexShader | PipelineStage2.FragmentShader,
+					dstAccess: Access2.UniformRead,
+					srcQueueFamilyIndex: ~0u,
+					dstQueueFamilyIndex: ~0u,
+					buffer: buffer,
+					offset: 0,
+					size: size
+				)
+			],
+			imageMemoryBarriers: null
+		);
+
+		cmd.CopyBuffer(stagingBuffer, buffer, [copyRegion]);
+		cmd.PipelineBarrier2(dependencyInfo);
+
+		lock (disposingLock)
+		{
+			toBeDisposed[frameIndex].Add(stagingBufferMemory);
+			toBeDisposed[frameIndex].Add(stagingBuffer);
+		}
+
+		return true;
+
+		static (int Size, int Alignment) getTypeLayout(Type? x) => x switch
+		{
+			Type t when t == typeof(bool) => (4, 4),
+			Type t when t == typeof(int) => (4, 4),
+			Type t when t == typeof(uint) => (4, 4),
+			Type t when t == typeof(float) => (4, 4),
+			Type t when t == typeof(double) => (8, 8),
+			Type t when t == typeof(Vector2) => (8, 8),
+			Type t when t == typeof(Vector2Int) => (8, 8),
+			Type t when t == typeof(Vector3) => (12, 16),
+			Type t when t == typeof(Vector3Int) => (12, 16),
+			Type t when t == typeof(Vector4) => (16, 16),
+			Type t when t == typeof(Vector4Int) => (16, 16),
+			Type t when t == typeof(Matrix4x4) => (64, 16),
+			Type t when t == typeof(Quaternion) => (16, 16),
+			Type t when t == typeof(Color) => (16, 16),
+			_ => (0, 0)
+		};
+	}
+
+	private void StartRendering(CommandBuffer cmd, uint frameIndex, IEnumerable<SceneObject> objects, uint swapchainImageIndex, RenderTarget? target = null)
 	{
 		var extent = (target != null) ? new Extent2D((uint)target.Width, (uint)target.Height) : this.swapchainExtent;
 
@@ -277,14 +416,33 @@ internal sealed partial class Renderer
 			destinationArrayElement: 0,
 			descriptorType: DescriptorType.UniformBuffer,
 			imageInfos: null,
-			bufferInfos: [new(buffer: globalUniformsBuffers[currentFrame], offset: default, range: (ulong)Marshal.SizeOf<GlobalUniforms>())],
+			bufferInfos: [new(buffer: globalUniformBuffers[frameIndex].VkBuffer, offset: default, range: globalUniformBuffers[frameIndex].Size)],
 			texelBufferViews: null
 		);
+
+		var objectsList = objects.ToList();
+		var objectUniformBuffers = new Dictionary<SceneObject, (Vulkan.Buffer Buffer, DeviceMemory BufferMemory, DeviceSize Size)>();
+
+		foreach (var obj in objectsList)
+		{
+			var material = obj.GetComponent<MeshRenderer>().Material;
+
+			if (CreateUniformBuffer(cmd, frameIndex, material.Uniforms, out var uniformBuffer, out var uniformBufferMemory, out var uniformBufferSize))
+			{
+				lock (disposingLock)
+				{
+					toBeDisposed[frameIndex].Add(uniformBufferMemory!);
+					toBeDisposed[frameIndex].Add(uniformBuffer!);
+				}
+
+				objectUniformBuffers[obj] = (uniformBuffer!, uniformBufferMemory!, uniformBufferSize!);
+			}
+		}
 
 		cmd.PipelineBarrier2(dependencyInfoBegin);
 		cmd.BeginRendering(renderingInfo);
 
-		foreach (var obj in objects)
+		foreach (var obj in objectsList)
 		{
 			var material = obj.GetComponent<MeshRenderer>().Material;
 			var mesh = obj.GetComponent<MeshFilter>().Mesh;
@@ -305,17 +463,14 @@ internal sealed partial class Renderer
 			cmd.SetScissors(new Rect2D(offset: new(0, 0), extent: extent));
 			cmd.SetViewports(new Viewport(x: 0, y: 0, width: extent.Width, height: extent.Height, minDepth: 0f, maxDepth: 1f));
 			cmd.SetVertexInput(vertexInputDescription.Bindings, vertexInputDescription.Attributes);
-			cmd.BindVertexBuffers(mesh.VertexBuffer);
-			cmd.BindIndexBuffer(mesh.IndexBuffer, mesh.IndexType);
+			cmd.BindVertexBuffers(mesh.VertexBuffer.VkBuffer);
+			cmd.BindIndexBuffer(mesh.IndexBuffer.VkBuffer, mesh.IndexType);
 			cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, globalDescriptorWrite);
 
 			var pushConstants = new PushConstants(obj.Model, (obj is UIObject uiObject) ? uiObject.Id : 0);
 			cmd.PushConstants(pipelineLayout, ShaderStage.All, offset: 0, size: (uint)Marshal.SizeOf<PushConstants>(), ref Unsafe.As<PushConstants, byte>(ref pushConstants));
 
-			CreateUniformsBuffer(material.Uniforms, out VkBuffer? uniformsBuffer, out DeviceMemory? uniformsMemory, out DeviceSize uniformsSize);
-			bool hasUniforms = uniformsSize != 0;
-
-			if (hasUniforms)
+			if (objectUniformBuffers.TryGetValue(obj, out var objectUniforms))
 			{
 				using var objectDescriptorWrite = new WriteDescriptorSet(
 					next: default,
@@ -324,14 +479,11 @@ internal sealed partial class Renderer
 					destinationArrayElement: 0,
 					descriptorType: DescriptorType.UniformBuffer,
 					imageInfos: null,
-					bufferInfos: [new(buffer: uniformsBuffer!, offset: default, range: uniformsSize)],
+					bufferInfos: [new(buffer: objectUniforms.Buffer!, offset: default, range: objectUniforms.Size)],
 					texelBufferViews: null
 				);
 
 				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, objectDescriptorWrite);
-
-				ToBeDisposed(uniformsBuffer!);
-				ToBeDisposed(uniformsMemory!);
 			}
 
 			var textures = material.Uniforms
@@ -355,8 +507,9 @@ internal sealed partial class Renderer
 			{
 				cmd.PushDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout, textures);
 
-				foreach (var x in textures)
-					ToBeDisposed(x);
+				lock (disposingLock)
+					foreach (var x in textures)
+						toBeDisposed[frameIndex].Add(x);
 			}
 
 			cmd.DrawIndexed(mesh.IndexCount);
@@ -396,15 +549,12 @@ internal sealed partial class Renderer
 		}
 	}
 
-	public void DrawFrame(Matrix4x4 projection, Matrix4x4 view, IEnumerable<SceneObject> objects, RenderTarget? target = null)
+	public async Task DrawFrame(Matrix4x4 projection, Matrix4x4 view, IEnumerable<SceneObject> objects, RenderTarget? target = null)
 	{
 		if (objects == null)
 			throw new ArgumentNullException();
 
 		uint frameIndex = currentFrame;
-
-		// if (inFlightTimelineValues[frameIndex] != 0)
-			// graphicsQueueContext.Wait(inFlightTimelineValues[frameIndex]);
 
 		lock (disposingLock)
 		{
@@ -414,25 +564,26 @@ internal sealed partial class Renderer
 			toBeDisposed[frameIndex].Clear();
 		}
 
-		Marshal.StructureToPtr(new GlobalUniforms(view.Inversed, projection, view.t), globalUniformsLocations[frameIndex], false);
+		var globalUniforms = globalUniformBuffers[frameIndex].Map<GlobalUniforms>();
+		globalUniforms[0] = new GlobalUniforms(view.Inversed, projection, view.t);
+		globalUniformBuffers[frameIndex].Unmap();
 
 		uint imageIndex = (target == null) ? swapchain.GetNextImage(semaphore: null, fence: imageAvailableFence[frameIndex]) : ~0u;
 
-		inFlightTimelineValues[frameIndex] = graphicsQueueContext.Submit(
-			action: cmd =>
-			{
-				if (target == null)
+		if (target == null)
+		{
+			await Task.Run(() =>
 				{
 					imageAvailableFence[frameIndex].Wait();
 					imageAvailableFence[frameIndex].Reset();
 				}
+			);
+		}
 
-				StartRendering(cmd, objects, imageIndex, target);
-			},
-			onCompleted: (target == null) ? () => presentationQueueContext.Present(swapchains: [swapchain], imageIndices: [imageIndex]) : null
-		);
+		await graphicsQueueContext.SubmitAsync(cmd => StartRendering(cmd, frameIndex, objects, imageIndex, target));
 
-		graphicsQueueContext.Wait(inFlightTimelineValues[frameIndex]);
+		if (target == null)
+			presentationQueueContext.Present(swapchains: [swapchain], imageIndices: [imageIndex]);
 
 		if (++currentFrame >= maxFrames)
 			currentFrame = 0;

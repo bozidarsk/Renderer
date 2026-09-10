@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 using Vulkan;
 using Renderer;
@@ -37,9 +35,7 @@ public class Canvas : Panel
 	private readonly SceneObject canvasTexture;
 	private readonly RectTransform rectTransform;
 
-	private readonly Vulkan.Buffer maskBuffer;
-	private readonly Vulkan.DeviceMemory maskMemory;
-	private readonly nint maskLocation;
+	private readonly Buffer maskBuffer;
 
 	public void Resize(int width, int height, float scale)
 	{
@@ -66,14 +62,14 @@ public class Canvas : Panel
 			colorAttachments:
 			[
 				new(
-					new Texture(Width, Height, format: Format.R8G8B8A8UNorm, usage: ImageUsage.ColorAttachment | ImageUsage.Sampled, aspect: ImageAspect.Color, initialLayout: ImageLayout.ShaderReadOnlyOptimal),
+					Texture.Create(Width, Height, format: Format.R8G8B8A8UNorm, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc | ImageUsage.Sampled, aspect: ImageAspect.Color),
 					AttachmentLoadOp.Clear,
 					AttachmentStoreOp.Store,
 					new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f)),
 					null
 				),
 				new(
-					new Texture(Width, Height, format: Format.R8G8B8A8UInt, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc, aspect: ImageAspect.Color, initialLayout: ImageLayout.TransferSrcOptimal),
+					Texture.Create(Width, Height, format: Format.R8G8B8A8UInt, usage: ImageUsage.ColorAttachment | ImageUsage.TransferSrc, aspect: ImageAspect.Color),
 					AttachmentLoadOp.Clear,
 					AttachmentStoreOp.Store,
 					new ClearValue(new ClearColorValue(0u, 0u, 0u, 0u)),
@@ -133,6 +129,9 @@ public class Canvas : Panel
 			]
 		);
 
+		camera.Target.ColorAttachments[0].Texture.TransitionLayout(ImageLayout.Undefined, ImageLayout.ShaderReadOnlyOptimal).Wait();
+		camera.Target.ColorAttachments[1].Texture.TransitionLayout(ImageLayout.Undefined, ImageLayout.TransferSrcOptimal).Wait();
+
 		canvasTexture.GetComponent<MeshRenderer>().Material["texture0"] = camera.Target.ColorAttachments[0].Texture;
 
 		rectTransform.Rect = new(x: -(Width * Scale) / 2f, y: (Height * Scale) / 2f, width: (Width * Scale), height: (Height * Scale));
@@ -145,27 +144,11 @@ public class Canvas : Panel
 	{
 		var texture = camera.Target!.ColorAttachments[1].Texture;
 
-		Scene.Renderer.TransferQueueContext.Wait(Scene.Renderer.TransferQueueContext.Submit(cmd =>
-			{
-				cmd.CopyImageToBuffer(texture.Image, maskBuffer, ImageLayout.TransferSrcOptimal, new BufferImageCopy(
-						bufferOffset: 0,
-						bufferRowLength: 0,
-						bufferImageHeight: 0,
-						imageSubresource: new(
-							aspect: ImageAspect.Color,
-							mipLevel: 0,
-							baseArrayLayer: 0,
-							layerCount: 1
-						),
-						imageOffset: new(x: x, y: y, z: 0),
-						imageExtent: new(width: 1, height: 1, depth: 1)
-					)
-				);
-			}
-		));
+		texture.CopyToAsync(maskBuffer, imageOffset: new(x: x, y: y, z: 0), imageExtent: new(width: 1, height: 1, depth: 1)).Wait();
 
-		uint id;
-		unsafe { id = *((uint*)maskLocation); }
+		var map = maskBuffer.Map<uint>();
+		var id = map[0];
+		maskBuffer.Unmap();
 
 		return id;
 	}
@@ -189,7 +172,7 @@ public class Canvas : Panel
 
 		canvasTexture = new SceneObject(this.Scene,
 			new Transform(),
-			new MeshFilter(new Mesh<CanvasVertex, byte>(vertices, indices)),
+			new MeshFilter(Mesh.CreateAsync<CanvasVertex>(vertices, indices).Result),
 			new MeshRenderer(new Material(shaders: ["Renderer/Shaders/canvas.vert.hlsl", "Renderer/Shaders/canvas.frag.hlsl"], uniforms: [new("texture0", typeof(Texture))]))
 		)
 		{ Layer = this.TextureLayer };
@@ -197,14 +180,11 @@ public class Canvas : Panel
 		var extent = scene.Renderer.SwapchainExtent;
 		Resize((int)extent.Width, (int)extent.Height, this.Scale);
 
-		DeviceSize size = sizeof(uint);
-		this.Scene.Renderer.CreateBuffer(size, BufferUsage.TransferDst, out maskBuffer);
-		this.Scene.Renderer.CreateBufferMemory(maskBuffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out maskMemory);
-		maskLocation = maskMemory.Map(size: size, offset: default, flags: default);
+		this.maskBuffer = Buffer.Create(sizeof(uint), BufferUsage.TransferDst, MemoryProperty.HostVisible | MemoryProperty.HostCoherent);
 
 		// for now maskBuffer and maskMemory will leak
-		maskBuffer.Name = "maskBuffer";
-		maskMemory.Name = "maskMemory";
+		maskBuffer.VkBuffer.Name = "maskBuffer";
+		maskBuffer.Memory.Name = "maskMemory";
 
 		this.Scene.Window.OnMouseButton += (s, e) =>
 		{

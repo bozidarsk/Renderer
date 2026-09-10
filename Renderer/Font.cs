@@ -22,7 +22,7 @@ internal struct InnerTextVertex : IVertex
 	public Vector3 Normal { set { } }
 }
 
-internal sealed record TextMesh(Mesh<OuterTextVertex> Outer, Mesh<InnerTextVertex> Inner, Rect Rect);
+internal sealed record TextMesh(Mesh Outer, Mesh Inner, Rect Rect);
 
 public sealed class Font
 {
@@ -116,8 +116,8 @@ public sealed class Font
 		var extent = max - min;
 
 		return new(
-			new Mesh<OuterTextVertex>(outerVertices.ToArray(), outerIndices.ToArray()),
-			new Mesh<InnerTextVertex>(innerVertices.ToArray(), innerIndices.ToArray()),
+			Mesh.CreateAsync<OuterTextVertex>(outerVertices.ToArray(), outerIndices.ToArray()).Result,
+			Mesh.CreateAsync<InnerTextVertex>(innerVertices.ToArray(), innerIndices.ToArray()).Result,
 			new Rect(x: min.x, y: max.y, width: extent.x, height: extent.y)
 		);
 	}

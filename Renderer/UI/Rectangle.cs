@@ -44,7 +44,7 @@ public class Rectangle : UIObject
 	public Rectangle(Scene scene) : base(scene,
 		new RectTransform(),
 		new MeshFilter(
-			new Mesh<RectangleVertex, byte>(
+			Mesh.CreateAsync<RectangleVertex>(
 				[
 					new() { Position = new(-0.5f, 0.5f, 0) },
 					new() { Position = new(0.5f, 0.5f, 0) },
@@ -52,7 +52,7 @@ public class Rectangle : UIObject
 					new() { Position = new(-0.5f, -0.5f, 0) },
 				],
 				[0, 2, 1, 2, 0, 3]
-			)
+			).Result
 		),
 		new MeshRenderer(
 			new Material(

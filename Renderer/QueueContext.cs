@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -44,7 +45,7 @@ internal sealed class QueueContext : IDisposable
 		);
 
 		var freeBuffers = new Stack<CommandBuffer>();
-		var inFlight = new Queue<(CommandBuffer Buffer, ulong SignalValue, Action? OnCompleted)>();
+		var inFlight = new Queue<(CommandBuffer Buffer, ulong SignalValue)>();
 
 		foreach (var job in jobs.GetConsumingEnumerable())
 		{
@@ -52,12 +53,10 @@ internal sealed class QueueContext : IDisposable
 
 			while (inFlight.Count > 0 && inFlight.Peek().SignalValue <= completed)
 			{
-				(var cmd, _, var onCompleted) = inFlight.Dequeue();
+				(var cmd, _) = inFlight.Dequeue();
 
 				cmd.Reset(default);
 				freeBuffers.Push(cmd);
-
-				onCompleted?.Invoke();
 			}
 
 			if (job is RecordJob recordJob)
@@ -93,7 +92,7 @@ internal sealed class QueueContext : IDisposable
 				);
 
 				queue.Submit2(null, submitInfo);
-				inFlight.Enqueue((cmd, recordJob.SignalValue, recordJob.OnCompleted));
+				inFlight.Enqueue((cmd, recordJob.SignalValue));
 			}
 			else if (job is PresentJob presentJob)
 			{
@@ -111,27 +110,26 @@ internal sealed class QueueContext : IDisposable
 		foreach (var x in freeBuffers)
 			x.Dispose();
 
-		foreach ((var cmd, _, var onCompleted) in inFlight)
-		{
-			onCompleted?.Invoke();
+		foreach ((var cmd, _) in inFlight)
 			cmd.Dispose();
-		}
 
 		done.Set();
 	}
 
-	public void Wait(ulong value) => timelineSemaphore.Wait(value);
-
-	public ulong Submit(Action<CommandBuffer> action, Action? onCompleted = null)
+	public async Task SubmitAsync(Action<CommandBuffer> action)
 	{
+		if (Thread.CurrentThread.ManagedThreadId == thread.ManagedThreadId)
+			throw new InvalidOperationException("Submitting a job for a queue from inside an already submitted job will result in a deadlock.");
+
+		ulong value;
+
 		lock (submissionLock)
 		{
-			var value = Interlocked.Increment(ref nextValue);
-
-			jobs.Add(new RecordJob(action, value, onCompleted));
-
-			return value;
+			value = Interlocked.Increment(ref nextValue);
+			jobs.Add(new RecordJob(action, value));
 		}
+
+		await Task.Run(() => timelineSemaphore.Wait(value));
 	}
 
 	public void Present(Swapchain[] swapchains, uint[] imageIndices)
@@ -177,6 +175,6 @@ internal sealed class QueueContext : IDisposable
 	}
 
 	private abstract record Job;
-	private sealed record RecordJob(Action<CommandBuffer> Action, ulong SignalValue, Action? OnCompleted) : Job;
+	private sealed record RecordJob(Action<CommandBuffer> Action, ulong SignalValue) : Job;
 	private sealed record PresentJob(PresentInfo Info) : Job;
 }

@@ -12,7 +12,7 @@ public class RenderTexture : RenderTarget
 		height,
 		colorAttachments: [
 			new(
-				new Texture(width, height, format: Format.R8G8B8A8UNorm, usage: ImageUsage.ColorAttachment | ImageUsage.Sampled, aspect: ImageAspect.Color, initialLayout: ImageLayout.ShaderReadOnlyOptimal),
+				Texture.Create(width, height, format: Format.R8G8B8A8UNorm, usage: ImageUsage.ColorAttachment | ImageUsage.Sampled, aspect: ImageAspect.Color),
 				AttachmentLoadOp.Clear,
 				AttachmentStoreOp.Store,
 				new ClearValue(new ClearColorValue(0f, 0f, 0f, 0f)),
@@ -20,7 +20,7 @@ public class RenderTexture : RenderTarget
 			)
 		],
 		depthAttachment: new(
-			new Texture(width, height, format: Format.D32SFloat, usage: ImageUsage.DepthStencilAttachment, aspect: ImageAspect.Depth, initialLayout: ImageLayout.DepthAttachmentOptimal),
+			Texture.Create(width, height, format: Format.D32SFloat, usage: ImageUsage.DepthStencilAttachment, aspect: ImageAspect.Depth),
 			AttachmentLoadOp.Clear,
 			AttachmentStoreOp.DontCare,
 			new(new ClearDepthStencilValue(depth: 0, stencil: 0)),
@@ -53,5 +53,7 @@ public class RenderTexture : RenderTarget
 		]
 	)
 	{
+		ColorTexture.TransitionLayout(ImageLayout.Undefined, ImageLayout.ShaderReadOnlyOptimal).Wait();
+		DepthTexture.TransitionLayout(ImageLayout.Undefined, ImageLayout.DepthAttachmentOptimal).Wait();
 	}
 }

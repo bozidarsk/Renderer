@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 using Vulkan;
 
@@ -10,130 +11,107 @@ namespace Renderer;
 
 public class Mesh : Asset
 {
-	internal Vulkan.Buffer VertexBuffer { private set; get; }
-	internal DeviceMemory VertexBufferMemory { private set; get; }
-	internal Vulkan.Buffer IndexBuffer { private set; get; }
-	internal DeviceMemory IndexBufferMemory { private set; get; }
+	public Buffer VertexBuffer { get; }
+	public Buffer IndexBuffer { get; }
 
-	internal int VertexCount { private set; get; }
-	internal Type VertexType { private set; get; }
+	internal int VertexCount { get; }
+	internal Type VertexType { get; }
 
-	internal int IndexCount { private set; get; }
-	internal IndexType IndexType { private set; get; }
+	internal int IndexCount { get; }
+	internal IndexType IndexType { get; }
 
-	public static readonly Mesh<DefaultVertex, byte> Empty = new(
-		[new DefaultVertex()],
-		[0, 0, 0]
-	);
-
-	private void Initialize(Array vertices, Array indices)
-	{
-		renderer.CreateStagingBuffer(vertices, BufferUsage.VertexBuffer, out var vertexBuffer, out var vertexBufferMemory);
-		renderer.CreateStagingBuffer(indices, BufferUsage.IndexBuffer, out var indexBuffer, out var indexBufferMemory);
-
-		this.VertexBuffer = vertexBuffer;
-		this.VertexBufferMemory = vertexBufferMemory;
-		this.IndexBuffer = indexBuffer;
-		this.IndexBufferMemory = indexBufferMemory;
-
-		this.VertexCount = vertices.Length;
-		this.IndexCount = indices.Length;
-
-		this.VertexType = vertices.GetType().GetElementType()!;
-		this.IndexType = indices.GetType().GetElementType()! switch
-		{
-			Type t when t == typeof(byte) => IndexType.UInt8,
-			Type t when t == typeof(ushort) => IndexType.UInt16,
-			Type t when t == typeof(uint) => IndexType.UInt32,
-			Type t => throw new ArgumentOutOfRangeException(nameof(IndexType), $"Cannot map mesh index type '{t.FullName}' to a vulkan index type.")
-		};
-	}
+	public static readonly Mesh Empty = Mesh.CreateAsync<DefaultVertex>([new DefaultVertex()], [0, 0, 0]).Result;
 
 	protected override void Free()
 	{
 		renderer.ToBeDisposed(VertexBuffer);
-		renderer.ToBeDisposed(VertexBufferMemory);
 		renderer.ToBeDisposed(IndexBuffer);
-		renderer.ToBeDisposed(IndexBufferMemory);
 	}
 
-#pragma warning disable CS8618
+	private static async Task<Mesh> FromArraysAsync<TVertex, TIndex>(TVertex[] vertices, TIndex[] indices)
+		where TVertex : struct, IVertex
+		where TIndex : unmanaged, IBinaryInteger<TIndex>
+	{
+		var vertexCount = vertices.Length;
+		var indexCount = indices.Length;
 
-	public Mesh(string filename) : this(filename, default, default) { }
+		var vertexType = typeof(TVertex);
+		var indexType = typeof(TIndex);
 
-	private protected Mesh(string filename, Type? vertexType, Type? indexType)
+		if (vertexCount <= 0 || indexCount <= 0)
+			throw new ArgumentOutOfRangeException();
+
+		if (indexCount % 3 != 0)
+			throw new ArgumentOutOfRangeException(nameof(indexCount), "Index count must be multiple of 3.");
+
+		if (!vertexType.IsValueType || !vertexType.IsAssignableTo(typeof(IVertex)))
+			throw new ArgumentException($"Vertex type must be a struct and implement '{nameof(IVertex)}'.");
+
+		if (indexType != typeof(byte) && indexType != typeof(ushort) && indexType != typeof(uint))
+			throw new ArgumentException("Index type must be byte, ushort or uint.");
+
+		var vertexBuffer = await Buffer.CreateAsync(vertices, BufferUsage.VertexBuffer);
+		var indexBuffer = await Buffer.CreateAsync(indices, BufferUsage.IndexBuffer);
+
+		return new(vertexBuffer, vertexCount, vertexType, indexBuffer, indexCount, indexType);
+	}
+
+	public static async Task<Mesh> CreateAsync<TVertex>(TVertex[] vertices, byte[] indices) where TVertex : struct, IVertex => await FromArraysAsync(vertices, indices);
+	public static async Task<Mesh> CreateAsync<TVertex>(TVertex[] vertices, ushort[] indices) where TVertex : struct, IVertex => await FromArraysAsync(vertices, indices);
+	public static async Task<Mesh> CreateAsync<TVertex>(TVertex[] vertices, uint[] indices) where TVertex : struct, IVertex => await FromArraysAsync(vertices, indices);
+
+	public static async Task<Mesh> CreateAsync(string filename) => await CreateAsync<DefaultVertex, uint>(filename);
+	public static async Task<Mesh> CreateAsync<TVertex>(string filename) where TVertex : struct, IVertex => await CreateAsync<TVertex, uint>(filename);
+	public static async Task<Mesh> CreateAsync<TVertex, TIndex>(string filename)
+		where TVertex : struct, IVertex
+		where TIndex : unmanaged, IBinaryInteger<TIndex>, IConvertible
 	{
 		if (filename == null)
 			throw new ArgumentNullException();
 
-		vertexType ??= typeof(DefaultVertex);
-		indexType ??= typeof(uint);
+		if (typeof(TIndex) != typeof(byte) && typeof(TIndex) != typeof(ushort) && typeof(TIndex) != typeof(uint))
+			throw new ArgumentException("Index type must be byte, ushort or uint.");
 
-		Array vertices, indices;
+		TVertex[] vertices;
+		TIndex[] indices;
 
 		var extension = Path.GetExtension(filename).ToLower();
+
 		switch (extension)
 		{
 			case ".obj":
 				var obj = OBJ.FromFile(filename);
-				vertices = Array.CreateInstance(vertexType, obj.Vertices.Count);
+				vertices = new TVertex[obj.Vertices.Count];
 				for (int i = 0; i < vertices.Length; i++)
 				{
-					object v = vertices.GetValue(i)!;
-
-					((IVertex)v).Position = (obj.Vertices.Count != 0) ? obj.Vertices[i] : default;
-					((IVertex)v).Normal = (obj.Normals.Count != 0) ? obj.Normals[i] : default;
-					((IVertex)v).UV = (obj.Textures.Count != 0) ? obj.Textures[i] : default;
-
-					vertices.SetValue(v, i);
+					vertices[i].Position = (obj.Vertices.Count != 0) ? obj.Vertices[i] : default;
+					vertices[i].Normal = (obj.Normals.Count != 0) ? obj.Normals[i] : default;
+					vertices[i].UV = (obj.Textures.Count != 0) ? obj.Textures[i] : default;
 				}
-				indices = indexType switch
-				{
-					Type t when t == typeof(byte) => obj.Indices.Select(x => checked((byte)x)).ToArray(),
-					Type t when t == typeof(ushort) => obj.Indices.Select(x => checked((ushort)x)).ToArray(),
-					Type t when t == typeof(uint) => obj.Indices.Select(x => checked((uint)x)).ToArray(),
-					_ => throw new UnreachableException()
-				};
+				indices = obj.Indices.Select(x => (TIndex)Convert.ChangeType(x, typeof(TIndex))).ToArray();
 				break;
 			default:
 				throw new InvalidOperationException($"Failed to parse mesh of type '{extension}'.");
 		}
 
-		Initialize(vertices, indices);
+		return await FromArraysAsync(vertices, indices);
 	}
 
-	private protected Mesh(Array vertices, Array indices) =>
-		Initialize(vertices ?? throw new ArgumentNullException(), indices ?? throw new ArgumentNullException())
-	;
-
-#pragma warning restore
-}
-
-public class Mesh<TVertex> : Mesh
-	where TVertex : struct, IVertex
-{
-	public Mesh(string filename) : base(filename, vertexType: typeof(TVertex), indexType: default) { }
-
-	public Mesh(TVertex[] vertices, byte[] indices) : base(vertices, indices) { }
-	public Mesh(TVertex[] vertices, ushort[] indices) : base(vertices, indices) { }
-	public Mesh(TVertex[] vertices, uint[] indices) : base(vertices, indices) { }
-}
-
-public class Mesh<TVertex, TIndex> : Mesh
-	where TVertex : struct, IVertex
-	where TIndex : unmanaged, IBinaryInteger<TIndex>
-{
-	public Mesh(string filename) : base(
-		filename,
-		vertexType: typeof(TVertex),
-		indexType: (typeof(TIndex) == typeof(byte) || typeof(TIndex) == typeof(ushort) || typeof(TIndex) == typeof(uint))
-			? typeof(TIndex)
-			: throw new ArgumentException("Index type must be byte, ushort or uint.")
-	)
+	private Mesh(Buffer vertexBuffer, int vertexCount, Type vertexType, Buffer indexBuffer, int indexCount, Type indexType)
 	{
-	}
+		this.VertexBuffer = vertexBuffer;
+		this.IndexBuffer = indexBuffer;
 
-	public Mesh(TVertex[] vertices, byte[] indices) : base(vertices, indices) { }
-	public Mesh(TVertex[] vertices, ushort[] indices) : base(vertices, indices) { }
-	public Mesh(TVertex[] vertices, uint[] indices) : base(vertices, indices) { }
+		this.VertexCount = vertexCount;
+		this.IndexCount = indexCount;
+
+		this.VertexType = vertexType;
+		this.IndexType = indexType switch
+		{
+			Type t when t == typeof(byte) => IndexType.UInt8,
+			Type t when t == typeof(ushort) => IndexType.UInt16,
+			Type t when t == typeof(uint) => IndexType.UInt32,
+			_ => throw new UnreachableException()
+		};
+	}
 }

@@ -19,7 +19,7 @@ public class Camera : SceneObject
 			view: TryGetComponent<Transform>(out Transform transform) ? (Matrix4x4)transform : Matrix4x4.Identity,
 			objects: objects,
 			target: this.Target
-		);
+		).Wait();
 	}
 
 	public Camera(Scene scene) : base(scene, new Transform()) { }

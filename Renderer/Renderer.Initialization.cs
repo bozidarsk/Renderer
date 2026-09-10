@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
 using Vulkan;
@@ -31,15 +32,12 @@ internal sealed partial class Renderer : IDisposable
 	private ImageView[] swapchainImageViews;
 	private PipelineLayout pipelineLayout;
 	private DescriptorSetLayout descriptorSetLayout;
-	private VkBuffer[] globalUniformsBuffers;
-	private DeviceMemory[] globalUniformsMemories;
-	private nint[] globalUniformsLocations;
+	private Buffer[] globalUniformBuffers;
 	private Image depthImage;
 	private ImageView depthImageView;
 	private DeviceMemory depthImageMemory;
 
 	private Fence[] imageAvailableFence;
-	private ulong[] inFlightTimelineValues;
 
 	private QueueContext graphicsQueueContext, presentationQueueContext, computeQueueContext, transferQueueContext;
 
@@ -51,6 +49,7 @@ internal sealed partial class Renderer : IDisposable
 	public Device Device => device ?? throw new NullReferenceException("Device has not been initialized.");
 	public Extent2D SwapchainExtent => swapchainExtent;
 
+	public uint[] QueueFamilyIndices { private set; get; }
 	public QueueContext GraphicsQueueContext => graphicsQueueContext ?? throw new NullReferenceException("GraphicsQueueContext has not been initialized.");
 	public QueueContext PresentationQueueContext => presentationQueueContext ?? throw new NullReferenceException("PresentationQueueContext has not been initialized.");
 	public QueueContext ComputeQueueContext => computeQueueContext ?? throw new NullReferenceException("ComputeQueueContext has not been initialized.");
@@ -372,9 +371,10 @@ internal sealed partial class Renderer : IDisposable
 
 		device = deviceCreateInfo.CreateDevice(physicalDevice, allocator);
 
+		this.QueueFamilyIndices = new[] { graphicsQueueFamilyIndex, presentationQueueFamilyIndex, computeQueueFamilyIndex, transferQueueFamilyIndex }.Distinct().ToArray();
 		var map = new Dictionary<uint, QueueContext>();
 
-		foreach (var x in stackalloc[] { graphicsQueueFamilyIndex, presentationQueueFamilyIndex, computeQueueFamilyIndex, transferQueueFamilyIndex })
+		foreach (var x in this.QueueFamilyIndices)
 			if (!map.ContainsKey(x))
 				map[x] = new QueueContext(this, x);
 
@@ -442,10 +442,30 @@ internal sealed partial class Renderer : IDisposable
 	private void InitializeImageViews()
 	{
 		swapchainImages = swapchain.GetImages();
-		swapchainImageViews = new ImageView[swapchainImages.Length];
+		swapchainImageViews = swapchainImages
+			.Select(x =>
+				{
+					var imageViewCreateInfo = new ImageViewCreateInfo(
+						next: default,
+						flags: default,
+						image: x,
+						viewType: ImageViewType.Generic2D,
+						format: swapchainImageFormat,
+						components: new(r: ComponentSwizzle.Identity, g: ComponentSwizzle.Identity, b: ComponentSwizzle.Identity, a: ComponentSwizzle.Identity),
+						subresourceRange: new(
+							aspect: ImageAspect.Color,
+							baseMipLevel: 0,
+							levelCount: 1,
+							baseArrayLayer: 0,
+							layerCount: 1
+						)
+					);
 
-		for (int i = 0; i < swapchainImageViews.Length; i++)
-			CreateImageView(swapchainImages[i], swapchainImageFormat, ImageAspect.Color, ImageViewType.Generic2D, out swapchainImageViews[i]);
+					return imageViewCreateInfo.CreateImageView(device, allocator);
+				}
+			)
+			.ToArray()
+		;
 	}
 
 	private void InitializeDescriptorSetLayout()
@@ -502,19 +522,10 @@ internal sealed partial class Renderer : IDisposable
 	{
 		DeviceSize size = (ulong)Marshal.SizeOf<GlobalUniforms>();
 
-		globalUniformsBuffers = new VkBuffer[maxFrames];
-		globalUniformsMemories = new DeviceMemory[maxFrames];
-		globalUniformsLocations = new nint[maxFrames];
+		globalUniformBuffers = new Buffer[maxFrames];
 
 		for (int i = 0; i < maxFrames; i++)
-		{
-			CreateBuffer(size, BufferUsage.UniformBuffer, out VkBuffer buffer);
-			CreateBufferMemory(buffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent, out DeviceMemory memory);
-
-			globalUniformsBuffers[i] = buffer;
-			globalUniformsMemories[i] = memory;
-			globalUniformsLocations[i] = memory.Map(size: size, offset: default, flags: default);
-		}
+			globalUniformBuffers[i] = Buffer.Create(size, BufferUsage.UniformBuffer, MemoryProperty.HostVisible | MemoryProperty.HostCoherent);
 	}
 
 	private void InitializePipelineLayout()
@@ -592,13 +603,9 @@ internal sealed partial class Renderer : IDisposable
 		);
 
 		imageAvailableFence = new Fence[maxFrames];
-		inFlightTimelineValues = new ulong[maxFrames];
 
 		for (int i = 0; i < maxFrames; i++)
-		{
 			imageAvailableFence[i] = fenceCreateInfo.CreateFence(device, allocator);
-			inFlightTimelineValues[i] = 0;
-		}
 	}
 
 	public void DeviceWaitIdle() => device.WaitIdle();
@@ -649,6 +656,9 @@ internal sealed partial class Renderer : IDisposable
 		foreach (var x in new[] { graphicsQueueContext, presentationQueueContext, computeQueueContext, transferQueueContext }.DistinctBy(x => x.FamilyIndex))
 			x.Dispose();
 
+		foreach (var x in globalUniformBuffers)
+			x.Dispose();
+
 		foreach (var x in Assets)
 			(x.Target as IDisposable)?.Dispose();
 
@@ -668,9 +678,6 @@ internal sealed partial class Renderer : IDisposable
 		depthImage.Dispose();
 		depthImageMemory.Dispose();
 
-		foreach (var x in globalUniformsMemories)
-			x.Unmap();
-
 		foreach (var x in imageAvailableFence)
 			x.Dispose();
 
@@ -683,11 +690,6 @@ internal sealed partial class Renderer : IDisposable
 			x.Dispose();
 
 		swapchain.Dispose();
-
-		foreach (var x in globalUniformsBuffers)
-			x.Dispose();
-		foreach (var x in globalUniformsMemories)
-			x.Dispose();
 
 		descriptorSetLayout.Dispose();
 
