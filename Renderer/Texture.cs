@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -20,6 +21,17 @@ public class Texture : Asset
 	internal ImageView ImageView { private set; get; }
 	internal DeviceMemory ImageMemory { private set; get; }
 	internal Sampler Sampler { private set; get; }
+
+	private static readonly Dictionary<ImageLayout, (Access, PipelineStage)> imageTransitionParameters = new()
+	{
+		{ ImageLayout.ColorAttachmentOptimal, (Access.ColorAttachmentWrite, PipelineStage.ColorAttachmentOutput) },
+		{ ImageLayout.DepthAttachmentOptimal, (Access.DepthStencilAttachmentRead | Access.DepthStencilAttachmentWrite, PipelineStage.EarlyFragmentTests) },
+		{ ImageLayout.PresentSrc, (Access.None, PipelineStage.BottomOfPipe) },
+		{ ImageLayout.ShaderReadOnlyOptimal, (Access.ShaderRead, PipelineStage.FragmentShader) },
+		{ ImageLayout.TransferDstOptimal, (Access.TransferWrite, PipelineStage.Transfer) },
+		{ ImageLayout.TransferSrcOptimal, (Access.TransferRead, PipelineStage.Transfer) },
+		{ ImageLayout.Undefined, (0, PipelineStage.TopOfPipe) },
+	};
 
 	protected override void Free()
 	{
@@ -53,115 +65,11 @@ public class Texture : Asset
 
 	public async Task TransitionLayout(ImageLayout from, ImageLayout to)
 	{
-		Access sourceAccess, destinationAccess;
-		PipelineStage sourceStage, destinationStage;
-
-		if (from == ImageLayout.Undefined && to == ImageLayout.TransferDstOptimal)
-		{
-			sourceAccess = 0;
-			destinationAccess = Access.TransferWrite;
-
-			sourceStage = PipelineStage.TopOfPipe;
-			destinationStage = PipelineStage.Transfer;
-		}
-		else if (from == ImageLayout.TransferDstOptimal && to == ImageLayout.ShaderReadOnlyOptimal)
-		{
-			sourceAccess = Access.TransferWrite;
-			destinationAccess = Access.ShaderRead;
-
-			sourceStage = PipelineStage.Transfer;
-			destinationStage = PipelineStage.FragmentShader;
-		}
-		else if (from == ImageLayout.Undefined && to == ImageLayout.ColorAttachmentOptimal)
-		{
-			sourceAccess = 0;
-			destinationAccess = Access.ColorAttachmentWrite;
-
-			sourceStage = PipelineStage.TopOfPipe;
-			destinationStage = PipelineStage.ColorAttachmentOutput;
-		}
-		else if (from == ImageLayout.Undefined && to == ImageLayout.ShaderReadOnlyOptimal)
-		{
-			sourceAccess = 0;
-			destinationAccess = Access.ShaderRead;
-
-			sourceStage = PipelineStage.TopOfPipe;
-			destinationStage = PipelineStage.FragmentShader;
-		}
-		else if (from == ImageLayout.ColorAttachmentOptimal && to == ImageLayout.ShaderReadOnlyOptimal)
-		{
-			sourceAccess = Access.ColorAttachmentWrite;
-			destinationAccess = Access.ShaderRead;
-
-			sourceStage = PipelineStage.ColorAttachmentOutput;
-			destinationStage = PipelineStage.FragmentShader;
-		}
-		else if (from == ImageLayout.ShaderReadOnlyOptimal && to == ImageLayout.ColorAttachmentOptimal)
-		{
-			sourceAccess = Access.ShaderRead;
-			destinationAccess = Access.ColorAttachmentWrite;
-
-			sourceStage = PipelineStage.FragmentShader;
-			destinationStage = PipelineStage.ColorAttachmentOutput;
-		}
-		else if (from == ImageLayout.PresentSrc && to == ImageLayout.ShaderReadOnlyOptimal)
-		{
-			sourceAccess = Access.None;
-			destinationAccess = Access.ShaderRead;
-
-			sourceStage = PipelineStage.BottomOfPipe;
-			destinationStage = PipelineStage.FragmentShader;
-		}
-		else if (from == ImageLayout.PresentSrc && to == ImageLayout.ColorAttachmentOptimal)
-		{
-			sourceAccess = Access.None;
-			destinationAccess = Access.ColorAttachmentWrite;
-
-			sourceStage = PipelineStage.BottomOfPipe;
-			destinationStage = PipelineStage.ColorAttachmentOutput;
-		}
-		else if (from == ImageLayout.TransferSrcOptimal && to == ImageLayout.ShaderReadOnlyOptimal)
-		{
-			sourceAccess = Access.TransferRead;
-			destinationAccess = Access.ShaderRead;
-
-			sourceStage = PipelineStage.Transfer;
-			destinationStage = PipelineStage.FragmentShader;
-		}
-		else if (from == ImageLayout.ShaderReadOnlyOptimal && to == ImageLayout.TransferSrcOptimal)
-		{
-			sourceAccess = Access.ShaderRead;
-			destinationAccess = Access.TransferRead;
-
-			sourceStage = PipelineStage.FragmentShader;
-			destinationStage = PipelineStage.Transfer;
-		}
-		else if (from == ImageLayout.ColorAttachmentOptimal && to == ImageLayout.TransferSrcOptimal)
-		{
-			sourceAccess = Access.ColorAttachmentWrite;
-			destinationAccess = Access.TransferRead;
-
-			sourceStage = PipelineStage.ColorAttachmentOutput;
-			destinationStage = PipelineStage.Transfer;
-		}
-		else if (from == ImageLayout.Undefined && to == ImageLayout.DepthAttachmentOptimal)
-		{
-			sourceAccess = 0;
-			destinationAccess = Access.DepthStencilAttachmentRead | Access.DepthStencilAttachmentWrite;
-
-			sourceStage = PipelineStage.TopOfPipe;
-			destinationStage = PipelineStage.EarlyFragmentTests;
-		}
-		else if (from == ImageLayout.Undefined && to == ImageLayout.TransferSrcOptimal)
-		{
-			sourceAccess = 0;
-			destinationAccess = Access.TransferRead;
-
-			sourceStage = PipelineStage.TopOfPipe;
-			destinationStage = PipelineStage.Transfer;
-		}
-		else
+		if (!imageTransitionParameters.TryGetValue(from, out var sourceTransitionParametes) || !imageTransitionParameters.TryGetValue(to, out var destinationTransitionParametes))
 			throw new InvalidOperationException($"Unsupported layer transition from '{from}' to '{to}'.");
+
+		(Access sourceAccess, PipelineStage sourceStage) = sourceTransitionParametes;
+		(Access destinationAccess, PipelineStage destinationStage) = destinationTransitionParametes;
 
 		var barrier = new ImageMemoryBarrier(
 			next: default,
